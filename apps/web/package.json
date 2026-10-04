@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:demo": "node --experimental-websocket --no-warnings --env-file=.env.local scripts/seed-demo.mjs",
+    "login-link": "node --experimental-websocket --no-warnings --env-file=.env.local scripts/login-link.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^11.4.0",
