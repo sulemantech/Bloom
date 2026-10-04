@@ -1,0 +1,16 @@
+{
+  "name": "youth-idealab",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix apps/web run dev",
+    "build": "npm --prefix apps/web run build",
+    "db:push": "supabase db push",
+    "db:test": "supabase test db --linked",
+    "db:types": "supabase gen types typescript --linked > apps/web/src/lib/supabase/database.types.ts",
+    "db:local:start": "supabase start",
+    "db:local:test": "supabase test db"
+  },
+  "devDependencies": {
+    "supabase": "^2.119.0"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "app": {
+    "name": "Youth IdeaLab",
+    "tagline": "From first idea to final showcase, in 4 steps."
+  },
+  "home": {
+    "title": "Welcome to Youth IdeaLab",
+    "intro": "Students explore, choose a real problem, build their answer to it and present it at Demo Day — with a mentor at every step.",
+    "signIn": "Sign in",
+    "comingSoon": "Sign-in opens before the first group starts."
+  },
+  "steps": {
+    "explore": "Explore",
+    "choose": "Choose",
+    "build": "Build",
+    "present": "Present"
+  },
+  "ageGroups": {
+    "explorer": "Explorer (12–14)",
+    "builder": "Builder (15–18)"
+  }
+}

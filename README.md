@@ -1,246 +1,57 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="assets/logo.svg">
-    <img alt="Bloom" src="assets/logo.svg" width="360">
-  </picture>
-</p>
+# Youth IdeaLab
 
-<p align="center">
-  <strong>Hire a private AI tutor for anything you want to learn.</strong>
-</p>
+The learning platform for [Youth Idea Lab](https://youth-idealab.vercel.app/): an 8-week, mentor-led course where students aged 12–18 explore, choose a real problem, build their answer to it and present it at Demo Day.
 
-<p align="center">
-  <em>Your AI reads how you actually learn — and teaches the next lesson just for you.<br>Built on Bloom's 2-Sigma research: 1-on-1 tutoring = top 2%.</em>
-</p>
+> The earlier Bloom AI-tutor code lives on the `bloom/legacy` branch. Its adaptive-tutor ideas will be reused for the Phase 3 student tutor.
 
-<p align="center">
-  <a href="https://github.com/Li-Evan/Bloom/stargazers"><img src="https://img.shields.io/github/stars/Li-Evan/Bloom?style=social" alt="GitHub stars"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
-  <img src="https://img.shields.io/github/last-commit/Li-Evan/Bloom" alt="Last commit">
-  <img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/node-18+-blue.svg" alt="Node.js 18+">
-  <img src="https://img.shields.io/badge/react-19-blue.svg" alt="React 19">
-  <img src="https://img.shields.io/badge/fastapi-0.115+-blue.svg" alt="FastAPI">
-</p>
+## Structure
 
-<p align="center">
-  <a href="https://li-evan.github.io/Bloom/"><strong>🌐 Website</strong></a> · <a href="./README.zh.md">Chinese</a> · English
-</p>
+```
+apps/web/        Next.js app (student, parent, mentor and admin views)
+  src/lib/       supabase/ clients · notify · ai · storage · flags · sentry
+  messages/      interface text (next-intl), English for now
+supabase/
+  migrations/    tables, row-level security, audit log, storage policies
+  seed.sql       the 8-week programme: 4 steps and activities per age group
+  tests/         pgTAP tests of what each role can see and change
+```
 
-<p align="center">
-  <a href="https://li-evan.github.io/Bloom/"><img src="assets/hero.png" alt="Bloom — from average to the top 2%" width="820"></a>
-</p>
+## Concepts
 
----
+| Website term | In the database |
+|---|---|
+| The 8-week course | `programs` (template) |
+| 4 steps: Explore, Choose, Build, Present | `stages` |
+| Weekly tasks | `activities` (`age_group` null = both) |
+| Explorer (12–14) / Builder (15–18) | `age_group` enum |
+| A group of students | `cohorts` + `memberships` |
+| Weekly progress card for parents | `progress_cards` (parents see `approved` only) |
 
-In 1984, educational psychologist Benjamin Bloom discovered that students receiving **one-on-one tutoring** scored **2 standard deviations (+2σ)** above the classroom average — jumping to the **top 2%**. Bloom called this the "2 Sigma Problem": the effect is proven, but personal tutors don't scale.
+## Development
 
-**Bloom solves this with AI.** It generates a structured syllabus, delivers lessons one at a time, reads your annotations and feedback, then tailors the next lesson to your exact understanding level — just like a real tutor would.
-
-## Two Ways to Use
-
-| Mode | Setup | Best for |
-|------|-------|----------|
-| **CLI** | Claude Code + terminal | Power users who like Markdown editors |
-| **Web** | Browser (React + FastAPI) | Visual learners, shareable setup |
-
-Both follow the same flow: **syllabus → lesson → annotate → feedback → next lesson → evaluation → summary**.
-
----
-
-## Quick Start: CLI Mode
-
-Requires only [Claude Code](https://claude.com/claude-code). No backend.
+Requires Node 20+. The database runs on Supabase (online); Docker is only needed for the test runner.
 
 ```bash
-git clone https://github.com/Li-Evan/Bloom.git
-cd Bloom
+npm install                                  # Supabase CLI (repo root)
+npx supabase login
+npx supabase link --project-ref <project-ref>
 
-# Install the tutor skill locally for this clone
-mkdir -p .claude/skills
-cp -R skills/bloom-tutor .claude/skills/
+npm run db:push                              # apply new migrations to the linked project
+npm run db:test                              # row-level security tests (run in a rolled-back transaction)
+npm run db:types                             # regenerate TypeScript types after schema changes
 
-claude
+cd apps/web
+npm install
+cp .env.example .env.local                   # URL + keys from Project Settings → API Keys
+npm run dev                                  # http://localhost:3000
 ```
 
-Then say: `Create a new folder and help me learn [any topic]`
+To seed a fresh project: `npx supabase db push --include-seed`.
+Once real families use the online project, develop against a second Supabase project or a local one
+(`npm run db:local:start`, needs Docker) instead.
 
-**Or install it as a plugin** (bundles `bloom-tutor` plus the `learn-*` skills) — in Claude Code:
+For deployment, set the same environment variables in Vercel.
 
-```text
-/plugin marketplace add Li-Evan/Bloom
-/plugin install bloom@li-evan
-```
+## Licence
 
-See [GUIDE.md](./GUIDE.md) for the full walkthrough.
-
-## Quick Start: Web Mode
-
-### Prerequisites
-
-- Python 3.11+ with [uv](https://docs.astral.sh/uv/)
-- Node.js 18+
-- An OpenAI-compatible LLM API key (e.g. [DashScope](https://dashscope.console.aliyun.com/), OpenAI, etc.)
-
-### Setup
-
-```bash
-git clone https://github.com/Li-Evan/Bloom.git
-cd Bloom
-
-# Configure
-cp .env.example .env
-# Edit .env — fill in LLM_API_KEY
-
-# Backend
-cd backend && uv sync && uv run uvicorn app.main:app --reload --port 8000
-
-# Frontend (new terminal)
-cd frontend && npm install && npm run dev
-```
-
-Open http://localhost:5173. Click **New Course**, choose **Topic**, **Source Upload**, or **Project Files**, and start learning.
-
-### Docker
-
-```bash
-cp .env.example .env   # fill in API key
-docker compose up -d   # visit http://localhost:3000
-```
-
----
-
-## How It Works
-
-### Topic Mode
-
-```
-Create course → AI generates syllabus + lesson 01
-                        ↓
-        Read lesson → highlight text → add annotations
-                        ↓
-        Write feedback → answer thought questions
-                        ↓
-        Click "Done Reading" → AI generates next lesson
-        (answer review + annotation responses + new content)
-                        ↓
-        Repeat until all mastery items checked ✅
-                        ↓
-        Auto-generate evaluation → then summary
-```
-
-### Source Mode
-
-```
-Upload PDF / TXT / MD → AI generates syllabus + source-reading chapter
-                          ↓
-       Read source → highlight text → ask and get an immediate answer
-                          ↓
-       Click "Done Reading" → AI reads the full source + Q&A, then generates the next lesson
-                          ↓
-       Continue with the normal adaptive lesson flow
-```
-
-### Project Files
-
-```
-Upload a file / multiple files / a whole folder → each file renders directly as one page
-                          ↓
-       Read each file → highlight text → ask and get an immediate answer
-                          ↓
-       No syllabus, no next-lesson generation; the files and highlight Q&A feed next-step recommendations
-```
-
-## Features
-
-- **Three course modes** — generate from a topic, upload a PDF/TXT/MD source, or **Project Files** (upload files/a folder, render each directly, highlight-ask anytime, no syllabus or next-lesson generation)
-- **Learning depth** — choose simple, standard, or deep syllabus expansion when creating a course; shown as a badge on each course card
-- **Reference material** — paste textbook chapters, papers, or notes when creating a topic course
-- **Next-topic recommendations** — generate 3 course-ready topics from your full learning history, refresh the set, save ideas to a learning queue, or start one directly through the normal syllabus → lesson flow
-- **Highlight Q&A sessions** — select any text in any lesson (or source) and a small icon pops up; click it to ask. The highlighted text stays marked in yellow, the AI answers instantly, and you can keep asking follow-ups in the same thread. The window is draggable and collapses into a margin dot you can reopen anytime. Each session sees the full lesson + the highlighted span + its own conversation, and your questions still feed the next lesson.
-- **Adaptive lessons** — each lesson addresses your specific gaps from the previous one
-- **Chapter sidebar** — quick-jump between lessons while reading
-- **Collapsible syllabus** — track mastery progress without clutter
-- **Streaming generation** — watch AI write the next lesson in real-time
-- **Personal center & learning calendar** — open the profile from the header to see a month calendar shaded by daily activity; click any day to see which courses, lessons, and highlights you studied, alongside overview stat cards and a six-month contribution heatmap (streaks and grouping use your local date)
-
-## Skills
-
-Bloom ships a set of portable **[Claude Code](https://claude.com/claude-code) skills** in [`skills/`](./skills/) — self-contained capability packs you can copy into `~/.claude/skills/` (global) or any project's `.claude/skills/` and use anywhere.
-
-| Skill | What it does |
-|-------|-------------|
-| **bloom-tutor** | The full interactive tutoring system as one skill — syllabus → adaptive lessons → `???` annotations → evaluation → summary. CLI mode, packaged and portable. |
-| **learn-deep** | Default deep-dive entry — runs all five lenses below in one pass, then helps you pick a direction |
-| **learn-crossover** | Learn a new concept by leveraging what you already know (structural analogies) |
-| **learn-occam** | Decide whether / how deeply something is worth learning (ROI, just-enough) |
-| **learn-graph** | Build a knowledge-graph map of a field plus a learning path |
-| **learn-prototype** | Learn by building the crappiest working prototype, then iterating |
-| **learn-feynman** | Verify true understanding by explaining it back |
-
-Each folder is dependency-free: copy it into a skills directory, then just talk to Claude Code (e.g. *"help me learn X"*, *"I'm done reading"*).
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Backend | Python, FastAPI, SQLAlchemy, SQLite |
-| Frontend | React, Vite, Tailwind CSS |
-| AI | Any OpenAI-compatible LLM API |
-| Container | Docker, docker-compose |
-| Font | Outfit, JetBrains Mono |
-
-## Commands
-
-```bash
-make dev-backend      # backend with hot reload
-make dev-frontend     # frontend dev server
-make test             # run pytest
-make up / make down   # docker start / stop
-```
-
-## Project Structure
-
-```
-├── GUIDE.md               # CLI usage guide
-├── .env.example           # env template
-├── backend/
-│   └── app/
-│       ├── courses.py     # course, lesson, annotation, feedback, stats, summary APIs
-│       ├── recommendations.py # next-topic recommendation APIs
-│       ├── models.py      # Course, Lesson, Annotation, Feedback, Recommendation
-│       └── config.py      # reads .env
-├── frontend/
-│   └── src/pages/
-│       ├── DashboardPage  # course list + create form
-│       ├── CoursePage     # syllabus + lesson list
-│       └── LessonPage     # reader + annotations + feedback + AI gen
-├── example/               # pre-built topics for CLI mode
-├── site/                  # marketing website (standalone Astro static build, decoupled from the app)
-└── skills/                # portable Claude Code skills (bloom-tutor + learn-*)
-```
-
-## The Science
-
-| Concept | What it means |
-|---------|--------------|
-| **Bloom's 2 Sigma** | 1-on-1 tutoring = +2σ performance over classroom |
-| **Mastery Learning** | Don't move on until the concept is truly understood |
-| **Socratic Method** | Ask questions, don't hand answers |
-| **Spaced Retrieval** | Thought question reviews at lesson start reinforce memory |
-| **Adaptive Path** | Content adjusts to individual feedback in real-time |
-
-## Star History
-
-<a href="https://star-history.com/#Li-Evan/Bloom&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Li-Evan/Bloom&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Li-Evan/Bloom&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Li-Evan/Bloom&type=Date" width="640" />
-  </picture>
-</a>
-
-## License
-
-[MIT](LICENSE)
+MIT. Includes code originally from [Bloom](https://github.com/Li-Evan/Bloom).
