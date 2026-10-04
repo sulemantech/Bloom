@@ -24,9 +24,20 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+
+  // Optimistic check only: pages still verify the role with requireRole().
+  const isProtected = PROTECTED_PREFIXES.some((p) => request.nextUrl.pathname.startsWith(p));
+  if (isProtected && !data?.claims) {
+    const redirect = NextResponse.redirect(new URL("/login", request.url));
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    return redirect;
+  }
+
   return response;
 }
+
+const PROTECTED_PREFIXES = ["/student", "/parent", "/mentor", "/admin"];
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],

@@ -1,6 +1,9 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Badge, STEP_TONE } from "@/components/ui/Badge";
 import { Logo } from "@/components/ui/LogoMark";
+import { getCurrentProfile, HOME_PATH } from "@/lib/auth";
 
 const STEPS = [
   { key: "explore", weeks: "1–2" },
@@ -10,6 +13,9 @@ const STEPS = [
 ] as const;
 
 export default async function Home() {
+  const profile = await getCurrentProfile();
+  if (profile) redirect(HOME_PATH[profile.role]);
+
   const t = await getTranslations();
 
   return (
@@ -33,12 +39,9 @@ export default async function Home() {
         ))}
       </ol>
 
-      <div className="flex flex-col items-start gap-2">
-        <button type="button" disabled className="btn btn-primary">
-          {t("home.signIn")}
-        </button>
-        <p className="text-[13px] text-soft">{t("home.comingSoon")}</p>
-      </div>
+      <Link href="/login" className="btn btn-primary self-start">
+        {t("home.signIn")}
+      </Link>
     </main>
   );
 }

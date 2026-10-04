@@ -7,8 +7,7 @@
     "titleStart": "Welcome to",
     "intro": "Students explore, choose a real problem, build their answer to it and present it at Demo Day — with a mentor at every step.",
     "weeks": "Weeks {weeks}",
-    "signIn": "Sign in",
-    "comingSoon": "Sign-in opens before the first group starts."
+    "signIn": "Sign in"
   },
   "steps": {
     "explore": "Explore",
@@ -19,5 +18,128 @@
   "ageGroups": {
     "explorer": "Explorer (12–14)",
     "builder": "Builder (15–18)"
+  },
+  "login": {
+    "title": "Sign in",
+    "subtitle": "Welcome back to Youth IdeaLab.",
+    "chooseAccount": "Choose your account type",
+    "tabAdult": "Parent or mentor",
+    "tabStudent": "Student",
+    "adultIntro": "We'll email you a secure sign-in link. No password needed.",
+    "email": "Email address",
+    "sendLink": "Email me a sign-in link",
+    "sending": "Sending…",
+    "checkEmailTitle": "Check your email",
+    "checkEmailBody": "If this email is registered with us, a sign-in link is on its way. It works once and expires in one hour. Can't find it? Check your spam folder, or ask us on WhatsApp.",
+    "studentIntro": "Use the username and password your parent set up for you.",
+    "username": "Username",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "forgotStudent": "Forgot your password? Ask your parent — they can set a new one for you.",
+    "linkExpired": "That sign-in link has expired or was already used. Please ask for a new one.",
+    "errors": {
+      "invalidEmail": "Please enter a valid email address.",
+      "missingFields": "Please enter your username and password.",
+      "wrongCredentials": "That username and password don't match. Please try again.",
+      "tooManyRequests": "Too many attempts. Please wait a few minutes and try again."
+    }
+  },
+  "shell": {
+    "signOut": "Sign out",
+    "roles": {
+      "student": "Student",
+      "parent": "Parent",
+      "mentor": "Mentor",
+      "admin": "Admin"
+    }
+  },
+  "parent": {
+    "title": "Hello {name}",
+    "intro": "Here you'll see your child's progress, project and weekly progress cards.",
+    "children": "Your children",
+    "noChildren": "You haven't added a child yet. Add them below so they can sign in.",
+    "usernameLabel": "Username",
+    "inGroup": "In {group}",
+    "notInGroup": "Not in a group yet — our team will add them before the first class.",
+    "ageGroups": {
+      "explorer": "Explorer",
+      "builder": "Builder"
+    },
+    "addChild": {
+      "title": "Add your child",
+      "intro": "Create your child's account. They'll sign in with the username and password you choose here — no email needed.",
+      "fullName": "Child's full name",
+      "birthYear": "Year of birth",
+      "username": "Username",
+      "usernameHint": "3–30 characters: lowercase letters, numbers, dots or underscores.",
+      "password": "Password",
+      "passwordHint": "At least 8 characters. Only you can change it later.",
+      "consent": "I am this child's parent or guardian. I agree to Youth IdeaLab storing their name, year of birth and project work as described in the <link>privacy and safeguarding notice</link>.",
+      "submit": "Create account",
+      "creating": "Creating…",
+      "created": "Account created. Share the username and password with your child.",
+      "errors": {
+        "notAllowed": "Only parents can add a child.",
+        "nameRequired": "Please enter your child's name.",
+        "usernameInvalid": "Usernames are 3–30 characters: lowercase letters, numbers, dots or underscores, starting with a letter or number.",
+        "usernameTaken": "That username is taken. Please choose another.",
+        "passwordShort": "The password must be at least 8 characters.",
+        "birthYearInvalid": "Please check the year of birth. The course is for ages 12–18.",
+        "consentRequired": "Please confirm your consent to continue.",
+        "createFailed": "Something went wrong creating the account. Please try again."
+      }
+    },
+    "reset": {
+      "open": "Set a new password",
+      "newPassword": "New password (at least 8 characters)",
+      "save": "Save password",
+      "saving": "Saving…",
+      "done": "Password updated. Share it with your child.",
+      "errors": {
+        "notAllowed": "You can only change your own child's password.",
+        "passwordShort": "The password must be at least 8 characters.",
+        "resetFailed": "The password couldn't be changed. Please try again."
+      }
+    }
+  },
+  "comingSoon": {
+    "hello": "Hello {name}",
+    "intro": {
+      "student": "Your weekly activities and your project will appear here.",
+      "parent": "Your child's progress will appear here.",
+      "mentor": "Your group, students' submissions and progress cards will appear here.",
+      "admin": "Groups, invitations and activities will be managed here."
+    },
+    "body": "This page is being built and will be ready before the first group starts."
+  },
+  "privacy": {
+    "title": "Privacy and safeguarding",
+    "version": "Version {version}",
+    "draft": "Draft — this notice is being reviewed and may change before the first group starts.",
+    "collect": {
+      "title": "What we collect",
+      "body": "Your child's name, year of birth, username, the work they submit (text, files and links), and mentor feedback. For parents: name and email address. We don't collect your child's email address, phone number or photo unless they upload one as part of their project."
+    },
+    "use": {
+      "title": "How we use it",
+      "body": "Only to run the course: to show activities, collect and review project work, and send you weekly progress cards. We never sell data or use it for advertising."
+    },
+    "see": {
+      "title": "Who can see it",
+      "body": "Your child, you, your child's mentors and Youth IdeaLab staff. Other students and parents cannot see your child's work. A portfolio page is only made public if you give separate permission, and you can withdraw it at any time."
+    },
+    "never": {
+      "title": "Safeguarding",
+      "body": "All communication with students happens in moderated group spaces — never private messages. Every change to your child's records is logged."
+    },
+    "rights": {
+      "title": "Your rights",
+      "body": "You can ask for a copy of everything we hold about your child, ask us to correct it, or ask us to delete your child's account and data."
+    },
+    "contact": {
+      "title": "Contact",
+      "body": "Youth IdeaLab is run by MetaFront LLP, Islamabad. Contact us on WhatsApp with any questions about your child's data."
+    }
   }
 }

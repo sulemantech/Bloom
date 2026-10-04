@@ -61,6 +61,12 @@ select throws_ok(
     values ('00000000-0000-0000-0000-000000001001', 'c0000000-0000-0000-0000-000000000001', 'student', 'explorer')$$,
   'P0001', null, 'a parent cannot join a cohort as a student');
 
+-- The admin API sets app_metadata after insert; the profile must follow.
+insert into auth.users (id, email) values ('c0000000-0000-0000-0000-000000000009', 'late@test.local');
+update auth.users set raw_app_meta_data = '{"role": "mentor"}' where id = 'c0000000-0000-0000-0000-000000000009';
+select is((select role from public.profiles where id = 'c0000000-0000-0000-0000-000000000009'),
+          'mentor'::public.app_role, 'a role set after sign-up updates the profile');
+
 -- ---------------------------------------------------------------------------
 -- Student S1
 -- ---------------------------------------------------------------------------

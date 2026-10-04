@@ -1,0 +1,49 @@
+"use server";
+
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentProfile, HOME_PATH, studentEmail } from "@/lib/auth";
+
+export type LoginState = { status: "idle" | "sent" | "error"; message?: string };
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Parents, mentors and admins: email sign-in link. Only existing (invited) accounts get one. */
+export async function sendSignInLink(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!EMAIL_PATTERN.test(email)) return { status: "error", message: "invalidEmail" };
+
+  const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false, emailRedirectTo: `${origin}/auth/callback` },
+  });
+
+  // Same answer whether or not the account exists, so the form can't be used to find out who has one.
+  if (error && error.status === 429) return { status: "error", message: "tooManyRequests" };
+  return { status: "sent" };
+}
+
+/** Students: username and password set by their parent. */
+export async function studentSignIn(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const username = String(formData.get("username") ?? "");
+  const password = String(formData.get("password") ?? "");
+  if (!username || !password) return { status: "error", message: "missingFields" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email: studentEmail(username), password });
+  if (error) {
+    return { status: "error", message: error.status === 429 ? "tooManyRequests" : "wrongCredentials" };
+  }
+
+  const profile = await getCurrentProfile();
+  redirect(profile ? HOME_PATH[profile.role] : "/");
+}
+
+export async function signOut() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
