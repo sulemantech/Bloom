@@ -42,6 +42,22 @@ export async function studentSignIn(_prev: LoginState, formData: FormData): Prom
   redirect(profile ? HOME_PATH[profile.role] : "/");
 }
 
+/** Development only: email + password for adults. Off unless ENABLE_DEV_PASSWORD_LOGIN=true. */
+export async function devPasswordSignIn(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  if (process.env.ENABLE_DEV_PASSWORD_LOGIN !== "true") return { status: "error", message: "wrongCredentials" };
+
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  if (!email || !password) return { status: "error", message: "missingFields" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { status: "error", message: "wrongCredentials" };
+
+  const profile = await getCurrentProfile();
+  redirect(profile ? HOME_PATH[profile.role] : "/");
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

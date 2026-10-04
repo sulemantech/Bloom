@@ -52,6 +52,8 @@ Once real families use the online project, develop against a second Supabase pro
 
 For deployment, set the same environment variables in Vercel.
 
+To try the app with demo accounts for each role, see [docs/DEMO_ACCOUNTS.md](docs/DEMO_ACCOUNTS.md) (temporary).
+
 ## Licence
 
 MIT. Includes code originally from [Bloom](https://github.com/Li-Evan/Bloom).

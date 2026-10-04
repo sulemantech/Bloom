@@ -2,15 +2,16 @@
 
 import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
-import { sendSignInLink, studentSignIn, type LoginState } from "./actions";
+import { devPasswordSignIn, sendSignInLink, studentSignIn, type LoginState } from "./actions";
 
 const initial: LoginState = { status: "idle" };
 
-export function LoginForms({ linkError }: { linkError: boolean }) {
+export function LoginForms({ linkError, devPasswordLogin }: { linkError: boolean; devPasswordLogin: boolean }) {
   const t = useTranslations("login");
   const [tab, setTab] = useState<"adult" | "student">("adult");
   const [linkState, linkAction, linkPending] = useActionState(sendSignInLink, initial);
   const [studentState, studentAction, studentPending] = useActionState(studentSignIn, initial);
+  const [devState, devAction, devPending] = useActionState(devPasswordSignIn, initial);
 
   return (
     <div className="card flex flex-col gap-6 p-6 sm:p-8">
@@ -58,7 +59,29 @@ export function LoginForms({ linkError }: { linkError: boolean }) {
             </button>
           </form>
         )
-      ) : (
+      ) : null}
+
+      {tab === "adult" && devPasswordLogin && (
+        <form action={devAction} className="flex flex-col gap-4 rounded-xl border border-dashed border-warning/50 p-4">
+          <p className="label-caps text-warning">{t("devTitle")}</p>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium">{t("email")}</span>
+            <input name="email" type="email" autoComplete="username" required className="field" />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium">{t("password")}</span>
+            <input name="password" type="password" autoComplete="current-password" required className="field" />
+          </label>
+          {devState.status === "error" && (
+            <p role="alert" className="text-sm text-danger">{t(`errors.${devState.message}`)}</p>
+          )}
+          <button type="submit" disabled={devPending} className="btn btn-secondary">
+            {devPending ? t("signingIn") : t("signIn")}
+          </button>
+        </form>
+      )}
+
+      {tab === "student" && (
         <form action={studentAction} className="flex flex-col gap-4">
           <p className="text-sm text-muted">{t("studentIntro")}</p>
           <label className="flex flex-col gap-1.5">

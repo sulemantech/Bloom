@@ -7,15 +7,34 @@ const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUP
 });
 
 const COHORT_ID = "00000000-0000-0000-0000-000000001001"; // "Group 1" from seed.sql
-const STUDENT = { username: "demo.student", password: "Demo-Student-2026", name: "Demo Student" };
+// Passwords come from .env.local (never committed): DEMO_STUDENT_PASSWORD, DEMO_ADMIN_PASSWORD,
+// DEMO_MENTOR_PASSWORD, DEMO_PARENT_PASSWORD.
+const env = (name) => {
+  const value = process.env[name];
+  if (!value || value.length < 8) throw new Error(`Set ${name} (8+ characters) in .env.local`);
+  return value;
+};
+
+const STUDENT = { username: "demo.student", password: env("DEMO_STUDENT_PASSWORD"), name: "Demo Student" };
+
+// Development only: adults normally sign in with an email link (ENABLE_DEV_PASSWORD_LOGIN enables passwords).
+const ADULT_PASSWORDS = {
+  "admin.demo@example.com": env("DEMO_ADMIN_PASSWORD"),
+  "mentor.demo@example.com": env("DEMO_MENTOR_PASSWORD"),
+  "parent.demo@example.com": env("DEMO_PARENT_PASSWORD"),
+};
 
 async function ensureUser(email, fullName) {
   const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
   const existing = list.users.find((u) => u.email === email);
-  if (existing) return existing.id;
+  if (existing) {
+    if (ADULT_PASSWORDS[email]) await admin.auth.admin.updateUserById(existing.id, { password: ADULT_PASSWORDS[email] });
+    return existing.id;
+  }
   const { data, error } = await admin.auth.admin.createUser({
     email,
     email_confirm: true,
+    password: ADULT_PASSWORDS[email],
     user_metadata: { full_name: fullName },
   });
   if (error) throw error;
@@ -67,7 +86,7 @@ await admin.from("memberships").upsert(
 );
 
 console.log("Demo accounts ready:");
-console.log("  admin    admin.demo@example.com   (sign in with: npm run login-link -- admin.demo@example.com)");
-console.log("  mentor   mentor.demo@example.com  (in Group 1)");
-console.log("  parent   parent.demo@example.com  (parent of demo.student)");
+for (const [email, password] of Object.entries(ADULT_PASSWORDS)) {
+  console.log(`  ${email.split(".")[0].padEnd(8)} ${email} / password ${password}`);
+}
 console.log(`  student  username ${STUDENT.username} / password ${STUDENT.password}  (Group 1, Explorer)`);

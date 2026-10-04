@@ -23,7 +23,10 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         </h1>
         <p className="text-muted">{t("subtitle")}</p>
       </header>
-      <LoginForms linkError={error === "link"} />
+      <LoginForms
+        linkError={error === "link"}
+        devPasswordLogin={process.env.ENABLE_DEV_PASSWORD_LOGIN === "true"}
+      />
     </main>
   );
 }

@@ -43,7 +43,8 @@
       "missingFields": "Please enter your username and password.",
       "wrongCredentials": "That username and password don't match. Please try again.",
       "tooManyRequests": "Too many attempts. Please wait a few minutes and try again."
-    }
+    },
+    "devTitle": "Development only: sign in with a password"
   },
   "shell": {
     "signOut": "Sign out",
