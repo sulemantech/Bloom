@@ -1,36 +1,43 @@
 import { getTranslations } from "next-intl/server";
+import { Badge, STEP_TONE } from "@/components/ui/Badge";
+import { Logo } from "@/components/ui/LogoMark";
 
-const STEPS = ["explore", "choose", "build", "present"] as const;
+const STEPS = [
+  { key: "explore", weeks: "1–2" },
+  { key: "choose", weeks: "3–4" },
+  { key: "build", weeks: "5–6" },
+  { key: "present", weeks: "7–8" },
+] as const;
 
 export default async function Home() {
   const t = await getTranslations();
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-10 px-4 py-16 sm:px-8">
+      <Logo />
+
       <header className="flex flex-col gap-3">
-        <p className="text-sm font-medium uppercase tracking-widest text-zinc-500">{t("app.name")}</p>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("home.title")}</h1>
-        <p className="max-w-xl text-lg text-zinc-600 dark:text-zinc-400">{t("home.intro")}</p>
+        <h1 className="font-display-tight text-[28px] leading-tight sm:text-4xl">
+          {t("home.titleStart")} <span className="text-gradient">{t("app.name")}</span>
+        </h1>
+        <p className="max-w-xl text-base text-muted">{t("home.intro")}</p>
       </header>
 
       <ol className="grid gap-3 sm:grid-cols-4">
-        {STEPS.map((step, i) => (
-          <li key={step} className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
-            <span className="text-sm text-zinc-500">{i + 1}</span>
-            <p className="font-medium">{t(`steps.${step}`)}</p>
+        {STEPS.map(({ key, weeks }, i) => (
+          <li key={key} className="card flex flex-col gap-2 p-4">
+            <Badge tone={STEP_TONE[key]}>{i + 1}</Badge>
+            <p className="font-display-tight text-lg">{t(`steps.${key}`)}</p>
+            <p className="text-[13px] text-soft">{t("home.weeks", { weeks })}</p>
           </li>
         ))}
       </ol>
 
-      <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          disabled
-          className="w-fit rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white opacity-60 dark:bg-white dark:text-zinc-900"
-        >
+      <div className="flex flex-col items-start gap-2">
+        <button type="button" disabled className="btn btn-primary">
           {t("home.signIn")}
         </button>
-        <p className="text-sm text-zinc-500">{t("home.comingSoon")}</p>
+        <p className="text-[13px] text-soft">{t("home.comingSoon")}</p>
       </div>
     </main>
   );

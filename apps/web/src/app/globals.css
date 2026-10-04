@@ -1,26 +1,225 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Youth IdeaLab app theme: the website's colours, fonts and shapes with calmer surfaces.
+ * Light by default (also used for printing); dark follows the device, or data-theme="dark".
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* `dark:` matches both an explicit data-theme="dark" and the device setting. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media screen and (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
   }
 }
 
+:root {
+  --bg: #f6f8fc;
+  --surface: #ffffff;
+  --surface-2: #eef2f9;
+  --input: #ffffff;
+  --border: #dce3ef;
+  --text: #0a1226;
+  --muted: #4a5672;
+  --soft: #5f6b87;
+  --success: #3d7a0e;
+  --info: #0b6e99;
+  --ai: #5a47d6;
+  --danger: #c23b27;
+  --warning: #8a5a00;
+  color-scheme: light;
+}
+
+/* Dark tokens apply on screens only, so printed progress cards always use the light theme. */
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #070d1c;
+    --surface: #0e1830;
+    --surface-2: #0a1226;
+    --input: #16223f;
+    --border: rgb(255 255 255 / 0.1);
+    --text: #ffffff;
+    --muted: #a9b4cc;
+    --soft: #7d89a6;
+    --success: #b7f57a;
+    --info: #4bd7ff;
+    --ai: #8d7cff;
+    --danger: #ff806e;
+    --warning: #ffd166;
+    color-scheme: dark;
+  }
+}
+
+@media screen {
+  :root[data-theme="dark"] {
+    --bg: #070d1c;
+    --surface: #0e1830;
+    --surface-2: #0a1226;
+    --input: #16223f;
+    --border: rgb(255 255 255 / 0.1);
+    --text: #ffffff;
+    --muted: #a9b4cc;
+    --soft: #7d89a6;
+    --success: #b7f57a;
+    --info: #4bd7ff;
+    --ai: #8d7cff;
+    --danger: #ff806e;
+    --warning: #ffd166;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  /* Semantic colours (switch with the theme) */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-soft: var(--soft);
+  --color-success: var(--success);
+  --color-info: var(--info);
+  --color-ai: var(--ai);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+
+  /* Fixed brand colours (fills, badge tints, gradients), identical to the website */
+  --color-ink-950: #050913;
+  --color-ink-900: #070d1c;
+  --color-ink-850: #0a1226;
+  --color-ink-800: #0e1830;
+  --color-ink-700: #16223f;
+  --color-mist: #a9b4cc;
+  --color-mist-soft: #7d89a6;
+  --color-lime: #b7f57a;
+  --color-cyan: #4bd7ff;
+  --color-violet: #8d7cff;
+  --color-coral: #ff806e;
+  --color-sun: #ffd166;
+
+  /* Fonts are loaded with next/font in layout.tsx */
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+::selection {
+  background: rgb(75 215 255 / 0.3);
+}
+
+/* Headings: the website's .font-display */
+@utility font-display-tight {
+  font-family: var(--font-display);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+/* The website's 12px uppercase labels, for card headers and table group titles */
+@utility label-caps {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.75rem 1.5rem;
+  font-size: 15px;
+  font-weight: 600;
+  transition: opacity 150ms, background-color 150ms, border-color 150ms;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* One main action per screen */
+@utility btn-primary {
+  color: var(--color-ink-950);
+  background: linear-gradient(90deg, var(--color-lime), var(--color-cyan));
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+}
+
+@utility btn-secondary {
+  color: var(--text);
+  background: rgb(127 137 166 / 0.08);
+  border: 1px solid var(--border);
+  &:hover:not(:disabled) {
+    background: rgb(127 137 166 / 0.16);
+  }
+}
+
+@utility btn-danger {
+  color: var(--color-ink-950);
+  background: var(--color-coral);
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+}
+
+@utility card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+@utility field {
+  width: 100%;
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.625rem 0.875rem;
+  font-size: 16px; /* 16px stops iOS zooming into inputs */
+  color: var(--text);
+  transition: border-color 150ms;
+  &::placeholder {
+    color: var(--soft);
+  }
+  &:focus {
+    outline: none;
+    border-color: var(--color-cyan);
+  }
+}
+
+/* Only for the login screen and celebration moments. Built from the text tokens so it stays
+   readable in light mode (the website's bright lime is invisible on white). */
+@utility text-gradient {
+  background: linear-gradient(90deg, var(--success) 0%, var(--info) 45%, var(--ai) 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

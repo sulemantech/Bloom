@@ -1,0 +1,31 @@
+// The website's logo mark (same paths as its favicon).
+export function LogoMark({ size = 32, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      fill="none"
+      className={className}
+      role="img"
+      aria-label="Youth IdeaLab"
+    >
+      <rect width="64" height="64" rx="15" fill="#070D1C" />
+      <g transform="translate(6 6) scale(.8125)">
+        <path d="M32 4 35 12 43 15 35 18 32 26 29 18 21 15 29 12Z" fill="#B7F57A" />
+        <path d="M8 22 20 22 38 40 32 49 8 25Z" fill="#B7F57A" />
+        <path d="M44 22 56 22 56 25 38 43 26 43Z" fill="#4BD7FF" />
+        <path d="M26 43 38 43 38 59 26 59Z" fill="#8D7CFF" />
+      </g>
+    </svg>
+  );
+}
+
+export function Logo() {
+  return (
+    <span className="inline-flex items-center gap-2.5">
+      <LogoMark size={32} />
+      <span className="font-display-tight text-lg">Youth IdeaLab</span>
+    </span>
+  );
+}
