@@ -9,6 +9,9 @@ class Settings:
     LLM_BASE_URL: str = os.getenv("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen-plus")
 
+    # Language for AI-generated content (e.g. "English"). Empty keeps the prompts' default (Chinese).
+    CONTENT_LANGUAGE: str = os.getenv("CONTENT_LANGUAGE", "").strip()
+
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./bloom.db")
 
     CORS_ORIGINS: list[str] = [

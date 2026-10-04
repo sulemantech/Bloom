@@ -447,8 +447,33 @@ def _extract_thought_questions(content: str) -> str:
     """
     if not content:
         return ""
-    m = re.search(r'^##\s*思考题\s*$\n(.*?)(?=^##\s|\Z)', content, re.DOTALL | re.MULTILINE)
+    m = re.search(
+        r'^##\s*(?:思考题|Thought Questions)\s*$\n(.*?)(?=^##\s|\Z)',
+        content, re.DOTALL | re.MULTILINE | re.IGNORECASE,
+    )
     return m.group(1).strip() if m else ""
+
+
+LANGUAGE_DIRECTIVE = """
+
+---
+OUTPUT LANGUAGE (highest priority, overrides any language implied above):
+Write your entire response in {language}. Translate every heading, label, table header and
+instruction text from the template above into {language}; do not output any Chinese.
+- The thought-questions section heading must be exactly: ## Thought Questions
+- Keep these machine-read markers exactly as written (do not translate the marker keywords):
+  `<!-- eval-article -->` and `<!-- mastery: item1; item2 -->`. The mastery items inside the
+  comment must copy the syllabus checkbox text exactly, character for character.
+- Keep markdown checkboxes as `- [ ]` / `- [x]`.
+- If JSON is requested, keep the JSON keys unchanged and write only the values in {language}.
+"""
+
+
+def _with_language(system_prompt: str) -> str:
+    """Append the output-language directive when CONTENT_LANGUAGE is configured."""
+    if not settings.CONTENT_LANGUAGE:
+        return system_prompt
+    return system_prompt + LANGUAGE_DIRECTIVE.format(language=settings.CONTENT_LANGUAGE)
 
 
 def _stream_llm(system_prompt: str, user_message: str):
@@ -457,7 +482,7 @@ def _stream_llm(system_prompt: str, user_message: str):
     stream = client.chat.completions.create(
         model=settings.LLM_MODEL,
         messages=[
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": _with_language(system_prompt)},
             {"role": "user", "content": user_message},
         ],
         stream=True,
@@ -477,7 +502,7 @@ def _call_llm(system_prompt: str, user_message: str) -> str:
     response = client.chat.completions.create(
         model=settings.LLM_MODEL,
         messages=[
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": _with_language(system_prompt)},
             {"role": "user", "content": user_message},
         ],
     )
@@ -489,7 +514,7 @@ def _call_llm_messages(system_prompt: str, history: list[dict]) -> str:
     client = get_openai_client()
     response = client.chat.completions.create(
         model=settings.LLM_MODEL,
-        messages=[{"role": "system", "content": system_prompt}, *history],
+        messages=[{"role": "system", "content": _with_language(system_prompt)}, *history],
     )
     return response.choices[0].message.content
 
@@ -499,7 +524,7 @@ def _stream_llm_messages(system_prompt: str, history: list[dict]):
     client = get_openai_client()
     stream = client.chat.completions.create(
         model=settings.LLM_MODEL,
-        messages=[{"role": "system", "content": system_prompt}, *history],
+        messages=[{"role": "system", "content": _with_language(system_prompt)}, *history],
         stream=True,
     )
     full_response = ""
