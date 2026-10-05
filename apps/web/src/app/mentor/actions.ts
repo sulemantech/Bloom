@@ -168,3 +168,17 @@ export async function draftCardWithAi(_prev: DraftState, formData: FormData): Pr
 
   return result.ok ? { status: "ok", text: result.text } : { status: "error", message: result.reason };
 }
+
+/** A mentor's (or admin's) note on a student's Bloom learning path. Empty clears it. */
+export async function saveBloomNote(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const mentor = await requireStaff();
+  if (!mentor) return { status: "error", message: "notAllowed" };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_bloom_mentor_note", {
+    p_path: String(formData.get("pathId") ?? ""),
+    p_note: String(formData.get("note") ?? "").slice(0, 2000),
+  });
+  if (error) return { status: "error", message: error.code === "42501" ? "notAllowed" : "failed" };
+  refresh();
+  return { status: "ok" };
+}

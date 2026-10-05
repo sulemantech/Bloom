@@ -62,7 +62,8 @@
       "parent": "Parent",
       "mentor": "Mentor",
       "admin": "Admin"
-    }
+    },
+    "menu": "Main menu"
   },
   "parent": {
     "title": "Hello {name}",
@@ -112,7 +113,9 @@
         "resetFailed": "The password couldn't be changed. Please try again."
       }
     },
-    "viewProgress": "View progress"
+    "viewProgress": "View progress",
+    "doneOf": "{done} of {total} activities done",
+    "bloomPaths": "{count, plural, one {# Bloom path} other {# Bloom paths}} · {done} steps done"
   },
   "privacy": {
     "title": "Privacy and safeguarding",
@@ -191,7 +194,17 @@
     "back": "Back to my course",
     "weekLabel": "Week {week}",
     "instructions": "What to do",
-    "yourSubmissions": "Your submissions"
+    "yourSubmissions": "Your submissions",
+    "noGroupTitle": "You’re not in a group yet",
+    "allActivities": "All activities",
+    "activitiesIntro": "Every activity in the 8-week course, by step. Open one to see what to do and submit your work.",
+    "journey": "Your journey",
+    "journeyEmpty": "Your work, mentor feedback and Bloom learning will appear here as you go.",
+    "bloomTitle": "Bloom",
+    "bloomIntro": "Learn anything your project needs. Bloom suggests ideas based on your step and project, then plans small steps for you.",
+    "bloomStart": "Open Bloom",
+    "bloomNext": "Next: {task}",
+    "bloomContinue": "Continue"
   },
   "submit": {
     "title": "Submit your work",
@@ -277,7 +290,20 @@
     "sessions": "Live classes",
     "liveClass": "Live class",
     "joinLink": "Join link",
-    "recording": "Recording"
+    "recording": "Recording",
+    "dashboardTitle": "Hello {name}",
+    "dashboardIntro": "What needs you today across your groups.",
+    "stats": {
+      "groups": "Groups",
+      "students": "Students",
+      "toReview": "Waiting for review",
+      "attention": "Need a nudge"
+    },
+    "attentionTitle": "Students who may need a nudge",
+    "attentionNone": "Everyone is on track.",
+    "reviewCount": "{count} to review",
+    "bloomColumn": "Bloom",
+    "lastActive": "Last active"
   },
   "mentorStudent": {
     "back": "Back to {group}",
@@ -317,7 +343,11 @@
     "cardHint": "Parents only see a card after you approve it.",
     "work": "Work by step",
     "notSubmitted": "Not submitted yet.",
-    "olderVersions": "{count, plural, one {# earlier version} other {# earlier versions}}"
+    "olderVersions": "{count, plural, one {# earlier version} other {# earlier versions}}",
+    "bloom": "Bloom learning",
+    "bloomHint": "What they’re learning on their own. Open a path to see their steps, reflections and questions, and leave a note.",
+    "bloomSummary": "{paths, plural, one {# path} other {# paths}} · {done}/{total} steps",
+    "journey": "Journey"
   },
   "review": {
     "feedback": "Your feedback",
@@ -407,7 +437,11 @@
     "permissions": "Permissions",
     "permissionsIntro": "Optional — you can change these at any time.",
     "download": "Download my child’s data",
-    "deleteHint": "To delete your child’s account and data, message us on WhatsApp."
+    "deleteHint": "To delete your child’s account and data, message us on WhatsApp.",
+    "bloom": "What they’re learning in Bloom",
+    "bloomHint": "Bloom is your child’s personal learning space. Open a path to see their steps, reflections and questions.",
+    "bloomSummary": "{paths, plural, one {# path} other {# paths}} · {done} steps done",
+    "journey": "Their journey"
   },
   "consents": {
     "failed": "Could not save. Please try again.",
@@ -422,16 +456,23 @@
     "public_portfolio": {
       "title": "Public portfolio page",
       "body": "Let your child’s portfolio page be visible to anyone with the link. Turned off, only your family and mentors can see it."
+    },
+    "bloom_ai": {
+      "title": "Bloom AI guide",
+      "body": "Let your child use Bloom’s AI to suggest learning topics, plan steps and answer questions. Their age group, course step and project are shared, never their name. You and their mentor can read every question and answer."
     }
   },
   "admin": {
-    "title": "Admin",
+    "title": "Overview",
     "stats": {
       "groups": "Groups",
       "students": "Students",
       "parents": "Parents",
       "mentors": "Mentors & admins",
-      "unpaid": "Unpaid"
+      "unpaid": "Unpaid",
+      "activeWeek": "Active this week",
+      "toReview": "Waiting for review",
+      "bloomPaths": "Bloom paths"
     },
     "groups": "Groups",
     "starts": "Starts {date}",
@@ -456,10 +497,34 @@
     "parentOf": "Parent: {names}",
     "children": "Children: {names}",
     "noChildren": "No children added yet",
-    "adminBadge": "Admin"
+    "adminBadge": "Admin",
+    "intro": "Welcome back, {name}. Here’s how the programme is doing.",
+    "addStudent": "Add student",
+    "inviteAdult": "Invite parent or staff",
+    "attentionTitle": "Needs attention",
+    "allGood": "All good — nothing needs you right now.",
+    "attention": {
+      "ungrouped": "{count, plural, one {# student isn’t in a group} other {# students aren’t in a group}}",
+      "noMentor": "{count, plural, one {# group has no mentor} other {# groups have no mentor}}",
+      "unpaid": "{count, plural, one {# unpaid enrolment} other {# unpaid enrolments}}",
+      "toReview": "{count, plural, one {# submission waiting for review} other {# submissions waiting for review}}",
+      "neverSignedIn": "{count, plural, one {# adult hasn’t signed in yet} other {# adults haven’t signed in yet}}"
+    },
+    "recentTitle": "Recent activity",
+    "seeAll": "See all",
+    "someone": "Someone",
+    "system": "System",
+    "groupsTitle": "Groups",
+    "groupsIntro": "Each group runs the 8-week programme together with its mentors.",
+    "manageGroups": "Manage groups",
+    "groupProgress": "Activities done",
+    "noMentorBadge": "No mentor",
+    "reviewCount": "{count} to review",
+    "noGroups": "No groups yet",
+    "noGroupsBody": "Create the first group below, then add students and a mentor."
   },
   "adminGroup": {
-    "back": "Back to admin",
+    "back": "Back to groups",
     "openMentorView": "Open mentor view",
     "settings": "Group settings",
     "students": "{count, plural, one {# student} other {# students}}",
@@ -468,7 +533,18 @@
     "unpaid": "Unpaid",
     "refunded": "Refunded",
     "addStudent": "Add a student",
-    "addMentor": "Add a mentor"
+    "addMentor": "Add a mentor",
+    "createStudent": "New student account",
+    "noStudents": "No students yet. Add existing students below, or create a new account.",
+    "noMentors": "This group has no mentor yet.",
+    "editEnrolment": "Age group, fee and payment",
+    "doneOf": "{done}/{total} done",
+    "ageGroups": {
+      "explorer": "Explorer",
+      "builder": "Builder"
+    },
+    "dangerZone": "Delete group",
+    "cantDelete": "This group has submitted work, so it can’t be deleted. Remove students from it instead."
   },
   "adminForms": {
     "groupName": "Group name",
@@ -480,13 +556,14 @@
     "role": "Role",
     "roles": {
       "parent": "Parent",
-      "mentor": "Mentor"
+      "mentor": "Mentor",
+      "admin": "Admin"
     },
     "mentorGroup": "Group (mentors only)",
     "noGroup": "No group",
     "tempPassword": "Temporary password (development only)",
     "tempPasswordHint": "Leave empty to send an invitation email instead. With a password, the account is created at once and they sign in with the development password box.",
-    "invite": "Send invitation",
+    "invite": "Create account",
     "classDay": "Class day",
     "classStart": "Class starts",
     "classEnd": "Class ends",
@@ -520,14 +597,11 @@
       "refunded": "Refunded"
     },
     "removeFromGroup": "Remove from group",
-    "deleteStudent": "Delete this student’s account and data",
-    "deleteWarning": "This permanently deletes the account, all submissions, files, feedback and progress cards. It cannot be undone. Type the username “{username}” to confirm.",
-    "typeUsername": "Type the username to confirm",
+    "deleteWarning": "This permanently deletes the account and everything stored about it. It cannot be undone. Type “{value}” to confirm.",
     "deleteForever": "Delete permanently",
     "saved": "Saved.",
     "invited": "Invitation sent.",
     "created": "Account created. Share the temporary password with them.",
-    "deleted": "Student deleted.",
     "errors": {
       "notAllowed": "Only admins can do this.",
       "nameRequired": "Please enter a name.",
@@ -542,8 +616,436 @@
       "badTempPassword": "Temporary passwords need 8+ characters and are only allowed in development.",
       "emailExists": "An account with this email already exists.",
       "inviteFailed": "The invitation could not be sent. Supabase only emails team members until custom email (SMTP) is set up.",
-      "confirmMismatch": "The username doesn’t match.",
-      "failed": "Something went wrong. Please try again."
+      "confirmMismatch": "That doesn’t match. Check the spelling and try again.",
+      "failed": "Something went wrong. Please try again.",
+      "groupHasWork": "This group has submitted work and can’t be deleted.",
+      "usernameInvalid": "Usernames are 3–30 characters: lowercase letters, numbers, dots or underscores, starting with a letter or number.",
+      "usernameTaken": "That username is taken. Please choose another.",
+      "passwordShort": "The password must be at least 8 characters.",
+      "birthYearInvalid": "Please check the year of birth. The course is for ages 12–18.",
+      "pickParent": "Choose the student’s parent.",
+      "consentRequired": "Confirm the parent has signed the consent form.",
+      "cantDemoteSelf": "You can’t remove your own admin role.",
+      "removeFromGroupsFirst": "Remove this person from the groups they mentor first.",
+      "lastAdmin": "There must always be at least one admin.",
+      "cantDeactivateSelf": "You can’t deactivate your own account.",
+      "alreadyLinked": "They are already linked.",
+      "lastGuardian": "A student needs at least one parent. Link another parent first.",
+      "cantDeleteSelf": "You can’t delete your own account.",
+      "parentHasChildren": "Delete or re-link this parent’s children first.",
+      "activityTextRequired": "Add a title and instructions.",
+      "weekOutsideStep": "Choose a week inside this step.",
+      "activityHasWork": "Students have submitted work for this activity, so it can’t be deleted. Edit it instead."
+    },
+    "groupOptional": "Group (optional)",
+    "deleteGroup": "Delete group",
+    "deleteGroupWarning": "This permanently deletes {name} with its classes and memberships. Type the group name to confirm.",
+    "typeToConfirm": "Type to confirm",
+    "birthYear": "Year of birth",
+    "username": "Username",
+    "usernameHint": "3–30 characters: lowercase letters, numbers, dots or underscores.",
+    "usernameChangeHint": "This is how they sign in. Tell them if you change it.",
+    "password": "Password",
+    "passwordHint": "At least 8 characters. Share it with the family.",
+    "parent": "Parent",
+    "parentHint": "The parent who signed the consent form.",
+    "pickParent": "Choose a parent",
+    "consentSigned": "The parent has signed the consent form (paper or WhatsApp) for this child.",
+    "createStudent": "Create student account",
+    "emailChangeHint": "They sign in with this address.",
+    "ownRoleHint": "You can’t change your own role.",
+    "country": "Country",
+    "prefersFemaleMentor": "Prefers a female mentor",
+    "saveChanges": "Save changes",
+    "newPassword": "New password (8+ characters)",
+    "setPassword": "Set password",
+    "sendLink": "Email a sign-in link",
+    "deactivate": "Deactivate account",
+    "reactivate": "Reactivate account",
+    "link": "Link",
+    "unlink": "Unlink",
+    "activityTitle": "Activity title",
+    "instructions": "Instructions",
+    "week": "Week",
+    "order": "Order",
+    "bothAgeGroups": "Both age groups",
+    "submissionType": "Students submit",
+    "submissionTypes": {
+      "text": "Written answer",
+      "file": "File upload",
+      "link": "Link",
+      "text_and_file": "Answer and files"
+    },
+    "addActivity": "Add activity",
+    "deleteActivity": "Delete activity",
+    "passwordReset": "Password changed. Share it with the family.",
+    "linkSent": "Sign-in link sent.",
+    "reactivated": "Account reactivated.",
+    "deactivated": "Account deactivated. They can no longer sign in.",
+    "activityAdded": "Activity added."
+  },
+  "nav": {
+    "home": "Home",
+    "bloom": "Bloom",
+    "activities": "Activities",
+    "project": "Project",
+    "classes": "Classes",
+    "family": "Family",
+    "dashboard": "Dashboard",
+    "overview": "Overview",
+    "people": "People",
+    "groups": "Groups",
+    "payments": "Payments",
+    "programme": "Programme",
+    "activityLog": "Activity log"
+  },
+  "classes": {
+    "title": "Live classes",
+    "schedule": "Every {day}, {start}–{end}",
+    "scheduleTbc": "Your class time will be confirmed soon.",
+    "upcoming": "Coming up",
+    "none": "No classes scheduled yet.",
+    "liveClass": "Live class",
+    "days": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    }
+  },
+  "bloom": {
+    "eyebrow": "Your learning space",
+    "title": "Bloom",
+    "intro": "Learn what your project needs, at your own pace. Pick a topic, follow small steps, write what you learned — your mentor can see your progress and cheer you on.",
+    "stats": {
+      "active": "In progress",
+      "completed": "Completed",
+      "tasksDone": "Steps done",
+      "overall": "Overall"
+    },
+    "startTitle": "Start something new",
+    "startIntroAi": "Tell Bloom what you’re curious about, or let it suggest ideas from your project and this week’s step.",
+    "startIntroManual": "Name a topic you want to learn and add your own steps.",
+    "noConsentHint": "Bloom’s AI ideas and answers are off until your parent turns on “Bloom AI guide” in their account. You can still make your own learning paths.",
+    "curious": "What are you curious about? (optional)",
+    "curiousPlaceholder": "e.g. how apps make money, drawing logos, talking to customers",
+    "suggest": "Suggest ideas",
+    "suggestAgain": "Suggest different ideas",
+    "thinking": "Thinking…",
+    "planning": "Planning your steps…",
+    "aiWait": "This can take up to a minute.",
+    "startThis": "Start this path",
+    "writeOwn": "I have my own topic",
+    "backToIdeas": "Back to ideas",
+    "pathTitle": "What do you want to learn?",
+    "pathTitlePlaceholder": "e.g. Interviewing people about my problem",
+    "goal": "Why, or what you want to be able to do",
+    "goalPlaceholder": "e.g. Ask 5 people good questions and find out what they really need",
+    "depth": "How deep?",
+    "depths": {
+      "quick": "Quick",
+      "standard": "Standard",
+      "deep": "Deep dive"
+    },
+    "depthHints": {
+      "quick": "3 steps",
+      "standard": "5 steps",
+      "deep": "7 steps"
+    },
+    "letBloomPlan": "Let Bloom plan the steps for me (you can add or change steps later)",
+    "createPath": "Create path",
+    "activeTitle": "In progress",
+    "noActive": "Nothing in progress",
+    "noActiveBody": "Start a learning path above — small steps add up fast.",
+    "completedTitle": "Completed",
+    "archivedTitle": "{count, plural, one {# archived path} other {# archived paths}}",
+    "byBloom": "Planned by Bloom",
+    "hasMentorNote": "Mentor note",
+    "tasksDone": "{done} of {total} steps done",
+    "pathStatus": {
+      "active": "In progress",
+      "completed": "Completed",
+      "archived": "Archived"
+    },
+    "taskStatus": {
+      "todo": "To do",
+      "doing": "Doing",
+      "done": "Done"
+    },
+    "kinds": {
+      "learn": "Learn",
+      "do": "Do",
+      "reflect": "Reflect"
+    },
+    "steps": {
+      "explore": "Explore",
+      "choose": "Choose",
+      "build": "Build",
+      "present": "Present"
+    },
+    "back": "Back to Bloom",
+    "backToChild": "Back to your child",
+    "backToStudent": "Back to {name}",
+    "celebrate": "🎉 You finished this path! Look back at your reflections — and tell your mentor what you learned.",
+    "tasks": "Steps",
+    "noTasks": "No steps yet. Add your first step below.",
+    "howTo": "How to do it",
+    "reflection": "Reflection",
+    "yourReflection": "Your reflection",
+    "reflectPrompt": "What did you learn, and how will you use it?",
+    "notePrompt": "A note about what you did (optional)",
+    "addNote": "Add a note",
+    "startTask": "Start",
+    "markDone": "Mark done",
+    "reopen": "Not finished? Reopen",
+    "addOwnTask": "Add your own step",
+    "taskTitle": "Step",
+    "taskTitlePlaceholder": "e.g. Sketch 3 logo ideas",
+    "taskKind": "Type of step",
+    "taskDetails": "Details",
+    "taskDetailsPlaceholder": "How you’ll do it (optional)",
+    "addTask": "Add step",
+    "askTitle": "Ask Bloom",
+    "askAboutTask": "Ask Bloom about this step",
+    "askPlaceholder": "e.g. Can you give me an example?",
+    "ask": "Ask",
+    "bloomSays": "Bloom",
+    "mentorNote": "Mentor note",
+    "mentorNoteFrom": "Note from {name}",
+    "yourMentor": "your mentor",
+    "mentorNotePlaceholder": "Encourage, nudge or suggest a next step. The student and their parent can see this.",
+    "saveNote": "Save note",
+    "archive": "Archive",
+    "restore": "Restore",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this learning path and all its steps and questions? This can’t be undone.",
+    "noPathsYet": "No learning paths yet.",
+    "ok": {
+      "taskAdded": "Step added.",
+      "taskDone": "Nice work — step done!",
+      "pathDone": "Path complete — well done!",
+      "saved": "Saved.",
+      "noteSaved": "Note saved."
+    },
+    "errors": {
+      "notAllowed": "Only students can change their Bloom.",
+      "titleRequired": "Please give it a name.",
+      "questionRequired": "Type your question first.",
+      "failed": "Something went wrong. Please try again.",
+      "ai": {
+        "noConsent": "Bloom’s AI is off until your parent turns on “Bloom AI guide” in their account.",
+        "notConfigured": "Bloom’s AI isn’t set up yet. You can still create your own path.",
+        "refused": "Bloom couldn’t help with that one. Try asking in a different way, or ask your mentor.",
+        "rateLimited": "Bloom is busy right now. Try again in a minute.",
+        "failed": "Bloom couldn’t answer just now. Please try again."
+      }
+    }
+  },
+  "timeline": {
+    "empty": "Nothing yet.",
+    "weekN": "week {week}",
+    "neverActive": "No activity yet",
+    "activeToday": "Active today",
+    "activeDaysAgo": "{days, plural, one {Active yesterday} other {Active # days ago}}",
+    "kinds": {
+      "submitted": "Submitted",
+      "reviewed_done": "Mentor marked done:",
+      "reviewed_changes": "Mentor asked for changes:",
+      "feedback": "Mentor feedback on",
+      "card": "Progress card sent for",
+      "project": "Updated project",
+      "path_started": "Started learning",
+      "path_completed": "Completed learning path",
+      "task_done": "Finished step",
+      "question": "Asked Bloom:"
+    }
+  },
+  "adminPeople": {
+    "title": "People",
+    "intro": "Everyone with an account: students, parents, mentors and admins.",
+    "addStudent": "Add student",
+    "inviteAdult": "Invite parent or staff",
+    "rolesLabel": "Filter by role",
+    "roles": {
+      "all": "Everyone",
+      "student": "Students",
+      "parent": "Parents",
+      "mentor": "Mentors",
+      "admin": "Admins"
+    },
+    "search": "Search people",
+    "searchPlaceholder": "Search by name, username or email",
+    "filterLabel": "Show",
+    "filters": {
+      "none": "Everyone in this tab",
+      "ungrouped": "Students without a group",
+      "invited": "Never signed in",
+      "deactivated": "Deactivated accounts"
+    },
+    "apply": "Search",
+    "noResults": "No one matches",
+    "noResultsHint": "Try a different search or filter.",
+    "columns": {
+      "name": "Name",
+      "role": "Role",
+      "groups": "Group",
+      "family": "Family",
+      "status": "Sign-in"
+    },
+    "you": "you",
+    "noGroup": "No group",
+    "ageGroups": {
+      "explorer": "Explorer",
+      "builder": "Builder"
+    },
+    "status": {
+      "deactivated": "Deactivated",
+      "lastSignIn": "Signed in {date}",
+      "neverSignedIn": "Never signed in"
+    },
+    "back": "Back to people",
+    "newTitle": "Add a person",
+    "newStudentTab": "Student",
+    "newAdultTab": "Parent, mentor or admin",
+    "newStudentIntro": "For families who signed the consent form on paper or WhatsApp. Parents can also add their own children from their account.",
+    "newAdultIntro": "They’ll get an email with a sign-in link. Parents can then add their own children.",
+    "needParentFirst": "A student account needs a parent. Invite the parent first, then add the student."
+  },
+  "adminPerson": {
+    "back": "Back to people",
+    "roles": {
+      "student": "Student",
+      "parent": "Parent",
+      "mentor": "Mentor",
+      "admin": "Admin"
+    },
+    "deactivated": "Deactivated",
+    "since": "Account created {date}",
+    "createdInvited": "Invitation sent. They’ll appear as “never signed in” until they use the link.",
+    "createdPassword": "Account created with a temporary password. Share it with them securely.",
+    "openStudentView": "Open full student view",
+    "learning": "Course progress",
+    "doneOf": "{done} of {total} activities done",
+    "overdue": "{count, plural, =0 {Nothing overdue} one {# activity overdue} other {# activities overdue}}",
+    "notInGroup": "Not in a group yet.",
+    "bloom": "Bloom learning",
+    "bloomNeedsGroup": "{count, plural, =0 {No learning paths yet.} one {# learning path. Add the student to a group to open it.} other {# learning paths. Add the student to a group to open them.}}",
+    "details": "Details",
+    "journey": "Journey",
+    "parents": "Parents",
+    "children": "Children",
+    "noParents": "No parent linked. Every student needs at least one.",
+    "noChildren": "No children linked yet.",
+    "addChild": "Add a child account",
+    "group": "Group",
+    "groups": "Groups they mentor",
+    "mentorsNoGroup": "Not mentoring a group.",
+    "mentorBadge": "Mentor",
+    "ageGroups": {
+      "explorer": "Explorer",
+      "builder": "Builder"
+    },
+    "groupHint": "Change groups from the group’s page.",
+    "permissions": "Parent permissions",
+    "noConsents": "No permissions recorded.",
+    "permissionsHint": "Only the parent can change these, from their account.",
+    "consentTypes": {
+      "platform": "Account",
+      "public_portfolio": "Public portfolio",
+      "media": "Demo Day video",
+      "ai": "AI progress cards",
+      "bloom_ai": "Bloom AI guide"
+    },
+    "account": "Sign-in and access",
+    "lastSignIn": "Last signed in {date}",
+    "neverSignedIn": "Hasn’t signed in yet.",
+    "setPassword": "Set a new password",
+    "dangerZone": "Delete account"
+  },
+  "adminPayments": {
+    "title": "Payments",
+    "intro": "Course fees per student enrolment. Mark payments as they arrive.",
+    "statusLabel": "Filter by payment status",
+    "statuses": {
+      "all": "All",
+      "unpaid": "Unpaid",
+      "paid": "Paid",
+      "refunded": "Refunded"
+    },
+    "collected": "Collected",
+    "outstanding": "{count, plural, =0 {Outstanding} one {Outstanding (# student)} other {Outstanding (# students)}}",
+    "refunded": "Refunded",
+    "groupLabel": "Filter by group",
+    "allGroups": "All groups",
+    "empty": "No enrolments match",
+    "noFee": "No fee set",
+    "update": "Update fee or payment"
+  },
+  "adminProgramme": {
+    "title": "Programme",
+    "intro": "{name}: the {weeks}-week course every group follows. Changes apply to all groups straight away.",
+    "weeks": "Weeks {from}–{to} · {count, plural, one {# activity} other {# activities}}",
+    "weekLabel": "Week {week}",
+    "submissionTypes": {
+      "text": "Written answer",
+      "file": "File upload",
+      "link": "Link",
+      "text_and_file": "Answer and files"
+    },
+    "ageGroups": {
+      "explorer": "Explorer",
+      "builder": "Builder"
+    },
+    "both": "Both age groups",
+    "edit": "Edit",
+    "addActivity": "Add an activity"
+  },
+  "audit": {
+    "title": "Activity log",
+    "intro": "Every change to records, with who made it. Contents are never stored here, only what changed.",
+    "filterLabel": "Filter activity",
+    "filters": {
+      "all": "All",
+      "people": "People",
+      "groups": "Groups",
+      "work": "Course work",
+      "bloom": "Bloom"
+    },
+    "empty": "Nothing recorded yet",
+    "someone": "Someone",
+    "system": "System",
+    "pages": "Pages",
+    "newer": "Newer",
+    "older": "Older",
+    "actions": {
+      "insert": "created",
+      "update": "updated",
+      "delete": "deleted",
+      "password_reset": "reset the password of",
+      "sign_in_link_sent": "sent a sign-in link to",
+      "email_changed": "changed the email of",
+      "account_deactivated": "deactivated",
+      "account_reactivated": "reactivated",
+      "account_deleted": "deleted the account of"
+    },
+    "entities": {
+      "profiles": "a profile",
+      "guardian_links": "a family link",
+      "consents": "a permission",
+      "cohorts": "a group",
+      "memberships": "a group membership",
+      "projects": "a project",
+      "submissions": "a submission",
+      "submission_files": "a file",
+      "feedback": "feedback",
+      "progress_cards": "a progress card",
+      "invitations": "an invitation",
+      "bloom_paths": "a Bloom path",
+      "bloom_tasks": "a Bloom step",
+      "bloom_questions": "a Bloom question"
     }
   }
 }

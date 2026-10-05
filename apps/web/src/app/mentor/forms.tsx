@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { addSession, reviewSubmission, saveProgressCard, setRecording, type ActionState } from "./actions";
+import { addSession, reviewSubmission, saveBloomNote, saveProgressCard, setRecording, type ActionState } from "./actions";
 
 const initial: ActionState = { status: "idle" };
 
@@ -147,6 +147,31 @@ export function RecordingForm({ sessionId }: { sessionId: string }) {
         {t("saveRecording")}
       </button>
       <Feedback state={state} ns="sessionForm" />
+    </form>
+  );
+}
+
+/** Encouragement or a nudge on a student's Bloom path; the student and parent see it. */
+export function BloomNoteForm({ pathId, note }: { pathId: string; note: string | null }) {
+  const t = useTranslations("bloom");
+  const [state, action, pending] = useActionState(saveBloomNote, initial);
+  return (
+    <form action={action} className="mt-2 flex flex-col gap-2">
+      <input type="hidden" name="pathId" value={pathId} />
+      <textarea
+        name="note"
+        rows={3}
+        maxLength={2000}
+        defaultValue={note ?? ""}
+        placeholder={t("mentorNotePlaceholder")}
+        aria-label={t("mentorNote")}
+        className="field resize-y"
+      />
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="submit" disabled={pending} className="btn btn-secondary px-4 py-2 text-sm">{t("saveNote")}</button>
+        {state.status === "ok" && <span role="status" className="text-sm text-success">{t("ok.noteSaved")}</span>}
+        {state.status === "error" && <span role="alert" className="text-sm text-danger">{t("errors.failed")}</span>}
+      </div>
     </form>
   );
 }

@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { AppShell } from "@/components/AppShell";
+import { PageHeader } from "@/components/AppShell";
+import { LastActive } from "@/components/bloom";
+import { ProgressBar } from "@/components/course";
 import { AGE_GROUP_TONE, Badge } from "@/components/ui/Badge";
 import { requireRole } from "@/lib/auth";
+import { loadBloomTotals, loadLastActive } from "@/lib/data/bloom";
+import { loadStudentOverview } from "@/lib/data/overview";
 import { createClient } from "@/lib/supabase/server";
 import { AddChildForm } from "./AddChildForm";
 import { ResetPasswordForm } from "./ResetPasswordForm";
@@ -29,14 +33,16 @@ export default async function ParentHome() {
         .eq("role", "student")
     : { data: [] };
 
+  const ids = children.map((c) => c.id);
+  const [overviews, lastActive, bloom] = await Promise.all([
+    Promise.all(children.map((c) => loadStudentOverview(supabase, c.id))),
+    loadLastActive(supabase, ids),
+    loadBloomTotals(supabase, ids),
+  ]);
+
   return (
-    <AppShell profile={profile}>
-      <header className="flex flex-col gap-1">
-        <h1 className="font-display-tight text-[28px] leading-tight">
-          {t("title", { name: profile.full_name || "" })}
-        </h1>
-        <p className="text-muted">{t("intro")}</p>
-      </header>
+    <>
+      <PageHeader title={t("title", { name: profile.full_name.split(" ")[0] || "" })} description={t("intro")} />
 
       <section className="flex flex-col gap-3" aria-labelledby="children-heading">
         <h2 id="children-heading" className="label-caps text-soft">{t("children")}</h2>
@@ -44,8 +50,10 @@ export default async function ParentHome() {
           <p className="card p-6 text-muted">{t("noChildren")}</p>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
-            {children.map((child) => {
+            {children.map((child, i) => {
               const membership = memberships?.find((m) => m.user_id === child.id);
+              const overview = overviews[i];
+              const b = bloom.get(child.id);
               return (
                 <li key={child.id} className="card flex flex-col gap-3 p-5">
                   <div className="flex items-start justify-between gap-3">
@@ -66,6 +74,13 @@ export default async function ParentHome() {
                       ? t("inGroup", { group: membership.cohort.name })
                       : t("notInGroup")}
                   </p>
+                  {overview && (
+                    <ProgressBar value={overview.stats.done} max={overview.stats.total} label={t("doneOf", { done: overview.stats.done, total: overview.stats.total })} />
+                  )}
+                  <p className="flex flex-wrap gap-x-3 gap-y-1 text-[13px]">
+                    <LastActive at={lastActive.get(child.id) ?? null} />
+                    {b && b.paths > 0 && <span className="text-ai">✦ {t("bloomPaths", { count: b.paths, done: b.done })}</span>}
+                  </p>
                   <Link href={`/parent/children/${child.id}`} className="btn btn-primary self-start px-4 py-2 text-sm">
                     {t("viewProgress")}
                   </Link>
@@ -78,6 +93,6 @@ export default async function ParentHome() {
       </section>
 
       <AddChildForm />
-    </AppShell>
+    </>
   );
 }

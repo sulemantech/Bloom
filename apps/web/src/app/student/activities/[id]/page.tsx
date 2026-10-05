@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { AppShell } from "@/components/AppShell";
 import { StatusBadge, StepBadge, SubmissionCard } from "@/components/course";
 import { requireRole } from "@/lib/auth";
 import { loadStudentOverview, signFiles } from "@/lib/data/overview";
@@ -28,7 +27,7 @@ export default async function ActivityPage({ params }: PageProps<"/student/activ
   const fileUrls = await signFiles(supabase, submissions.flatMap((s) => s.submission_files.map((f) => f.storage_path)));
 
   return (
-    <AppShell profile={profile}>
+    <>
       <Link href="/student" className="text-sm font-medium text-info">← {t("back")}</Link>
 
       <header className="flex flex-col gap-3">
@@ -63,6 +62,6 @@ export default async function ActivityPage({ params }: PageProps<"/student/activ
           ))}
         </section>
       )}
-    </AppShell>
+    </>
   );
 }

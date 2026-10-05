@@ -113,6 +113,197 @@ export type Database = {
         }
         Relationships: []
       }
+      bloom_paths: {
+        Row: {
+          ai_generated: boolean
+          cohort_id: string | null
+          completed_at: string | null
+          created_at: string
+          depth: string
+          goal: string
+          id: string
+          mentor_note: string | null
+          mentor_note_at: string | null
+          mentor_note_by: string | null
+          stage_key: string | null
+          status: Database["public"]["Enums"]["bloom_path_status"]
+          student_id: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_generated?: boolean
+          cohort_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          depth?: string
+          goal?: string
+          id?: string
+          mentor_note?: string | null
+          mentor_note_at?: string | null
+          mentor_note_by?: string | null
+          stage_key?: string | null
+          status?: Database["public"]["Enums"]["bloom_path_status"]
+          student_id: string
+          summary?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_generated?: boolean
+          cohort_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          depth?: string
+          goal?: string
+          id?: string
+          mentor_note?: string | null
+          mentor_note_at?: string | null
+          mentor_note_by?: string | null
+          stage_key?: string | null
+          status?: Database["public"]["Enums"]["bloom_path_status"]
+          student_id?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bloom_paths_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bloom_paths_mentor_note_by_fkey"
+            columns: ["mentor_note_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bloom_paths_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bloom_questions: {
+        Row: {
+          answer: string
+          created_at: string
+          id: string
+          path_id: string
+          question: string
+          student_id: string
+          task_id: string | null
+        }
+        Insert: {
+          answer?: string
+          created_at?: string
+          id?: string
+          path_id: string
+          question: string
+          student_id: string
+          task_id?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          id?: string
+          path_id?: string
+          question?: string
+          student_id?: string
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bloom_questions_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "bloom_paths"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bloom_questions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bloom_questions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "bloom_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bloom_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          details: string
+          id: string
+          kind: Database["public"]["Enums"]["bloom_task_kind"]
+          path_id: string
+          position: number
+          reflection: string | null
+          status: Database["public"]["Enums"]["bloom_task_status"]
+          student_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          details?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["bloom_task_kind"]
+          path_id: string
+          position?: number
+          reflection?: string | null
+          status?: Database["public"]["Enums"]["bloom_task_status"]
+          student_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          details?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["bloom_task_kind"]
+          path_id?: string
+          position?: number
+          reflection?: string | null
+          status?: Database["public"]["Enums"]["bloom_task_status"]
+          student_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bloom_tasks_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "bloom_paths"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bloom_tasks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cohorts: {
         Row: {
           created_at: string
@@ -842,6 +1033,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_update_profile: {
+        Args: {
+          p_birth_year: number
+          p_country: string
+          p_full_name: string
+          p_prefers_female_mentor: boolean
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_timezone: string
+          p_user: string
+          p_username: string
+        }
+        Returns: undefined
+      }
       can_view_student: { Args: { p_student: string }; Returns: boolean }
       export_student_data: { Args: { p_student: string }; Returns: Json }
       has_active_consent: {
@@ -856,18 +1060,35 @@ export type Database = {
       is_cohort_mentor: { Args: { p_cohort: string }; Returns: boolean }
       is_parent_in_cohort: { Args: { p_cohort: string }; Returns: boolean }
       is_parent_of: { Args: { p_student: string }; Returns: boolean }
+      is_student: { Args: never; Returns: boolean }
+      log_admin_action: {
+        Args: { p_action: string; p_entity: string; p_entity_id: string }
+        Returns: undefined
+      }
       mark_progress_card_viewed: {
         Args: { p_card: string }
         Returns: undefined
       }
       mentors_student: { Args: { p_student: string }; Returns: boolean }
+      set_bloom_mentor_note: {
+        Args: { p_note: string; p_path: string }
+        Returns: undefined
+      }
     }
     Enums: {
       age_group: "explorer" | "builder"
       app_role: "student" | "parent" | "mentor" | "admin"
+      bloom_path_status: "active" | "completed" | "archived"
+      bloom_task_kind: "learn" | "do" | "reflect"
+      bloom_task_status: "todo" | "doing" | "done"
       card_status: "draft" | "approved"
       cohort_role: "student" | "mentor"
-      consent_type: "platform" | "public_portfolio" | "media" | "ai"
+      consent_type:
+        | "platform"
+        | "public_portfolio"
+        | "media"
+        | "ai"
+        | "bloom_ai"
       project_area:
         | "technology"
         | "design"
@@ -1014,9 +1235,12 @@ export const Constants = {
     Enums: {
       age_group: ["explorer", "builder"],
       app_role: ["student", "parent", "mentor", "admin"],
+      bloom_path_status: ["active", "completed", "archived"],
+      bloom_task_kind: ["learn", "do", "reflect"],
+      bloom_task_status: ["todo", "doing", "done"],
       card_status: ["draft", "approved"],
       cohort_role: ["student", "mentor"],
-      consent_type: ["platform", "public_portfolio", "media", "ai"],
+      consent_type: ["platform", "public_portfolio", "media", "ai", "bloom_ai"],
       project_area: [
         "technology",
         "design",

@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { AppShell } from "@/components/AppShell";
+import { LastActive } from "@/components/bloom";
 import { WeekHeadline, WeekStrip } from "@/components/course";
 import { AGE_GROUP_TONE, Badge } from "@/components/ui/Badge";
 import { requireRole } from "@/lib/auth";
+import { loadBloomTotals, loadLastActive } from "@/lib/data/bloom";
 import { loadCohortProgress, type CohortProgress } from "@/lib/data/cohort";
 import { formatDateTime, isPast, tr } from "@/lib/programme";
 import { createClient } from "@/lib/supabase/server";
@@ -38,12 +39,14 @@ export default async function GroupPage({ params }: PageProps<"/mentor/groups/[c
   const { cohort, program, students, toReview, week, cards, sessions } = data;
   const weeks = Array.from({ length: program.weeks }, (_, i) => i + 1);
   const cardWeek = week === null || week === 0 ? 1 : Math.min(week, program.weeks);
+  const ids = students.map((s) => s.profile.id);
+  const [lastActive, bloom] = await Promise.all([loadLastActive(supabase, ids), loadBloomTotals(supabase, ids)]);
 
   return (
-    <AppShell profile={profile}>
+    <>
       <header className="flex flex-col gap-3">
         {profile.role === "admin" && (
-          <Link href="/admin" className="text-sm font-medium text-info">← {t("backToAdmin")}</Link>
+          <Link href={`/admin/groups/${cohortId}`} className="text-sm font-medium text-info">← {t("backToAdmin")}</Link>
         )}
         <h1 className="font-display-tight text-[28px] leading-tight">{cohort.name}</h1>
         <WeekHeadline overview={data} />
@@ -84,7 +87,7 @@ export default async function GroupPage({ params }: PageProps<"/mentor/groups/[c
           <p className="text-sm text-muted">{t("noStudents")}</p>
         ) : (
           <div className="-mx-5 overflow-x-auto px-5">
-            <table className="w-full min-w-[720px] border-separate border-spacing-y-1 text-sm">
+            <table className="w-full min-w-[860px] border-separate border-spacing-y-1 text-sm">
               <thead>
                 <tr className="text-left text-soft">
                   <th className="label-caps py-2 pr-3 font-semibold">{t("student")}</th>
@@ -94,6 +97,8 @@ export default async function GroupPage({ params }: PageProps<"/mentor/groups/[c
                     </th>
                   ))}
                   <th className="label-caps px-2 py-2 text-center font-semibold">{t("cardFor", { week: cardWeek })}</th>
+                  <th className="label-caps px-2 py-2 text-center font-semibold">{t("bloomColumn")}</th>
+                  <th className="label-caps px-2 py-2 text-left font-semibold">{t("lastActive")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -125,6 +130,19 @@ export default async function GroupPage({ params }: PageProps<"/mentor/groups/[c
                           {!card ? t("cardNone") : card.status === "approved" ? (card.viewed_at ? t("cardSeen") : t("cardSent")) : t("cardDraft")}
                         </Badge>
                       </td>
+                      <td className="px-2 py-1 text-center">
+                        {(() => {
+                          const b = bloom.get(s.profile.id);
+                          return b && b.total > 0 ? (
+                            <span className="inline-block min-w-11 rounded-lg bg-violet/10 px-2 py-1 tabular-nums text-ai">{b.done}/{b.total}</span>
+                          ) : (
+                            <span className="text-soft">—</span>
+                          );
+                        })()}
+                      </td>
+                      <td className="whitespace-nowrap px-2 py-1 text-[13px]">
+                        <LastActive at={lastActive.get(s.profile.id) ?? null} />
+                      </td>
                     </tr>
                   );
                 })}
@@ -155,6 +173,6 @@ export default async function GroupPage({ params }: PageProps<"/mentor/groups/[c
         )}
         <SessionForm cohortId={cohortId} timeZone={cohort.timezone} />
       </section>
-    </AppShell>
+    </>
   );
 }

@@ -111,7 +111,7 @@ export async function resetChildPassword(_prev: FormState, formData: FormData): 
 }
 
 type ConsentType = Database["public"]["Enums"]["consent_type"];
-const TOGGLEABLE: ConsentType[] = ["ai", "public_portfolio", "media"];
+const TOGGLEABLE: ConsentType[] = ["bloom_ai", "ai", "public_portfolio", "media"];
 
 /** A parent grants or withdraws an optional consent for their child. */
 export async function setConsent(_prev: FormState, formData: FormData): Promise<FormState> {

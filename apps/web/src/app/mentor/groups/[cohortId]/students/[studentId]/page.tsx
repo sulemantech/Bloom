@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { AppShell } from "@/components/AppShell";
+import { BloomPathList, LastActive, Timeline } from "@/components/bloom";
 import { ProgressBar, StatusBadge, StepBadge, SubmissionCard } from "@/components/course";
 import { AGE_GROUP_TONE, AREA_TONE, Badge } from "@/components/ui/Badge";
 import { requireRole } from "@/lib/auth";
+import { bloomStats, loadTimeline } from "@/lib/data/bloom";
 import { loadStudentOverview, signFiles } from "@/lib/data/overview";
 import { tr } from "@/lib/programme";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +21,7 @@ export default async function MentorStudentPage({
 }: PageProps<"/mentor/groups/[cohortId]/students/[studentId]">) {
   const { cohortId, studentId } = await params;
   const { week: weekParam } = await searchParams;
-  const profile = await requireRole("mentor", "admin");
+  await requireRole("mentor", "admin");
   const t = await getTranslations("mentorStudent");
   const supabase = await createClient();
 
@@ -39,9 +40,15 @@ export default async function MentorStudentPage({
   const cardWeek = Number.isInteger(requested) && requested >= 1 && requested <= program.weeks ? requested : defaultWeek;
   const card = (cards ?? []).find((c) => c.week === cardWeek);
   const weeks = Array.from({ length: program.weeks }, (_, i) => i + 1);
+  const base = `/mentor/groups/${cohortId}/students/${studentId}`;
+  const { events, lastActive, paths } = await loadTimeline(supabase, studentId, overview, {
+    bloomHref: (id) => `${base}/bloom/${id}`,
+    activityHref: (id) => `${base}#activity-${id}`,
+  });
+  const bloom = bloomStats(paths);
 
   return (
-    <AppShell profile={profile}>
+    <>
       <Link href={`/mentor/groups/${cohortId}`} className="text-sm font-medium text-info">← {t("back", { group: overview.cohort.name })}</Link>
 
       <header className="flex flex-col gap-2">
@@ -55,6 +62,9 @@ export default async function MentorStudentPage({
             <span>· {t("parents", { names: (parents ?? []).map((p) => p.parent?.full_name).filter(Boolean).join(", ") })}</span>
           )}
           {student.prefers_female_mentor && <Badge tone="violet">{t("femaleMentor")}</Badge>}
+          <span>
+            · <LastActive at={lastActive} />
+          </span>
         </div>
       </header>
 
@@ -78,6 +88,24 @@ export default async function MentorStudentPage({
           ) : (
             <p className="text-sm text-muted">{t("noProject")}</p>
           )}
+        </section>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-5">
+        <section className="card flex flex-col gap-3 p-5 lg:col-span-3" aria-labelledby="bloom-heading">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="bloom-heading" className="font-display-tight text-lg">
+              <span aria-hidden="true" className="text-ai">✦ </span>
+              {t("bloom")}
+            </h2>
+            <span className="text-[13px] text-soft">{t("bloomSummary", { paths: bloom.paths, done: bloom.tasksDone, total: bloom.tasksTotal })}</span>
+          </div>
+          <p className="text-[13px] text-soft">{t("bloomHint")}</p>
+          <BloomPathList paths={paths} hrefFor={(id) => `${base}/bloom/${id}`} />
+        </section>
+        <section className="card flex flex-col gap-3 p-5 lg:col-span-2" aria-labelledby="journey-heading">
+          <h2 id="journey-heading" className="font-display-tight text-lg">{t("journey")}</h2>
+          <Timeline events={events} timeZone={overview.cohort.timezone} limit={12} />
         </section>
       </div>
 
@@ -163,6 +191,6 @@ export default async function MentorStudentPage({
           </div>
         ))}
       </section>
-    </AppShell>
+    </>
   );
 }

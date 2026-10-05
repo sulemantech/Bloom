@@ -185,7 +185,8 @@ select ok((select count(*) from public.submissions where student_id = 'd0000000-
           'mentor sees submissions in their cohort');
 select is((select count(*)::int from public.submissions where student_id = 'd0000000-0000-0000-0000-000000000002'), 0,
           'mentor cannot see submissions in another cohort');
-select is((select count(*)::int from public.progress_cards), 2, 'mentor sees draft and approved cards for their cohort');
+select is((select count(*)::int from public.progress_cards where student_id = 'd0000000-0000-0000-0000-000000000001'), 2,
+          'mentor sees draft and approved cards for their cohort');
 select is((select count(*)::int from public.profiles where id = 'c0000000-0000-0000-0000-000000000001'), 1,
           'mentor sees the parents of their students');
 select lives_ok(
@@ -216,10 +217,110 @@ select is((select count(*)::int from public.progress_cards), 0, 'mentor of anoth
 -- Admin
 -- ---------------------------------------------------------------------------
 set local request.jwt.claims to '{"sub": "a0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
-select is((select count(*)::int from public.submissions), 3, 'admin sees every submission');
+select is((select count(*)::int from public.submissions where student_id in ('d0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000002')), 3,
+          'admin sees every submission');
+
+-- Admin operations (the test admin is the only admin inside this rolled-back transaction)
+set local role postgres;
+update public.profiles set role = 'parent' where role = 'admin' and id <> 'a0000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select lives_ok(
+  $$select public.admin_update_profile('d0000000-0000-0000-0000-000000000001', 'Renamed Student', 'student', 's1.new', 2013, 'PK', 'Asia/Karachi', true)$$,
+  'admin can edit a student profile');
+select is((select username from public.profiles where id = 'd0000000-0000-0000-0000-000000000001'), 's1.new', 'admin edit saved');
+select throws_ok(
+  $$select public.admin_update_profile('d0000000-0000-0000-0000-000000000001', 'X', 'parent', null, null, null, null, false)$$,
+  'P0001', null, 'a student cannot be turned into a parent');
+select throws_ok(
+  $$select public.admin_update_profile('b0000000-0000-0000-0000-000000000001', 'M1', 'parent', null, null, null, null, false)$$,
+  'P0001', null, 'a mentor who mentors a group cannot be demoted to parent');
+select throws_ok(
+  $$select public.admin_update_profile('a0000000-0000-0000-0000-000000000001', 'Admin', 'mentor', null, null, null, null, false)$$,
+  'P0001', null, 'the last admin cannot be demoted');
+select lives_ok($$select public.log_admin_action('password_reset', 'profiles', 'd0000000-0000-0000-0000-000000000001')$$,
+  'admin can log an auth action');
+select is((select count(*)::int from public.audit_log where action = 'password_reset' and actor_id = 'a0000000-0000-0000-0000-000000000001'), 1,
+  'logged action records the admin');
+select is((select count(*)::int from public.audit_log where entity = 'profiles' and action = 'update'
+           and entity_id = 'd0000000-0000-0000-0000-000000000001'
+           and actor_id = 'a0000000-0000-0000-0000-000000000001'), 1, 'profile edit is attributed to the admin');
+
+set local request.jwt.claims to '{"sub": "c0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select throws_ok(
+  $$select public.admin_update_profile('c0000000-0000-0000-0000-000000000001', 'Me', 'admin', null, null, null, null, false)$$,
+  '42501', null, 'a parent cannot make themselves admin');
+select throws_ok($$select public.log_admin_action('x', 'profiles', null)$$, '42501', null, 'a parent cannot write the audit log');
+set local request.jwt.claims to '{"sub": "a0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
 select ok((select count(*) from public.audit_log) > 0, 'admin can read the audit log');
-select is((select count(*)::int from public.audit_log where actor_id is not null and entity = 'feedback'), 1,
+select is((select count(*)::int from public.audit_log where actor_id = 'b0000000-0000-0000-0000-000000000001' and entity = 'feedback'), 1,
           'audit log records who gave feedback');
+
+-- ---------------------------------------------------------------------------
+-- Bloom: students own their learning; parents, mentors and admins can read it
+-- ---------------------------------------------------------------------------
+set local role postgres;
+insert into public.bloom_paths (id, student_id, cohort_id, title) values
+  ('70000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000001001', 'S1 path'),
+  ('70000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', 'e0000000-0000-0000-0000-000000000002', 'S2 path');
+
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select is((select count(*)::int from public.bloom_paths), 1, 'student sees only their own Bloom paths');
+select lives_ok(
+  $$insert into public.bloom_tasks (id, path_id, student_id, title)
+    values ('71000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', 'Step 1')$$,
+  'student can add a step to their own path');
+select throws_ok(
+  $$insert into public.bloom_tasks (path_id, student_id, title)
+    values ('70000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000001', 'Sneaky')$$,
+  '42501', null, 'student cannot add a step to someone else''s path');
+select throws_ok(
+  $$insert into public.bloom_paths (student_id, title) values ('d0000000-0000-0000-0000-000000000002', 'Not mine')$$,
+  '42501', null, 'student cannot create a path for another student');
+select throws_ok(
+  $$update public.bloom_paths set mentor_note = 'I am great' where id = '70000000-0000-0000-0000-000000000001'$$,
+  '42501', null, 'student cannot write the mentor note');
+select throws_ok(
+  $$select public.set_bloom_mentor_note('70000000-0000-0000-0000-000000000001', 'Self praise')$$,
+  '42501', null, 'student cannot use the mentor note function');
+update public.bloom_tasks set status = 'done' where id = '71000000-0000-0000-0000-000000000001';
+select lives_ok(
+  $$insert into public.bloom_questions (path_id, student_id, question, answer)
+    values ('70000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', 'Why?', 'Because.')$$,
+  'student can record a question to Bloom');
+
+set local role postgres;
+select isnt((select completed_at from public.bloom_tasks where id = '71000000-0000-0000-0000-000000000001'),
+            null, 'finishing a step records when');
+
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "c0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select is((select count(*)::int from public.bloom_paths), 1, 'parent sees only their child''s Bloom paths');
+select is((select count(*)::int from public.bloom_questions), 1, 'parent can read their child''s questions to Bloom');
+select throws_ok(
+  $$insert into public.bloom_paths (student_id, title) values ('c0000000-0000-0000-0000-000000000001', 'Parent path')$$,
+  '42501', null, 'parents cannot create Bloom paths');
+
+set local request.jwt.claims to '{"sub": "b0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select is((select count(*)::int from public.bloom_paths), 1, 'mentor sees Bloom paths of their own students only');
+select lives_ok(
+  $$select public.set_bloom_mentor_note('70000000-0000-0000-0000-000000000001', 'Great start!')$$,
+  'mentor can leave a note on their student''s path');
+select throws_ok(
+  $$select public.set_bloom_mentor_note('70000000-0000-0000-0000-000000000002', 'Not my student')$$,
+  '42501', null, 'mentor cannot leave a note for another group''s student');
+
+set local role postgres;
+select is((select mentor_note from public.bloom_paths where id = '70000000-0000-0000-0000-000000000001'),
+          'Great start!', 'mentor note was saved');
+select is((select mentor_note_by from public.bloom_paths where id = '70000000-0000-0000-0000-000000000001'),
+          'b0000000-0000-0000-0000-000000000001'::uuid, 'mentor note records who wrote it');
+
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "a0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select is((select count(*)::int from public.bloom_paths
+           where id in ('70000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002')), 2,
+          'admin sees every Bloom path');
 
 set local role postgres;
 select * from finish();

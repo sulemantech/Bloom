@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { AppShell } from "@/components/AppShell";
+import { BloomPathList, LastActive, Timeline } from "@/components/bloom";
 import { ProgressBar, StatusBadge, SubmissionCard, WeekHeadline, WeekStrip } from "@/components/course";
 import { SessionsCard } from "@/components/Sessions";
 import { AGE_GROUP_TONE, AREA_TONE, Badge } from "@/components/ui/Badge";
 import { requireRole } from "@/lib/auth";
+import { bloomStats, loadTimeline } from "@/lib/data/bloom";
 import { loadStudentOverview, signFiles } from "@/lib/data/overview";
 import { formatDate, tr } from "@/lib/programme";
 import { createClient } from "@/lib/supabase/server";
@@ -14,7 +15,7 @@ import { ConsentToggle } from "../../ConsentToggle";
 
 export const metadata: Metadata = { title: "Your child" };
 
-const OPTIONAL_CONSENTS = ["ai", "media", "public_portfolio"] as const;
+const OPTIONAL_CONSENTS = ["bloom_ai", "ai", "media", "public_portfolio"] as const;
 
 export default async function ParentChildPage({ params }: PageProps<"/parent/children/[id]">) {
   const { id } = await params;
@@ -43,6 +44,12 @@ export default async function ParentChildPage({ params }: PageProps<"/parent/chi
     (cards ?? []).filter((c) => !c.viewed_at).map((c) => supabase.rpc("mark_progress_card_viewed", { p_card: c.id })),
   );
 
+  const { events, lastActive, paths } = await loadTimeline(supabase, id, overview, {
+    bloomHref: (pathId) => `/parent/children/${id}/bloom/${pathId}`,
+  });
+  const bloom = bloomStats(paths);
+  const timeZone = overview?.cohort.timezone ?? profile.timezone;
+
   const active = new Set((consents ?? []).filter((c) => !c.revoked_at).map((c) => c.type));
   const recent = overview
     ? overview.submissions.filter((s) => s.feedback.length > 0 || s.status !== "submitted").slice(0, 4)
@@ -50,7 +57,7 @@ export default async function ParentChildPage({ params }: PageProps<"/parent/chi
   const fileUrls = overview ? await signFiles(supabase, recent.flatMap((s) => s.submission_files.map((f) => f.storage_path))) : new Map();
 
   return (
-    <AppShell profile={profile}>
+    <>
       <Link href="/parent" className="text-sm font-medium text-info">← {t("back")}</Link>
 
       <header className="flex flex-col gap-3">
@@ -61,6 +68,9 @@ export default async function ParentChildPage({ params }: PageProps<"/parent/chi
           )}
         </div>
         <h1 className="font-display-tight text-[28px] leading-tight">{child.full_name}</h1>
+        <p className="text-sm">
+          <LastActive at={lastActive} />
+        </p>
         {overview ? (
           <>
             <WeekHeadline overview={overview} />
@@ -93,6 +103,24 @@ export default async function ParentChildPage({ params }: PageProps<"/parent/chi
           <SessionsCard sessions={overview.sessions} timeZone={overview.cohort.timezone} />
         </div>
       )}
+
+      <div className="grid gap-4 lg:grid-cols-5">
+        <section className="card flex flex-col gap-3 p-5 lg:col-span-3" aria-labelledby="bloom-heading">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="bloom-heading" className="font-display-tight text-lg">
+              <span aria-hidden="true" className="text-ai">✦ </span>
+              {t("bloom")}
+            </h2>
+            <span className="text-[13px] text-soft">{t("bloomSummary", { paths: bloom.paths, done: bloom.tasksDone })}</span>
+          </div>
+          <p className="text-[13px] text-soft">{t("bloomHint")}</p>
+          <BloomPathList paths={paths} hrefFor={(pathId) => `/parent/children/${id}/bloom/${pathId}`} />
+        </section>
+        <section className="card flex flex-col gap-3 p-5 lg:col-span-2" aria-labelledby="journey-heading">
+          <h2 id="journey-heading" className="font-display-tight text-lg">{t("journey")}</h2>
+          <Timeline events={events} timeZone={timeZone} limit={10} />
+        </section>
+      </div>
 
       <section className="flex flex-col gap-3" aria-labelledby="cards-heading">
         <h2 id="cards-heading" className="label-caps text-soft">{t("cards")}</h2>
@@ -144,6 +172,6 @@ export default async function ParentChildPage({ params }: PageProps<"/parent/chi
           <span className="text-[13px] text-soft">{t("deleteHint")}</span>
         </div>
       </section>
-    </AppShell>
+    </>
   );
 }

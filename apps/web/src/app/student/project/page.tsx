@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { AppShell } from "@/components/AppShell";
 import { requireRole } from "@/lib/auth";
 import { loadStudentOverview } from "@/lib/data/overview";
 import { createClient } from "@/lib/supabase/server";
@@ -18,13 +17,13 @@ export default async function ProjectPage() {
   if (!overview) redirect("/student");
 
   return (
-    <AppShell profile={profile}>
+    <>
       <Link href="/student" className="text-sm font-medium text-info">← {t("back")}</Link>
       <header className="flex flex-col gap-1">
         <h1 className="font-display-tight text-[28px] leading-tight">{t("heading")}</h1>
         <p className="text-muted">{t("intro")}</p>
       </header>
       <ProjectForm cohortId={overview.cohort.id} project={overview.project} />
-    </AppShell>
+    </>
   );
 }

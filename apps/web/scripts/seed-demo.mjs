@@ -106,14 +106,43 @@ if (!sessionCount) {
   ]);
 }
 
-const { count: aiConsent } = await admin
-  .from("consents")
-  .select("*", { count: "exact", head: true })
-  .eq("student_id", studentId)
-  .eq("type", "ai")
-  .is("revoked_at", null);
-if (!aiConsent) {
-  await admin.from("consents").insert({ student_id: studentId, parent_id: parentId, type: "ai", version: "2026-10-v1" });
+// AI consents: mentors' progress-card drafts ("ai") and the student's Bloom guide ("bloom_ai").
+for (const type of ["ai", "bloom_ai"]) {
+  const { count } = await admin
+    .from("consents")
+    .select("*", { count: "exact", head: true })
+    .eq("student_id", studentId)
+    .eq("type", type)
+    .is("revoked_at", null);
+  if (!count) {
+    await admin.from("consents").insert({ student_id: studentId, parent_id: parentId, type, version: "2026-10-v1" });
+  }
+}
+
+// One Bloom learning path, half done, so every role has something to look at.
+const { count: bloomCount } = await admin.from("bloom_paths").select("*", { count: "exact", head: true }).eq("student_id", studentId);
+if (!bloomCount) {
+  const { data: path, error: pathError } = await admin
+    .from("bloom_paths")
+    .insert({
+      student_id: studentId,
+      cohort_id: COHORT_ID,
+      title: "Talking to people about a problem",
+      goal: "Ask good questions and find out what people really need",
+      summary: "Great projects start with listening. In this path you'll learn how to ask open questions, try them on two people, and turn what you hear into a clear problem statement.",
+      stage_key: "explore",
+      ai_generated: true,
+    })
+    .select("id")
+    .single();
+  if (pathError) throw pathError;
+  // Bulk inserts need the same keys on every row (missing keys become null).
+  const { error: taskError } = await admin.from("bloom_tasks").insert([
+    { path_id: path.id, student_id: studentId, position: 1, kind: "learn", status: "done", title: "What makes a good question?", details: "Open questions start with how, what or why and can't be answered with yes or no. Write 3 closed questions, then rewrite each as an open one.", reflection: "\"Do you like school lunch?\" became \"What's the hardest part of lunchtime?\" — much better answers!" },
+    { path_id: path.id, student_id: studentId, position: 2, kind: "do", status: "doing", reflection: null, title: "Interview two people", details: "Ask a family member and a friend your 3 open questions about a problem you've noticed. Write down their exact words, not your summary." },
+    { path_id: path.id, student_id: studentId, position: 3, kind: "reflect", status: "todo", reflection: null, title: "What surprised you?", details: "Compare the two interviews. What did both people say? What surprised you? Write one sentence: \"[Who] struggles with [what] because [why].\"" },
+  ]);
+  if (taskError) throw taskError;
 }
 await admin
   .from("memberships")
