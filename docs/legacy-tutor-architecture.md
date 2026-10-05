@@ -1,4 +1,7 @@
-# Bloom Architecture
+# Legacy Bloom tutor architecture
+
+> **Legacy.** This describes the original Bloom AI tutor (FastAPI + SQLite + React/Vite in `backend/`, `frontend/`, `skills/`), not the Youth Idea Lab app. For `apps/web`, see [architecture.md](architecture.md).
+
 
 ## Purpose
 

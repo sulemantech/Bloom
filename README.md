@@ -2,7 +2,9 @@
 
 The learning platform for [Youth Idea Lab](https://youth-idealab.vercel.app/): an 8-week, mentor-led course where students aged 12–18 explore, choose a real problem, build their answer to it and present it at Demo Day.
 
-> The earlier Bloom AI-tutor code lives on the `bloom/legacy` branch. Its adaptive-tutor ideas will be reused for the Phase 3 student tutor.
+> The earlier Bloom AI-tutor code is preserved on the `bloom/legacy` branch. Its folders (`backend/`, `frontend/`, `skills/`, `example/`) are still in this branch for now but are not part of the app.
+
+**Start here:** [docs/architecture.md](docs/architecture.md) maps the app, the database and how they fit together.
 
 ## Structure
 
