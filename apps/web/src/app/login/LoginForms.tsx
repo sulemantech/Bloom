@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
-import { devPasswordSignIn, sendSignInLink, studentSignIn, type LoginState } from "./actions";
+import { devDemoSignIn, devPasswordSignIn, sendSignInLink, studentSignIn, type LoginState } from "./actions";
 
 const initial: LoginState = { status: "idle" };
 
@@ -12,6 +12,7 @@ export function LoginForms({ linkError, devPasswordLogin }: { linkError: boolean
   const [linkState, linkAction, linkPending] = useActionState(sendSignInLink, initial);
   const [studentState, studentAction, studentPending] = useActionState(studentSignIn, initial);
   const [devState, devAction, devPending] = useActionState(devPasswordSignIn, initial);
+  const [demoState, demoAction, demoPending] = useActionState(devDemoSignIn, initial);
 
   return (
     <div className="card flex flex-col gap-6 p-6 sm:p-8">
@@ -47,6 +48,7 @@ export function LoginForms({ linkError, devPasswordLogin }: { linkError: boolean
         ) : (
           <form action={linkAction} className="flex flex-col gap-4">
             <p className="text-sm text-muted">{t("adultIntro")}</p>
+            <p className="text-[13px] text-soft">{t("staffHint")}</p>
             <label className="flex flex-col gap-1.5">
               <span className="text-sm font-medium">{t("email")}</span>
               <input name="email" type="email" autoComplete="email" required className="field" />
@@ -78,6 +80,22 @@ export function LoginForms({ linkError, devPasswordLogin }: { linkError: boolean
           <button type="submit" disabled={devPending} className="btn btn-secondary">
             {devPending ? t("signingIn") : t("signIn")}
           </button>
+        </form>
+      )}
+
+      {devPasswordLogin && (
+        <form action={demoAction} className="flex flex-col gap-3 rounded-xl border border-dashed border-warning/50 p-4">
+          <p className="label-caps text-warning">{t("demoTitle")}</p>
+          <div className="grid grid-cols-2 gap-2">
+            {(["admin", "mentor", "parent", "student"] as const).map((account) => (
+              <button key={account} type="submit" name="account" value={account} disabled={demoPending} className="btn btn-secondary px-3 py-2 text-sm">
+                {t(`demoAs.${account}`)}
+              </button>
+            ))}
+          </div>
+          {demoState.status === "error" && (
+            <p role="alert" className="text-sm text-danger">{t(`errors.${demoState.message}`)}</p>
+          )}
         </form>
       )}
 

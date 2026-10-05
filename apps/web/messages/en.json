@@ -23,7 +23,7 @@
     "title": "Sign in",
     "subtitle": "Welcome back to Youth IdeaLab.",
     "chooseAccount": "Choose your account type",
-    "tabAdult": "Parent or mentor",
+    "tabAdult": "Parent or staff",
     "tabStudent": "Student",
     "adultIntro": "We'll email you a secure sign-in link. No password needed.",
     "email": "Email address",
@@ -42,9 +42,18 @@
       "invalidEmail": "Please enter a valid email address.",
       "missingFields": "Please enter your username and password.",
       "wrongCredentials": "That username and password don't match. Please try again.",
-      "tooManyRequests": "Too many attempts. Please wait a few minutes and try again."
+      "tooManyRequests": "Too many attempts. Please wait a few minutes and try again.",
+      "demoUnavailable": "Demo sign-in isn’t available. Run npm run seed:demo and check the DEMO_* passwords in .env.local."
     },
-    "devTitle": "Development only: sign in with a password"
+    "devTitle": "Development only: sign in with a password",
+    "staffHint": "Mentors and admins sign in here too — you’ll be taken to the right place.",
+    "demoTitle": "Development only: sign in as a demo account",
+    "demoAs": {
+      "admin": "Admin",
+      "mentor": "Mentor",
+      "parent": "Parent",
+      "student": "Student"
+    }
   },
   "shell": {
     "signOut": "Sign out",
