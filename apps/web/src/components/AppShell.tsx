@@ -52,6 +52,7 @@ async function navFor(profile: Profile): Promise<NavItem[]> {
         { href: "/admin/groups", label: t("groups"), icon: "grid" },
         { href: "/admin/payments", label: t("payments"), icon: "money" },
         { href: "/admin/programme", label: t("programme"), icon: "book" },
+        { href: "/admin/ai", label: t("aiUsage"), icon: "sparkle" },
         { href: "/admin/activity", label: t("activityLog"), icon: "log" },
       ];
   }

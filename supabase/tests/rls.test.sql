@@ -393,8 +393,16 @@ select is((select count(*)::int from public.ai_runs), 0, 'a parent cannot read A
 set local request.jwt.claims to '{"sub": "b0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
 select is((select count(*)::int from public.ai_runs), 0, 'a mentor cannot read AI usage');
 
+select is((select count(*)::int from public.ai_usage_by_day(now() - interval '1 day', 'Asia/Karachi')), 0,
+          'a mentor gets no AI usage summary');
+
 set local request.jwt.claims to '{"sub": "a0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
 select is((select count(*)::int from public.ai_runs), 1, 'an admin reads AI usage');
+select is((select sum(calls)::int from public.ai_usage_by_day(now() - interval '1 day', 'Asia/Karachi')), 1,
+          'an admin gets the AI usage summary per day');
+select is((select output_tokens::int from public.ai_usage_by_student(now() - interval '1 day')
+           where student_id = 'd0000000-0000-0000-0000-000000000001'), 120,
+          'AI usage per student adds up tokens');
 select throws_ok(
   $$delete from public.ai_runs$$,
   '42501', null, 'not even an admin can delete AI usage through the API');

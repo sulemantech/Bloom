@@ -1103,6 +1103,29 @@ export type Database = {
         }
         Returns: undefined
       }
+      ai_usage_by_day: {
+        Args: { p_since: string; p_tz: string }
+        Returns: {
+          calls: number
+          capability: string
+          day: string
+          input_tokens: number
+          latency_calls: number
+          latency_ms_total: number
+          outcome: string
+          output_tokens: number
+        }[]
+      }
+      ai_usage_by_student: {
+        Args: { p_since: string }
+        Returns: {
+          calls: number
+          input_tokens: number
+          outcome: string
+          output_tokens: number
+          student_id: string
+        }[]
+      }
       bloom_path_derived_status: {
         Args: { p_path: string }
         Returns: Database["public"]["Enums"]["bloom_path_status"]

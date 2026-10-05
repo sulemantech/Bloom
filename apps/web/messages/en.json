@@ -697,6 +697,7 @@
     "groups": "Groups",
     "payments": "Payments",
     "programme": "Programme",
+    "aiUsage": "AI usage",
     "activityLog": "Activity log"
   },
   "classes": {
@@ -966,6 +967,43 @@
     "neverSignedIn": "Hasn’t signed in yet.",
     "setPassword": "Set a new password",
     "dangerZone": "Delete account"
+  },
+  "adminAi": {
+    "title": "AI usage",
+    "intro": "Every call to the AI, counted per day. No questions or answers are stored, only counts. Each student can make {limit} Bloom AI requests in 24 hours.",
+    "rangeLabel": "Time range",
+    "lastDays": "Last {count} days",
+    "stats": {
+      "calls": "AI calls",
+      "tokens": "Tokens used",
+      "limited": "Stopped by daily limit",
+      "notAnswered": "Not answered"
+    },
+    "empty": "No AI use in this period",
+    "emptyBody": "Calls appear here as soon as students use Bloom or mentors draft progress cards with AI.",
+    "perDay": "Per day",
+    "perCapability": "Per feature",
+    "topStudents": "Students using Bloom most",
+    "columns": {
+      "day": "Day",
+      "capability": "Feature",
+      "calls": "Calls",
+      "tokensIn": "Tokens in",
+      "tokensOut": "Tokens out",
+      "avgTime": "Avg time",
+      "limited": "Limit hits",
+      "notAnswered": "Not answered"
+    },
+    "capabilities": {
+      "bloom_suggest": "Bloom: suggest paths",
+      "bloom_plan": "Bloom: plan a path",
+      "bloom_ask": "Bloom: answer a question",
+      "progress_card": "Progress card draft"
+    },
+    "unknownStudent": "Unknown student",
+    "studentCalls": "{count, plural, one {# call} other {# calls}}",
+    "studentTokens": "{count, plural, one {# token} other {# tokens}}",
+    "studentLimited": "{count, plural, one {hit the limit once} other {hit the limit # times}}"
   },
   "adminPayments": {
     "title": "Payments",
