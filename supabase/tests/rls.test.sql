@@ -372,5 +372,37 @@ select is((select status::text from public.bloom_paths where id = '70000000-0000
 set local role postgres;
 select is((select completed_at is not null from public.bloom_paths where title = 'Planned path'), false,
           'a new path is not completed');
+
+-- ---------------------------------------------------------------------------
+-- AI usage log: written by the server's secret key, read by admins only
+-- ---------------------------------------------------------------------------
+insert into public.ai_runs (capability, student_id, actor_id, model, input_tokens, output_tokens, latency_ms, outcome, input_hash)
+values ('bloom_ask', 'd0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001',
+        'claude-opus-5-5', 900, 120, 2100, 'ok', 'abc123');
+
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select is((select count(*)::int from public.ai_runs), 0, 'a student cannot read AI usage, even their own');
+select throws_ok(
+  $$insert into public.ai_runs (capability, student_id, outcome) values ('bloom_ask', 'd0000000-0000-0000-0000-000000000001', 'ok')$$,
+  '42501', null, 'a student cannot write AI usage');
+
+set local request.jwt.claims to '{"sub": "c0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select is((select count(*)::int from public.ai_runs), 0, 'a parent cannot read AI usage');
+
+set local request.jwt.claims to '{"sub": "b0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select is((select count(*)::int from public.ai_runs), 0, 'a mentor cannot read AI usage');
+
+set local request.jwt.claims to '{"sub": "a0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select is((select count(*)::int from public.ai_runs), 1, 'an admin reads AI usage');
+select throws_ok(
+  $$delete from public.ai_runs$$,
+  '42501', null, 'not even an admin can delete AI usage through the API');
+
+set local role postgres;
+select is(
+  (select count(*)::int from information_schema.columns
+   where table_schema = 'public' and table_name = 'ai_runs' and column_name in ('prompt', 'input', 'output', 'answer', 'text')),
+  0, 'ai_runs has no column for prompt or answer text');
 select * from finish();
 rollback;

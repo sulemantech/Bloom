@@ -164,9 +164,9 @@ export async function draftCardWithAi(_prev: DraftState, formData: FormData): Pr
           feedback: latest?.feedback.map((f) => f.body) ?? [],
         };
       }),
-  });
+  }, { studentId, mentorId: staff.id });
 
-  return result.ok ? { status: "ok", text: result.text } : { status: "error", message: result.reason };
+  return result.ok ? { status: "ok", text: result.data } : { status: "error", message: result.reason };
 }
 
 /** A mentor's (or admin's) note on a student's Bloom learning path. Empty clears it. */

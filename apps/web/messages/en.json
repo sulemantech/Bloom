@@ -840,7 +840,8 @@
         "notConfigured": "Bloom’s AI isn’t set up yet. You can still create your own path.",
         "refused": "Bloom couldn’t help with that one. Try asking in a different way, or ask your mentor.",
         "rateLimited": "Bloom is busy right now. Try again in a minute.",
-        "failed": "Bloom couldn’t answer just now. Please try again."
+        "failed": "Bloom couldn’t answer just now. Please try again.",
+        "dailyLimit": "You’ve asked Bloom a lot today. Have a go on your own, ask your mentor, or come back tomorrow."
       }
     }
   },

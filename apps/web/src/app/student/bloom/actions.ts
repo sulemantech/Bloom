@@ -43,9 +43,9 @@ export async function suggestPaths(_prev: SuggestState, formData: FormData): Pro
   if (!(await hasBloomAiConsent(student.id))) return { status: "error", message: "ai.noConsent" };
 
   const { context } = await aiContext(student.id);
-  const result = await suggestBloomPaths(context, str(formData, "interest", 300));
+  const result = await suggestBloomPaths(student.id, context, str(formData, "interest", 300));
   if (!result.ok) return aiError(result.reason);
-  return { status: "ok", suggestions: result.suggestions };
+  return { status: "ok", suggestions: result.data };
 }
 
 export async function createPath(_prev: BloomState, formData: FormData): Promise<BloomState> {
@@ -64,7 +64,7 @@ export async function createPath(_prev: BloomState, formData: FormData): Promise
   let plan: { summary: string; tasks: { kind: (typeof KINDS)[number]; title: string; details: string }[] } | null = null;
   if (wantsAi) {
     if (!(await hasBloomAiConsent(student.id))) return { status: "error", message: "ai.noConsent" };
-    const result = await planBloomPath(context, { title, goal, depth });
+    const result = await planBloomPath(student.id, context, { title, goal, depth });
     if (!result.ok) return aiError(result.reason);
     plan = result.data;
   }
@@ -183,12 +183,12 @@ export async function askQuestion(_prev: BloomState, formData: FormData): Promis
   if (!path) return { status: "error", message: "failed" };
   const task = taskId ? path.bloom_tasks.find((t) => t.id === taskId) : undefined;
 
-  const result = await askBloom(context, { path: path.title, task: task?.title ?? null, taskDetails: task?.details ?? null }, question);
+  const result = await askBloom(student.id, context, { path: path.title, task: task?.title ?? null, taskDetails: task?.details ?? null }, question);
   if (!result.ok) return aiError(result.reason);
 
   const { error } = await supabase
     .from("bloom_questions")
-    .insert({ path_id: pathId, task_id: task?.id ?? null, student_id: student.id, question, answer: result.text });
+    .insert({ path_id: pathId, task_id: task?.id ?? null, student_id: student.id, question, answer: result.data });
   if (error) return { status: "error", message: "failed" };
   refresh();
   return { status: "ok" };

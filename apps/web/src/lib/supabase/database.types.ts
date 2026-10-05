@@ -83,6 +83,63 @@ export type Database = {
           },
         ]
       }
+      ai_runs: {
+        Row: {
+          actor_id: string | null
+          capability: string
+          created_at: string
+          id: string
+          input_hash: string | null
+          input_tokens: number | null
+          latency_ms: number | null
+          model: string | null
+          outcome: string
+          output_tokens: number | null
+          student_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          capability: string
+          created_at?: string
+          id?: string
+          input_hash?: string | null
+          input_tokens?: number | null
+          latency_ms?: number | null
+          model?: string | null
+          outcome: string
+          output_tokens?: number | null
+          student_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          capability?: string
+          created_at?: string
+          id?: string
+          input_hash?: string | null
+          input_tokens?: number | null
+          latency_ms?: number | null
+          model?: string | null
+          outcome?: string
+          output_tokens?: number | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_runs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_runs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
