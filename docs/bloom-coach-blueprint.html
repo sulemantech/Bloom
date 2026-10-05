@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bloom Coach Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: engineering teardown. Sticky section index on wide screens, one reading column, evidence tags on every claim. */
+:root {
+  --bg: #f6f6f9;
+  --surface: #ffffff;
+  --sunk: #eeedf4;
+  --fg: #1c1b26;
+  --muted: #5a586b;
+  --line: #dcdae6;
+  --accent: #5b3fd0;
+  --accent-soft: #ece8fb;
+  --ok: #1d7a4a;
+  --ok-soft: #e2f3e9;
+  --warn: #8a5a00;
+  --warn-soft: #fbefd6;
+  --bad: #b23a3a;
+  --bad-soft: #f9e3e3;
+  --code-bg: #f1f0f7;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-label: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14131b; --surface: #1c1b25; --sunk: #23222e; --fg: #e9e7f2; --muted: #a3a0b6; --line: #33313f;
+    --accent: #a593ff; --accent-soft: #2a2546; --ok: #6fd39d; --ok-soft: #173326; --warn: #f0c065; --warn-soft: #3a2e14;
+    --bad: #f08a8a; --bad-soft: #3b1d1f; --code-bg: #201f2a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14131b; --surface: #1c1b25; --sunk: #23222e; --fg: #e9e7f2; --muted: #a3a0b6; --line: #33313f;
+  --accent: #a593ff; --accent-soft: #2a2546; --ok: #6fd39d; --ok-soft: #173326; --warn: #f0c065; --warn-soft: #3a2e14;
+  --bad: #f08a8a; --bad-soft: #3b1d1f; --code-bg: #201f2a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15.5px/1.6 var(--font-body); padding-inline: 16px; padding-block: 0 64px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 40px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .wrap { grid-template-columns: 220px minmax(0, 1fr); } }
+nav.toc { display: none; }
+@media (min-width: 1000px) {
+  nav.toc { display: block; position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; max-height: 100vh; overflow-y: auto; padding-block: 40px; }
+}
+nav.toc p { font: 600 12px/1 var(--font-label); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; counter-reset: toc; }
+nav.toc li { counter-increment: toc; }
+nav.toc a { display: flex; gap: 8px; padding: 4px 8px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 13.5px; line-height: 1.35; }
+nav.toc a::before { content: counter(toc); font: 500 12px/1.6 var(--font-mono); color: var(--accent); min-width: 1.4em; }
+nav.toc a:hover, nav.toc a:focus-visible { background: var(--sunk); color: var(--fg); outline: none; }
+main { min-width: 0; padding-block: 40px 0; display: flex; flex-direction: column; gap: 56px; }
+header.doc { display: flex; flex-direction: column; gap: 12px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+.eyebrow { font: 600 12px/1 var(--font-label); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 0; }
+h1 { font: 600 clamp(28px, 4vw, 40px)/1.12 var(--font-body); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+h2 { font: 600 24px/1.25 var(--font-body); letter-spacing: -.01em; margin: 0; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+h2 .n { font: 500 15px/1 var(--font-mono); color: var(--accent); }
+h3 { font: 600 17px/1.35 var(--font-body); margin: 8px 0 0; text-wrap: balance; }
+section { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 24px; }
+p, li { max-width: 72ch; }
+p { margin: 0; }
+ul, ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
+.lede { font-size: 17px; color: var(--muted); max-width: 70ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 500; }
+code { font: 0.88em var(--font-mono); background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+pre { margin: 0; }
+pre.src { font: 13px/1.55 var(--font-mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; white-space: pre; }
+pre.src .hl { color: var(--accent); font-weight: 500; }
+.srcref { font: 12.5px var(--font-mono); color: var(--muted); margin-top: -6px; }
+.mermaid { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; text-align: center; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+th { font: 600 12px/1.3 var(--font-label); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--sunk); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td code { white-space: nowrap; }
+.tag { display: inline-block; font: 600 11px/1 var(--font-label); letter-spacing: .06em; text-transform: uppercase; padding: 4px 7px; border-radius: 999px; white-space: nowrap; vertical-align: 1px; }
+.tag.c { background: var(--ok-soft); color: var(--ok); }
+.tag.i { background: var(--warn-soft); color: var(--warn); }
+.tag.g { background: var(--bad-soft); color: var(--bad); }
+.tag.n { background: var(--sunk); color: var(--muted); }
+.yes { color: var(--ok); font-weight: 600; }
+.no { color: var(--bad); font-weight: 600; }
+.part { color: var(--warn); font-weight: 600; }
+.callout { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.callout.warn { border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); background: var(--warn-soft); }
+.flow { display: flex; flex-direction: column; gap: 0; border-left: 2px solid var(--accent); margin-left: 6px; }
+.flow > div { position: relative; padding: 4px 0 14px 20px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.flow > div::before { content: ""; position: absolute; left: -7px; top: 9px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+.flow .k { font: 600 12px/1.3 var(--font-label); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 13px; color: var(--muted); align-items: center; }
+.two { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) { .two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+a { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+<style>
+.tag.mvp { background: var(--accent-soft); color: var(--accent); }
+.tag.p2 { background: var(--sunk); color: var(--fg); }
+.tag.later { background: var(--sunk); color: var(--muted); }
+.principle { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 14px 16px; font-weight: 500; }
+.steps { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.step { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.step h3 { margin: 0; }
+.step dl { display: grid; grid-template-columns: minmax(0, 9.5em) minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 14.5px; }
+.step dt { font: 600 12px/1.6 var(--font-label); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.step dd { margin: 0; min-width: 0; }
+.now { font-size: 13.5px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; }
+@media (max-width: 520px) { .step dl { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<style>
+@page { size: A4; margin: 14mm 12mm; }
+@media print {
+  :root, :root[data-theme] { --bg:#fff; --surface:#fff; --sunk:#f1f0f6; --fg:#1c1b26; --muted:#55536a; --line:#d6d4e0;
+    --accent:#5b3fd0; --accent-soft:#ece8fb; --ok:#1d7a4a; --ok-soft:#e2f3e9; --warn:#8a5a00; --warn-soft:#fbefd6;
+    --bad:#b23a3a; --bad-soft:#f9e3e3; --code-bg:#f4f3f8; color-scheme: light; }
+  body { font-size: 11.5px; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .wrap { display: block; max-width: none; }
+  nav.toc { display: none !important; }
+  main { padding: 0; gap: 28px; }
+  section { break-inside: auto; }
+  h2, h3 { break-after: avoid; }
+  .mermaid svg { max-height: 235mm; width: auto !important; }
+  tr, .mermaid, .callout, .flow > div { break-inside: avoid; }
+  pre.src { white-space: pre-wrap; overflow: visible; font-size: 10.5px; }
+  .tbl { overflow: visible; }
+  td code { white-space: normal; }
+  p, li { max-width: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="Sections">
+  <p>Sections</p>
+  <ol>
+    <li><a href="#s0">Summary &amp; decisions</a></li>
+    <li><a href="#s1">Student experience</a></li>
+    <li><a href="#s2">Activity model</a></li>
+    <li><a href="#s3">Path structure</a></li>
+    <li><a href="#s4">Evidence model</a></li>
+    <li><a href="#s5">State machine</a></li>
+    <li><a href="#s6">AI responsibilities</a></li>
+    <li><a href="#s7">App responsibilities</a></li>
+    <li><a href="#s8">Project memory</a></li>
+    <li><a href="#s9">Artifacts</a></li>
+    <li><a href="#s10">Adaptive learning</a></li>
+    <li><a href="#s11">Ask Bloom</a></li>
+    <li><a href="#s12">Mentor role</a></li>
+    <li><a href="#s13">Parent role</a></li>
+    <li><a href="#s14">Data model</a></li>
+    <li><a href="#s15">Migration</a></li>
+    <li><a href="#s16">MVP vs later</a></li>
+    <li><a href="#s17">Worked example</a></li>
+    <li><a href="#s18">Final architecture</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="doc">
+  <p class="eyebrow">Youth Idea Lab · Bloom, phase 2 design proposal</p>
+  <h1>Bloom as a project-learning coach: target architecture</h1>
+  <p class="lede">How Bloom evolves from an AI-written checklist into a coach that helps each student make real things for their project, get feedback and improve them. It builds on the existing tables, actions and pages instead of replacing them.</p>
+  <div class="meta">
+    <span>Status proposal for review, nothing implemented</span>
+    <span>Baseline Bloom as built (docs/bloom-as-built)</span>
+    <span>Written 5 Oct 2026</span>
+  </div>
+  <div class="legend">
+    <span><span class="tag mvp">MVP</span> phase 1, needed to make Bloom interactive</span>
+    <span><span class="tag p2">Phase 2</span> once the core works</span>
+    <span><span class="tag later">Later</span> advanced</span>
+  </div>
+</header>
+
+<section id="s0">
+  <h2><span class="n">00</span>Summary and key decisions</h2>
+  <p class="principle">AI recommends and interprets. The application decides and stores the truth. Every meaningful path ends with something new on the student's project.</p>
+  <ol>
+    <li><strong>Keep the tables and evolve them.</strong> <code>bloom_paths</code> stays the path. <code>bloom_tasks</code> becomes the activity table, gaining a type, a config and a richer state. The existing <code>kind</code> (learn, do, reflect) is kept as the path's three phases.</li>
+    <li><strong>A short, fixed catalogue of 8 activity types</strong>, each defined in code with its own evidence spec, completion rule and optional rubric. The AI planner can only assemble activities from this catalogue; it never invents new types.</li>
+    <li><strong>Work is submitted, not ticked off.</strong> Doing an activity creates a submission with evidence. Simple types complete instantly. Types that produce something get an immediate AI rubric review, which gives advice but caps revision requests at 2. Mentors review only at milestones.</li>
+    <li><strong>Artifacts and project memory belong to the project, not the path.</strong> An accepted submission can create a new artifact version. AI can propose project facts, but only a student or mentor confirmation writes them.</li>
+    <li><strong>AI is a set of narrow, typed functions</strong> (planner, coach, assessor, memory proposer, brief writer). They share one context assembler and one AI gateway that handles consent, limits and logging. It is not an autonomous agent: AI has no tools that write data.</li>
+    <li><strong>The spine is the existing programme stages.</strong> Each stage (Explore, Choose, Build, Present) lists the artifacts it expects. "What's next" is a deterministic gap check against that list, and the planner then fills in the detail.</li>
+  </ol>
+</section>
+
+<section id="s1">
+  <h2><span class="n">01</span>Student experience, end to end</h2>
+  <p>Example: an Explorer (age 13) in week 3 (Choose stage). Project area is business; working idea: "a logo and a brand for my uncle's shop".</p>
+  <div class="flow">
+    <div><span class="k">Opens Bloom</span><p>The home page leads with <strong>"Your project"</strong>: a project card showing the current stage (Choose), what the stage expects (problem statement, at least 2 interviews), and what already exists (none yet). Below it is <strong>"Recommended next"</strong>: 1–3 paths picked because something is missing, for example "How a small business really works → produces a Business Map and an Interview". The curious-about field and "my own topic" stay as before.</p></div>
+    <div><span class="k">Chooses a path</span><p>The student taps "Start". The planner builds the path from the catalogue: 5 activities in 3 phases, aimed at <em>Business Map</em> as the target artifact. The path page shows that target at the top: "By the end you'll have: a money map of your uncle's shop."</p></div>
+    <div><span class="k">Starts a step and learns</span><p>Activity 1 is a <strong>Learn</strong> activity: 3 short cards on customers, what's sold and money in or out, with examples from a corner shop. There's an optional "I already know this, check me" link. A <strong>Quick check</strong> follows: sort 6 items ("rent", "selling sweets", "neighbours walking past", …) into the 3 parts. 5/6 correct completes it. A wrong answer gets a one-line hint and one retry.</p></div>
+    <div><span class="k">Talks to Bloom</span><p>In any activity, "Ask Bloom" opens a thread for that activity. Bloom knows the project, the path, this activity and what the student has typed so far. Example: "What should I ask if my uncle is busy?" gets a short answer and a suggestion to pick the 3 most important questions.</p></div>
+    <div><span class="k">Does a real task</span><p>Activity 2 is an <strong>Interview</strong>. The student chooses 5 questions from suggestions or writes their own, and Bloom flags any closed (yes or no) ones. The student talks to their uncle offline, then records an answer under each question, saying who was interviewed by role ("my uncle, the shop owner"), never by name. They can add a photo of their handwritten notes.</p></div>
+    <div><span class="k">Submits work</span><p>"Submit" runs deterministic checks first: 5 answers, each at least a few words, nothing that looks like a phone number or address. Then comes an AI rubric review that takes a few seconds and is shown inline.</p></div>
+    <div><span class="k">Gets feedback</span><p>"Great detail on how customers find the shop. Answer 4 ('money is ok') is short. Can you ask your uncle which costs are biggest?" Each criterion is marked met or not yet. The verdict is <em>needs revision</em> because one required criterion isn't met.</p></div>
+    <div><span class="k">Revises</span><p>The student adds "rent and buying stock are the biggest costs" and resubmits. The revision is accepted. After at most 2 revision requests, the work is always accepted, with a note for the mentor.</p></div>
+    <div><span class="k">Completes the activity</span><p>The activity becomes <strong>complete</strong>. The app creates <strong>Interview: uncle's shop, v1</strong> as a project artifact.</p></div>
+    <div><span class="k">Project memory updates</span><p>Bloom proposes up to 3 facts: "Most customers are neighbours who walk past", "Biggest costs are rent and stock", "Open question: do customers know the shop's name?". The student keeps, edits or dismisses each. Only kept facts are saved, as confirmed and attributed to this submission.</p></div>
+    <div><span class="k">Next becomes relevant</span><p>Activity 3 (<strong>Make</strong>: Business Map) is pre-filled from those facts. After the path ends with a <strong>Decide</strong> ("where would a logo help most?") and a <strong>Reflect</strong>, the gap check now shows "Choose stage: interviews 1 of 2, problem statement missing". The next recommendation is "Ask 3 customers what they notice about the shop", which feeds the problem statement. The mentor's next session brief mentions the new Business Map.</p></div>
+  </div>
+</section>
+
+<section id="s2">
+  <h2><span class="n">02</span>Activity model</h2>
+  <p>Eight types cover what Youth Idea Lab needs. Rank, sort and choose aren't separate types: they are variants of <em>Quick check</em>. Drawing, photo and file are evidence kinds, not activity types, so <em>Make</em> covers them. That keeps the catalogue small enough for the planner to use reliably and for the UI to build well.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Type</th><th>Teaches</th><th>Student does</th><th>Data captured</th><th>Completion</th><th>AI review</th><th>Mentor review</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Learn</strong></td><td>A concept, with an example from their own project</td><td>Reads 2–4 short cards; can test out</td><td>Opened and finished (viewed)</td><td>Reaching the last card, or passing the test-out check</td><td>No (content written by the planner)</td><td>No</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td><strong>Quick check</strong><br><small>choice · sort · rank</small></td><td>Checks understanding</td><td>Answers 3–6 items</td><td>Answers and score</td><td>Submitted. Below the threshold: a hint and 1 retry, then complete anyway</td><td>No. The answer key is deterministic and validated when the plan is made</td><td>No</td><td><span class="tag mvp">MVP</span> choice, sort · <span class="tag p2">P2</span> rank</td></tr>
+      <tr><td><strong>Respond</strong></td><td>Explaining or applying an idea in their own words</td><td>Answers 1–3 prompts in text</td><td>Text per prompt</td><td>Accepted by review</td><td>Yes, against a rubric</td><td>No</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td><strong>Interview</strong></td><td>Research with real people; asking open questions</td><td>Prepares questions, talks to a trusted adult or customer, records answers</td><td>Questions, answer per question, interviewee role, optional photo of notes</td><td>Accepted by review</td><td>Yes: completeness, specificity, open questions</td><td>Spot check, or at the milestone</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td><strong>Make</strong></td><td>Producing a project artifact</td><td>Fills a template (such as a business map) and/or uploads a photo or file (drawing, sketch, prototype)</td><td>Template fields as JSON; files</td><td>Accepted by review, which creates an artifact version</td><td>Yes: rubric per template; images via vision</td><td>At the milestone (see Mentor check)</td><td><span class="tag mvp">MVP</span> template, photo, file · <span class="tag later">Later</span> canvas</td></tr>
+      <tr><td><strong>Try</strong></td><td>Testing an idea: predict, run, compare</td><td>Writes a prediction, runs a small test, records the result</td><td>Prediction, method, result, what changed</td><td>Accepted by review</td><td>Yes</td><td>Optional</td><td><span class="tag p2">P2</span></td></tr>
+      <tr><td><strong>Decide</strong></td><td>Making and justifying a choice</td><td>Picks or ranks options and gives a reason that points to their own evidence</td><td>Choice, reason, linked artifacts or facts</td><td>Submitted (light AI nudge if the reason is empty)</td><td>Light, never blocking</td><td>Required if the decision is a milestone (such as the chosen problem)</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td><strong>Reflect</strong></td><td>Thinking about their own learning</td><td>Answers 1–2 prompts</td><td>Text</td><td>Submitted with at least a minimal answer</td><td>Optional encouraging reply, never blocking</td><td>No (mentor can read it)</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td><strong>Mentor check</strong></td><td>Human judgement at a milestone</td><td>Marks an artifact "ready for my mentor"</td><td>Reference to an artifact version; mentor verdict and comment</td><td>Mentor approves (in the app or during a live session)</td><td>No</td><td>Yes, this is the mentor review</td><td><span class="tag mvp">MVP</span></td></tr>
+    </tbody>
+  </table></div>
+  <p>Each type is defined once in code (for example <code>lib/bloom/activities/interview.ts</code>), holding its config schema (Zod), evidence spec, completion rule, rubric template and UI component. The planner outputs <code>{type, config}</code> pairs, which are validated against that schema before anything is saved.</p>
+</section>
+
+<section id="s3">
+  <h2><span class="n">03</span>Path structure</h2>
+  <p><strong>Decision: evolve, don't replace.</strong> Learn, Do, Reflect is already in the data (<code>kind</code>) and students understand it. It becomes the path's three <em>phases</em>, while the new <em>type</em> says what each activity actually is. Feedback and improvement aren't separate steps: they are the review loop inside each <strong>Do</strong> activity.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Phase (existing <code>kind</code>)</th><th>Shown as</th><th>Activity types</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td><code>learn</code></td><td>Understand</td><td>Learn, Quick check</td><td>1–2 activities, test-out allowed</td></tr>
+      <tr><td><code>do</code></td><td>Make</td><td>Respond, Interview, Make, Try</td><td>At least one activity that produces evidence. Each one runs submit, then feedback, then improve. Exactly one is the path's <em>core make</em>, which produces the target artifact.</td></tr>
+      <tr><td><code>reflect</code></td><td>Decide &amp; reflect</td><td>Decide, Reflect, Mentor check</td><td>Ends the path. A Decide activity writes a project decision; a Reflect activity records learning.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Two path shapes:</p>
+  <ul>
+    <li><strong>Project path</strong> (the default for recommendations): it has a <code>target_artifact_type</code>, and its core make activity creates or improves that artifact. 4–6 activities.</li>
+    <li><strong>Curiosity path</strong> (when the student's own topic has no project link): Understand, a short Respond or Try, then Reflect. It needs no artifact and keeps the open-ended curiosity Bloom has today. 3–4 activities.</li>
+  </ul>
+  <p>The <code>depth</code> setting (quick, standard, deep) is replaced by the shape plus a size rule. A path the student marks "deep dive" may add a second Do activity.</p>
+</section>
+
+<section id="s4">
+  <h2><span class="n">04</span>Evidence model</h2>
+  <ul>
+    <li><strong>Evidence is what proves an activity was done</strong>, and it is captured in a submission. An <strong>artifact</strong> is what the project keeps. An accepted submission <em>may</em> become an artifact version, but not all evidence does: a quiz answer never does.</li>
+    <li><strong>Each activity type declares an evidence spec</strong> made of slots, and the planner fills in the specifics (such as the 5 interview questions):
+<pre class="src">evidence: [
+  { slot: "answers",  kind: "structured", schema: InterviewAnswers, required: true },
+  { slot: "notes",    kind: "image",      max: 3, required: false },
+  { slot: "interviewee_role", kind: "text", max: 60, required: true }
+]</pre></li>
+  </ul>
+  <div class="tbl"><table>
+    <thead><tr><th>Evidence kind</th><th>Stored as</th><th>Validation (app)</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td>Text, short answer</td><td><code>submission.content</code> JSON</td><td>Required, min and max length, PII patterns (phone numbers, emails, street addresses)</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Selections, quiz answers, ranking</td><td>content JSON</td><td>Must match options in the activity config; scored against the key</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Structured (template fields, interview Q&amp;A)</td><td>content JSON validated by the template schema</td><td>Zod schema of the template version</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Image (photo of a drawing, notes or prototype)</td><td>Storage bucket <code>bloom-evidence/{student}/{submission}/…</code> + file row</td><td>Type (jpeg, png, webp, heic converted), max 10 MB, max count; EXIF location removed on upload</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>File (pdf, slides)</td><td>Same bucket + file row</td><td>Allowlisted types, size</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Link</td><td>content JSON</td><td>https only; no link shorteners</td><td><span class="tag p2">P2</span></td></tr>
+      <tr><td>Drawing (in-app canvas)</td><td>PNG in the bucket + optional stroke JSON</td><td>As image</td><td><span class="tag later">Later</span></td></tr>
+      <tr><td>Voice</td><td>Audio in the bucket + transcript</td><td>Length; transcript reviewed instead of the audio</td><td><span class="tag later">Later</span></td></tr>
+      <tr><td>Mentor confirmation</td><td>Assessment row (<code>by = mentor</code>)</td><td>Mentor of the student, or admin</td><td><span class="tag mvp">MVP</span></td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Validation runs in four layers:</strong> (1) the evidence spec, deterministic, which blocks submit; (2) safety: PII patterns and, later, image moderation, which blocks with an explanation or flags; (3) the AI rubric, which is advisory and can ask for a revision; (4) a mentor, only at milestones.</li>
+    <li><strong>Honesty about offline work:</strong> the app can't prove an interview happened. Evidence is good faith, made more credible by specific answers and the optional photo of notes. Mentors spot-check during sessions. Bloom never accuses a student of making work up.</li>
+    <li><strong>Visibility:</strong> same as Bloom today (<code>can_view_student</code>). Drafts are visible only to the student; submitted work is visible to the mentor and parent.</li>
+  </ul>
+</section>
+
+<section id="s5">
+  <h2><span class="n">05</span>Completion and state machine</h2>
+  <pre class="mermaid">
+stateDiagram-v2
+  [*] --> available
+  available --> in_progress: first edit or draft saved
+  available --> skipped: test-out passed / optional skipped
+  in_progress --> submitted: Submit (spec checks pass)
+  submitted --> complete: instant types (Learn, Quick check, Decide, Reflect)
+  submitted --> needs_revision: AI review says not yet (max 2 times)
+  submitted --> awaiting_mentor: accepted + activity is a milestone
+  submitted --> complete: AI review accepted
+  needs_revision --> submitted: Resubmit
+  needs_revision --> awaiting_mentor: Keep as is (milestone)
+  needs_revision --> complete: Keep as is (non-milestone, flagged for mentor)
+  awaiting_mentor --> complete: mentor approves
+  awaiting_mentor --> needs_revision: mentor asks for changes
+  complete --> in_progress: student reopens to improve (new attempt)
+  </pre>
+  <ul>
+    <li><strong>AI review is not a state the student waits in.</strong> It runs inside the submit request (a few seconds, with a visible progress state) and is stored as an assessment. If the AI fails or times out, the work is <strong>accepted</strong> and flagged "not reviewed" for the mentor. AI problems never block a student.</li>
+    <li><strong>Revision cap:</strong> at most 2 AI-requested revisions per activity. After that the work is accepted with an "AI still had suggestions" note. "Keep as is" is always available, and it sends the work to the mentor queue without blocking.</li>
+    <li><strong>Mentor review never blocks the rest of the path.</strong> The student can carry on; only the milestone itself stays pending. A path completes when all <em>required</em> activities are complete or awaiting a mentor; optional activities don't count.</li>
+    <li><strong>Path state</strong> stays active, completed or archived, and is now recomputed in one place (a database function or service) after <em>every</em> activity change. That fixes the stale-status bugs found in the as-built analysis.</li>
+    <li><strong>Mapping existing data:</strong> todo becomes available, doing becomes in_progress, done becomes complete.</li>
+  </ul>
+</section>
+
+<section id="s6">
+  <h2><span class="n">06</span>AI responsibilities</h2>
+  <p><strong>Decision: separate typed functions behind one gateway, not a single orchestrating agent.</strong> Each capability has its own prompt, input type, Zod output schema and tests. What they share:</p>
+  <ul>
+    <li><strong>Context assembler</strong> (deterministic): builds the right slices of project memory and activity data for each capability, within a token budget.</li>
+    <li><strong>AI gateway:</strong> checks consent, limits per student, picks the model per capability, records every call in <code>ai_runs</code> (capability, model, tokens, latency, outcome, input hash), and turns failures into safe fallbacks. This replaces the scattered calls in today's <code>lib/ai.ts</code>.</li>
+  </ul>
+  <p>A single agent with tools would make the app's state depend on model behaviour, which is exactly what this design avoids.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Capability</th><th>Input</th><th>Output</th><th>When called</th><th>Allowed</th><th>Must not</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Planner</strong> <span class="tag mvp">MVP</span></td><td>Project brief, stage and gap list, past paths (title, target, outcome), skills shown, student request, activity catalogue</td><td>Path: title, goal, target artifact type, summary, activities as <code>{phase, type, title, config}</code></td><td>The student starts a recommended or own path</td><td>Choose types from the catalogue; write lesson cards, questions, quiz items with a key, template prompts, rubric weights within limits</td><td>Invent types; set state; skip validation; produce a plan without a Do activity for a project path</td></tr>
+      <tr><td><strong>Coach</strong> (Ask Bloom, hints) <span class="tag mvp">MVP</span></td><td>Activity context, student's draft, last assessment, thread summary plus recent messages, project brief</td><td>Plain-text reply (≤150 words); optional suggested action chip ("add a step: …")</td><td>The student asks; a quick check needs a hint</td><td>Explain, give examples, ask guiding questions, suggest an action for the student to confirm</td><td>Write the student's submission for them; change state; mark anything complete; reveal quiz keys</td></tr>
+      <tr><td><strong>Assessor</strong> <span class="tag mvp">MVP</span></td><td>Activity config, rubric, submission content and images, relevant prior artifact</td><td>Per criterion: met or not yet, with a one-line reason; overall feedback text; suggested verdict</td><td>On submit, for Respond, Interview, Make and Try</td><td>Judge against the rubric; give specific, kind, actionable feedback</td><td>Grade with marks or percentages; compare the student with other students; set the state (the app maps the verdict); accuse the student of fabrication</td></tr>
+      <tr><td><strong>Memory proposer</strong> <span class="tag mvp">MVP</span></td><td>Accepted submission, current confirmed facts</td><td>Up to 3 proposed facts <code>{type, statement, source}</code>, plus a summary of the new artifact version</td><td>After an accepted Interview, Make or Try</td><td>Propose insights, open questions and assumptions; summarise</td><td>Write facts directly; propose decisions (students make those in Decide); duplicate confirmed facts</td></tr>
+      <tr><td><strong>Recommender</strong> <span class="tag p2">P2</span></td><td>Gap list, facts, recent outcomes</td><td>1–3 ranked path ideas with reasons</td><td>On Bloom home (cached)</td><td>Rank and phrase ideas</td><td>Override the deterministic gap list. In the MVP this is done by the gap check plus the planner's suggestion mode.</td></tr>
+      <tr><td><strong>Mentor brief writer</strong> <span class="tag p2">P2</span></td><td>Changes since the last session: submissions, assessments, artifacts, facts, question topics, flags</td><td>5-bullet brief and 1–2 talking points per student</td><td>24 h before a session (<code>sessions.starts_at</code>), or on demand</td><td>Summarise and prioritise</td><td>Give parents this brief; judge character; include raw question text from flagged threads</td></tr>
+    </tbody>
+  </table></div>
+  <p>All capabilities share the existing <code>BLOOM_SYSTEM</code> safety rules, extended with rules for evidence (no faces of other people, no addresses) and for assessment tone.</p>
+</section>
+
+<section id="s7">
+  <h2><span class="n">07</span>Application responsibilities</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Concern</th><th>The application owns, deterministically</th></tr></thead>
+    <tbody>
+      <tr><td>Activity state</td><td>Every transition goes through one state service that applies the rules in section 5. AI verdicts are inputs, mapped by fixed rules.</td></tr>
+      <tr><td>Completion</td><td>Evidence spec satisfied, rules per type, revision cap, path recomputation. Progress is weighted by required activities.</td></tr>
+      <tr><td>Evidence ownership</td><td><code>student_id</code> is copied by trigger (as today); storage paths are prefixed with the student; signed URLs only.</td></tr>
+      <tr><td>Permissions</td><td>RLS via <code>can_view_student</code> and <code>mentors_student</code> (as today); column grants; mentor actions through security-definer RPCs.</td></tr>
+      <tr><td>Project records</td><td>Facts are written only on a confirm action by a student or mentor. Project fields are edited only by people.</td></tr>
+      <tr><td>Mentor approval</td><td>Only a mentor of the student, or an admin, can move an activity out of <code>awaiting_mentor</code>.</td></tr>
+      <tr><td>Auditability</td><td>The existing <code>audit_log</code> trigger, plus <code>ai_runs</code>, plus assessments kept as their own rows (never overwritten).</td></tr>
+      <tr><td>Artifact versions</td><td>Versions are immutable once created; "current" and "final" are pointers changed by people; a new version always links its source submission.</td></tr>
+      <tr><td>Plans</td><td>Planner output is schema-validated, then normalised (counts, lengths, key checks). Path and activities are inserted in one transaction (RPC), which fixes the non-atomic insert.</td></tr>
+      <tr><td>Limits and consent</td><td><code>bloom_ai</code> consent checked in the gateway; daily AI-call budget per student; safety flags routed to the mentor and admin.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="s8">
+  <h2><span class="n">08</span>Project memory</h2>
+  <p>Project memory is a set of <strong>records</strong>, not one AI-written document: the project row, the project's facts, its artifacts' current versions and, later, skill evidence. A short <strong>project brief</strong> for prompts is compiled from those records by code, so it is always reproducible.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Information</th><th>Shape</th><th>Where</th><th>Who writes</th></tr></thead>
+    <tbody>
+      <tr><td>Original idea, area, status</td><td>Structured</td><td><code>projects</code> (existing)</td><td>Student (project page)</td></tr>
+      <tr><td>Problem being solved</td><td>Free text, plus the Problem Statement artifact once made</td><td><code>projects.problem</code> → artifact</td><td>Student</td></tr>
+      <tr><td>Target user or customer</td><td>Short text field</td><td><code>projects.target_user</code> (new)</td><td>Student; can be suggested via a fact</td></tr>
+      <tr><td>Research findings</td><td>Fact type <code>insight</code>, free-text statement</td><td><code>project_facts</code></td><td>AI proposes, then the student confirms</td></tr>
+      <tr><td>Decisions</td><td>Fact type <code>decision</code>, with a reason</td><td><code>project_facts</code></td><td>Student, through a Decide activity</td></tr>
+      <tr><td>Assumptions and open questions</td><td>Fact types <code>assumption</code> and <code>question</code></td><td><code>project_facts</code></td><td>AI proposes or the student adds; resolved by later facts</td></tr>
+      <tr><td>Artifacts</td><td>Structured, versioned</td><td><code>artifacts</code>, <code>artifact_versions</code></td><td>From accepted submissions</td></tr>
+      <tr><td>Mentor feedback</td><td>Free text</td><td>Assessments (by mentor), <code>mentor_note</code>, course <code>feedback</code></td><td>Mentor</td></tr>
+      <tr><td>Student reflections</td><td>Free text</td><td>Reflect submissions</td><td>Student</td></tr>
+      <tr><td>Demonstrated skills</td><td>Structured: skill key, level, source</td><td><code>skill_evidence</code> <span class="tag p2">P2</span></td><td>App rule: accepted activity tagged with a skill</td></tr>
+      <tr><td>Current and next milestone</td><td>Derived, not stored</td><td>Stage from the week plus the gap check</td><td>App</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Safe updates.</strong> AI output lands as <code>status = proposed</code> and is shown to the student as "Bloom noticed… Save to my project?" with edit, keep and dismiss. Only keeping it (or a mentor confirming) sets <code>confirmed</code>. A changed fact is <em>superseded</em> by a new row, never edited in place, so earlier states stay traceable. Mentors can add, edit (by superseding) or retire facts.</li>
+    <li><strong>Brief budget.</strong> The compiled brief holds the project fields, up to 12 confirmed facts (decisions first, then newest), and a one-line summary of each current artifact version. Its cap is about 1,200 tokens. It is cached per project and rebuilt when any input changes.</li>
+  </ul>
+</section>
+
+<section id="s9">
+  <h2><span class="n">09</span>Project artifacts</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Artifact type</th><th>Produced by</th><th>Template or form</th><th>Typical stage</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td>Interview set</td><td>Interview</td><td>Questions, answers per question, interviewee role, notes photos</td><td>Explore, Choose</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Business map</td><td>Make (template)</td><td>Customers · offer · how customers find you · money in · money out · helpers</td><td>Explore, Choose</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Problem statement</td><td>Make (template), then Mentor check</td><td>"[Who] struggles with [what] because [why]", plus evidence links</td><td>Choose (milestone)</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Customer profile</td><td>Make (template)</td><td>Who, needs, habits, quotes from interviews</td><td>Choose</td><td><span class="tag p2">P2</span></td></tr>
+      <tr><td>Concept sketch (logo, brand, product)</td><td>Make (photo or file)</td><td>Image(s) plus "what it shows" and "why"</td><td>Build</td><td><span class="tag mvp">MVP</span> (generic image artifact)</td></tr>
+      <tr><td>Prototype</td><td>Make (photo, file or link)</td><td>Media plus what works and what doesn't</td><td>Build (milestone)</td><td><span class="tag p2">P2</span></td></tr>
+      <tr><td>Experiment results</td><td>Try</td><td>Prediction, test, result, change</td><td>Build</td><td><span class="tag p2">P2</span></td></tr>
+      <tr><td>Pitch</td><td>Make (file or link), then Mentor check</td><td>Slides or a script, plus a rehearsal note</td><td>Present (milestone)</td><td><span class="tag p2">P2</span></td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Drafts and versions:</strong> an in-progress submission is the draft. Each accepted submission creates an immutable <code>artifact_version</code> (v1, v2 and so on) linked to its submission. <code>artifacts.current_version_id</code> points to the newest accepted version, and <code>final_version_id</code> is set by the student or mentor for the portfolio.</li>
+    <li><strong>Feedback</strong> attaches to versions through assessments (AI or mentor), so the history shows how the work improved.</li>
+    <li><strong>Portfolio:</strong> final versions of a project, shown on the existing public portfolio when <code>projects.is_public</code> and the <code>public_portfolio</code> consent allow. Images go through review before becoming public. <span class="tag p2">P2</span></li>
+    <li><strong>Course submissions:</strong> programme activities can also produce artifact versions later, so the course and Bloom feed one project record. <span class="tag p2">P2</span></li>
+  </ul>
+</section>
+
+<section id="s10">
+  <h2><span class="n">10</span>Adaptive learning</h2>
+  <ul>
+    <li><strong>The spine is a milestone map in code</strong>, keyed by stage. It lists the artifacts each stage expects: Explore (an interest or exploration note, 1 interview), Choose (2+ interviews, a problem statement checked by the mentor), Build (a concept, a prototype checked by the mentor, 1 experiment), Present (a pitch checked by the mentor, a portfolio). The <strong>gap check</strong> compares it with the project's artifacts. That deterministic list drives "Recommended next".</li>
+    <li><strong>No repetition:</strong> if the target artifact already has a current version, the planner is told to make an "improve" path (v2), not a new "create" path. The planner also receives the titles, targets and outcomes of the last 12 paths.</li>
+    <li><strong>Skip what's known:</strong> Learn activities offer a test-out quick check. Passing it marks Learn as skipped and records skill evidence (P2).</li>
+    <li><strong>Micro-lessons when needed:</strong> wrong quick-check answers, or a "not yet" on a concept criterion, trigger an inline Coach explanation inside the activity. It isn't a new activity, so the path doesn't grow.</li>
+    <li><strong>Reference earlier work:</strong> activity configs can reference artifacts and facts by id (for example, the Business Map is pre-filled from interview facts), and the brief includes artifact summaries.</li>
+    <li><strong>Gaps across paths</strong> <span class="tag p2">P2</span>: criteria the student repeatedly misses (such as "answers lack specifics") feed the planner as "practise: …".</li>
+  </ul>
+</section>
+
+<section id="s11">
+  <h2><span class="n">11</span>Ask Bloom</h2>
+  <p>There is one <strong>thread per activity</strong> plus one general thread per path, with messages kept as rows. The existing <code>bloom_questions</code> become messages in these threads. Context is assembled by scope with fixed budgets, so prompts don't grow with use:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Context slice</th><th>Included</th><th>Budget (tokens, approx.)</th></tr></thead>
+    <tbody>
+      <tr><td>System and safety rules</td><td>Always</td><td>600</td></tr>
+      <tr><td>Project brief</td><td>Always</td><td>≤1,200</td></tr>
+      <tr><td>Path: goal, target, activity titles and states</td><td>Always</td><td>≤400</td></tr>
+      <tr><td>Current activity: config and the student's current draft or last submission</td><td>In an activity thread</td><td>≤1,500</td></tr>
+      <tr><td>Latest assessment feedback for this activity</td><td>If one exists</td><td>≤300</td></tr>
+      <tr><td>Latest mentor note or comment on this path or artifact</td><td>If one exists</td><td>≤200</td></tr>
+      <tr><td>Thread: rolling summary plus the last 6 messages</td><td>Always</td><td>≤1,800</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Growth control:</strong> scoped threads, truncation by recency, and a rolling summary rebuilt every 8 messages by a cheap call <span class="tag p2">P2</span>. The MVP uses the last 8 messages only. Search across threads (vector retrieval) is <span class="tag later">Later</span> and only if needed.</li>
+    <li><strong>Limits:</strong> the Coach can suggest an action ("Add a step: ask two customers") that appears as a button. Only the student's click acts on it. It can't complete work or reveal answer keys.</li>
+    <li><strong>Safety:</strong> wellbeing or safety topics get the existing "talk to a trusted adult" handling plus a mentor and admin flag <span class="tag mvp">MVP</span>.</li>
+  </ul>
+</section>
+
+<section id="s12">
+  <h2><span class="n">12</span>Mentor role</h2>
+  <ul>
+    <li><strong>Checkpoints at milestones only:</strong> problem statement (Choose), prototype (Build) and pitch (Present) <span class="tag mvp">MVP</span> for the problem statement, <span class="tag p2">P2</span> for the rest. Decisions marked as milestones, such as "my chosen problem", are also checked.</li>
+    <li><strong>The mentor queue</strong> (one list per group, sorted by urgency): awaiting mentor; "kept as is" and "not reviewed" items; students stuck (2 revisions in a row, or no activity for 5+ days, reusing <code>loadLastActive</code>); safety flags.</li>
+    <li><strong>Per-student view:</strong> the project brief, the artifact timeline with versions, paths and progress, recent assessments, and the existing timeline.</li>
+    <li><strong>Mentor actions:</strong> approve or ask for changes (with a comment), confirm, edit or retire a project fact, and the existing per-path note.</li>
+    <li><strong>Mentor brief</strong> <span class="tag p2">P2</span>: before each live session, a per-student card covering what they made since last time, where they got stuck, the topics they asked Bloom about, open milestones, and 1–2 suggested talking points. Every point links to its source.</li>
+  </ul>
+</section>
+
+<section id="s13">
+  <h2><span class="n">13</span>Parent role</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Parents see</th><th>Parents don't see (by default)</th></tr></thead>
+    <tbody>
+      <tr><td>Path titles, progress and what each path produced; current and final artifact versions; mentor checkpoint outcomes; weekly progress cards (existing); consent controls; data export (existing)</td><td>Drafts; the back-and-forth of AI assessments; proposed (unconfirmed) facts; mentor briefs</td></tr>
+    </tbody>
+  </table></div>
+  <p>Ask Bloom transcripts are an <strong>open decision</strong>. Today's consent text promises parents can "read every question and answer". Options: (a) keep full visibility, the current promise; (b) show topics only, with full text for safety-flagged threads. Either way, safety flags go to the mentor and admin first and follow the safeguarding policy. Students should be told plainly what parents can see.</p>
+</section>
+
+<section id="s14">
+  <h2><span class="n">14</span>Conceptual data model</h2>
+  <p>Only entities that earn their place. A separate conversation table isn't needed, because a thread is identified by (path, activity). Evidence items are submission content plus a file table; there is no generic evidence table.</p>
+  <pre class="mermaid">
+erDiagram
+  PROJECT ||--o{ PROJECT_FACT : "memory"
+  PROJECT ||--o{ ARTIFACT : "owns"
+  ARTIFACT ||--o{ ARTIFACT_VERSION : "versions"
+  PROJECT |o--o{ BLOOM_PATH : "project paths (null = curiosity)"
+  BLOOM_PATH ||--o{ ACTIVITY : "bloom_tasks, extended"
+  ACTIVITY ||--o{ SUBMISSION : "attempts"
+  SUBMISSION ||--o{ SUBMISSION_FILE : "images, files"
+  SUBMISSION ||--o{ ASSESSMENT : "auto / ai / mentor"
+  SUBMISSION |o--o| ARTIFACT_VERSION : "accepted creates"
+  PROJECT_FACT }o--o| SUBMISSION : "source"
+  BLOOM_PATH ||--o{ MESSAGE : "threads by activity"
+  ACTIVITY |o--o{ MESSAGE : "thread"
+  AI_RUN }o--|| PROFILE : "student"
+  SKILL_EVIDENCE }o--|| SUBMISSION : "P2"
+  MENTOR_BRIEF }o--|| SESSION : "P2"
+  </pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Entity</th><th>Essence</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td>Project (existing <code>projects</code>)</td><td>+ <code>target_user</code>; the anchor for memory and artifacts</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>BloomPath (existing)</td><td>+ <code>project_id</code>, <code>shape</code>, <code>target_artifact_type</code>, <code>plan_version</code></td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Activity (existing <code>bloom_tasks</code>)</td><td>+ <code>type</code>, <code>config</code> JSON, <code>required</code>, <code>is_milestone</code>, <code>origin</code> (ai or student), richer <code>status</code>, <code>revision_count</code></td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Submission</td><td>Attempt n of an activity: content JSON, status, submitted_at</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>SubmissionFile</td><td>Storage path, type, size, moderation state</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Assessment</td><td>By auto, ai or mentor; criteria results; verdict; feedback; <code>ai_run_id</code></td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Artifact / ArtifactVersion</td><td>Type, title, current and final pointers / immutable content, summary, source submission</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>ProjectFact</td><td>Type, statement, status (proposed, confirmed, superseded, dismissed), source, confirmed_by</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>Message (evolves <code>bloom_questions</code>)</td><td>path_id, activity_id?, role (student or bloom), text, flags</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>AiRun</td><td>Capability, model, tokens, latency, outcome, input hash</td><td><span class="tag mvp">MVP</span></td></tr>
+      <tr><td>SkillEvidence</td><td>Skill key (catalogue in code), level, source submission</td><td><span class="tag p2">P2</span></td></tr>
+      <tr><td>MentorBrief</td><td>Session, student, content, generated_at</td><td><span class="tag p2">P2</span></td></tr>
+    </tbody>
+  </table></div>
+  <p>Activity types, templates, rubrics, the milestone map and the skill catalogue live <strong>in code</strong>, versioned with the app, not in the database. A version number is stored with each activity so old configs stay readable.</p>
+</section>
+
+<section id="s15">
+  <h2><span class="n">15</span>Migration strategy</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Action</th><th>What</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag c">Keep</span></td><td><code>bloom_paths</code>, <code>bloom_tasks</code> (as activities), the RLS pattern (<code>can_view_student</code>), triggers (copy student, completion stamps, audit), <code>bloom_ai</code> consent, <code>mentor_note</code> and its RPC, <code>export_student_data</code>, <code>BloomPathDetail</code> slots, timeline, mentor group totals, <code>loadStudentOverview</code>, course <code>submissions</code> as they are</td></tr>
+      <tr><td><span class="tag i">Extend</span></td><td><code>bloom_tasks</code>: type, config, required, is_milestone, origin, revision_count; the status enum gains <code>available</code>, <code>in_progress</code>, <code>submitted</code>, <code>needs_revision</code>, <code>awaiting_mentor</code>, <code>complete</code> and <code>skipped</code> (renamed from todo, doing, done in one migration). <code>bloom_paths</code>: project_id, shape, target_artifact_type, plan_version. <code>projects</code>: target_user. <code>lib/ai.ts</code> becomes the gateway plus capability modules. The export function adds the new tables.</td></tr>
+      <tr><td><span class="tag g">Migrate</span></td><td>Existing tasks become <code>type = legacy</code>, which completes on click (today's behaviour), so old paths keep working with no backfill of evidence. A non-empty <code>reflection</code> becomes a submission with that text. <code>bloom_questions</code> become message pairs (student, then bloom). <code>kind</code> stays as the phase.</td></tr>
+      <tr><td><span class="tag n">Deprecate</span></td><td><code>bloom_tasks.reflection</code> (read-only, then dropped after migration); <code>depth</code> (kept for legacy display); <code>bloom_paths.ai_generated</code> (replaced by per-activity <code>origin</code>); <code>bloom_questions</code> (replaced by a view, then dropped)</td></tr>
+      <tr><td><span class="tag mvp">New</span></td><td><code>bloom_submissions</code>, <code>bloom_submission_files</code>, <code>bloom_assessments</code>, <code>artifacts</code>, <code>artifact_versions</code>, <code>project_facts</code>, <code>bloom_messages</code>, <code>ai_runs</code>, the storage bucket <code>bloom-evidence</code>, the activity catalogue and players in code, the state service, the context assembler and the mentor queue</td></tr>
+    </tbody>
+  </table></div>
+  <p>The as-built defects are fixed along the way: the wiped-note bug disappears with the submission model; path and activities are inserted in one transaction; path status is recomputed in one place; adding steps recomputes status.</p>
+</section>
+
+<section id="s16">
+  <h2><span class="n">16</span>MVP vs later</h2>
+  <div class="two">
+    <div class="callout">
+      <h3><span class="tag mvp">MVP / phase 1</span></h3>
+      <ul>
+        <li>Activity types: Learn, Quick check (choice, sort), Respond, Interview, Make (template, photo, file), Decide, Reflect, Mentor check</li>
+        <li>Submissions, evidence spec checks, image and file upload with EXIF stripping, PII patterns</li>
+        <li>AI Assessor with rubrics, revision loop (cap 2), fail-open behaviour</li>
+        <li>New state machine and transactional path creation</li>
+        <li>Artifacts and versions: interview set, business map, problem statement, generic image or file</li>
+        <li>Project facts with propose and confirm; the compiled brief</li>
+        <li>Planner using the catalogue, the brief and the gap check (milestone map)</li>
+        <li>Ask Bloom threads per activity, with the last 8 messages</li>
+        <li>Mentor queue plus one checkpoint (problem statement)</li>
+        <li>AI gateway: consent, daily limit, <code>ai_runs</code> log</li>
+        <li>Legacy path support</li>
+      </ul>
+    </div>
+    <div class="callout">
+      <h3><span class="tag p2">Phase 2</span></h3>
+      <ul>
+        <li>Try activity type; rank variant; link evidence</li>
+        <li>Mentor brief before sessions</li>
+        <li>Skill evidence and the skill view</li>
+        <li>Test-out on Learn; cross-path gap patterns</li>
+        <li>Recommender ranking; rolling thread summaries</li>
+        <li>Customer profile, prototype, experiment and pitch artifacts; prototype and pitch checkpoints</li>
+        <li>Parent artifact view; portfolio from final versions</li>
+        <li>Course submissions feeding artifacts</li>
+      </ul>
+      <h3><span class="tag later">Later</span></h3>
+      <ul>
+        <li>Drawing canvas, voice evidence with transcription</li>
+        <li>Image moderation service; peer review</li>
+        <li>Urdu and other languages for prompts and rubrics</li>
+        <li>Vector retrieval across threads; spaced review</li>
+        <li>Analytics on learning outcomes across cohorts</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="s17">
+  <h2><span class="n">17</span>Worked example: "How a Small Business Really Works"</h2>
+  <p>Path shape: project path. Target artifact: <strong>Business map</strong>. It also produces an <strong>Interview set</strong> and a <strong>decision</strong>.</p>
+  <div class="steps">
+    <div class="step">
+      <h3>1 · Understand: The 3 big parts of any small shop</h3>
+      <p class="now">Today: a Learn task with a text explanation, then Mark done.</p>
+      <dl>
+        <dt>Type</dt><dd>Learn (3 cards: customers, what's sold, money in and out) + Quick check (sort)</dd>
+        <dt>Interaction</dt><dd>Reads the cards, then sorts 6 cards ("rent", "sweets", "neighbours walking past", "buying stock", "school children", "selling phone credit") into the 3 parts</dd>
+        <dt>Evidence</dt><dd>Sort answers (required)</dd>
+        <dt>AI feedback</dt><dd>None for grading (the key is deterministic). A one-line Coach hint on a wrong item.</dd>
+        <dt>Completion</dt><dd>Instant on submit. Below 5/6: a hint and 1 retry, then complete anyway.</dd>
+        <dt>Project update</dt><dd>None (skill evidence "business basics" in P2)</dd>
+      </dl>
+    </div>
+    <div class="step">
+      <h3>2 · Make: Ask your uncle 5 simple questions</h3>
+      <p class="now">Today: a Do task with instructions; Mark done records nothing.</p>
+      <dl>
+        <dt>Type</dt><dd>Interview</dd>
+        <dt>Interaction</dt><dd>Picks or edits 5 questions (Bloom flags closed ones), interviews the uncle offline, records an answer per question, sets interviewee role "uncle, shop owner", optional photo of notes</dd>
+        <dt>Evidence</dt><dd>Required: 5 answers, interviewee role. Optional: up to 3 photos.</dd>
+        <dt>AI feedback</dt><dd>Rubric: all questions answered; answers are specific (numbers, examples); at least 3 open questions; money question answered. Needs revision if a required criterion isn't met.</dd>
+        <dt>Completion</dt><dd>Accepted by review (max 2 revisions, then accepted with a note)</dd>
+        <dt>Project update</dt><dd>Artifact <em>Interview set: uncle's shop v1</em>. Proposed facts: customer insight, cost insight, open question, which the student confirms.</dd>
+      </dl>
+    </div>
+    <div class="step">
+      <h3>3 · Make: Draw your shop money map (core make)</h3>
+      <p class="now">Today: a Do task to draw on paper; nothing is captured.</p>
+      <dl>
+        <dt>Type</dt><dd>Make, template <code>business_map</code> + optional photo of the hand drawing</dd>
+        <dt>Interaction</dt><dd>Fills the six map boxes, pre-filled with suggestions from the confirmed interview facts, which the student edits. Can upload a photo of a paper version instead of typing every box (at least 3 boxes typed).</dd>
+        <dt>Evidence</dt><dd>Required: customers, offer, money in, money out. Optional: how customers find you, helpers, photo.</dd>
+        <dt>AI feedback</dt><dd>Rubric: money in and out both present; consistent with the interview; customers described specifically. The photo is read with vision for consistency only, never graded on drawing skill.</dd>
+        <dt>Completion</dt><dd>Accepted by review</dd>
+        <dt>Project update</dt><dd>Artifact <em>Business map v1</em>, the path's target. A revision later creates v2.</dd>
+      </dl>
+    </div>
+    <div class="step">
+      <h3>4 · Decide: Spot where a logo would help customers</h3>
+      <p class="now">Today: a Do task; the conclusion lives only in the student's head.</p>
+      <dl>
+        <dt>Type</dt><dd>Decide (rank variant), linked to the project idea (logo)</dd>
+        <dt>Interaction</dt><dd>From 5 "moments customers notice the shop" (sign, bags, receipts, WhatsApp status, shop front), chooses the top 2 and writes why, pointing to the map or the interview. Optional photo of the current sign, with the guidance "no people, no street name".</dd>
+        <dt>Evidence</dt><dd>Required: 2 choices and a reason. Optional: photo.</dd>
+        <dt>AI feedback</dt><dd>Light: a nudge if the reason doesn't mention any evidence. Never blocks.</dd>
+        <dt>Completion</dt><dd>Instant on submit</dd>
+        <dt>Project update</dt><dd>Decision fact (student-authored, confirmed): "A logo matters most on the shop sign and carrier bags, because most customers are walk-ins". Sets up the Build-stage concept sketch.</dd>
+      </dl>
+    </div>
+    <div class="step">
+      <h3>5 · Reflect: What did I learn about the shop?</h3>
+      <p class="now">Today: a Reflect task whose answer is optional and can be wiped.</p>
+      <dl>
+        <dt>Type</dt><dd>Reflect + choose next</dd>
+        <dt>Interaction</dt><dd>Two prompts: "What surprised you?" and "What will you do next for your project?". Then picks a next path from the 2–3 shown, which come from the gap check.</dd>
+        <dt>Evidence</dt><dd>Required: 1 prompt answered (minimal length)</dd>
+        <dt>AI feedback</dt><dd>Optional one-line encouraging reply</dd>
+        <dt>Completion</dt><dd>Instant. Completes the path.</dd>
+        <dt>Project update</dt><dd>Path outcome recorded (artifacts made, decision). The gap check moves to "Choose: interviews 1/2, problem statement missing". The mentor's next brief lists the new business map.</dd>
+      </dl>
+    </div>
+  </div>
+  <p>Mentor involvement: none required for this path, because the business map isn't a milestone. The mentor sees it in their queue only if the student chose "Keep as is" or the AI review failed. The milestone, the problem statement, comes in a later path.</p>
+</section>
+
+<section id="s18">
+  <h2><span class="n">18</span>Final architecture</h2>
+
+  <h3>A. Target architecture</h3>
+  <pre class="mermaid">
+flowchart TD
+  UI["UI<br/>Bloom home (project card, recommended next)<br/>Path page · activity players · Ask Bloom thread<br/>Mentor queue · parent view"]
+  ACT["Server actions<br/>startPath · saveDraft · submitActivity<br/>confirmFact · askBloom · mentorReview"]
+  DOM["Domain services (deterministic)<br/>Activity state service · Evidence service (spec, PII, uploads)<br/>Artifact service (versions) · Project memory (facts, brief)<br/>Milestone map + gap check"]
+  CA["Context assembler<br/>budgeted slices per capability"]
+  GW["AI gateway<br/>consent · daily limits · model per capability · ai_runs log"]
+  CAP["AI capabilities<br/>Planner · Coach · Assessor<br/>Memory proposer · Brief writer (P2)"]
+  DB[("Supabase<br/>Postgres + RLS + storage")]
+  UI --> ACT --> DOM
+  DOM --> CA --> GW --> CAP
+  CAP -->|"validated proposals only"| DOM
+  DOM -->|"writes"| DB
+  UI -.->|"reads via RLS"| DB
+</pre>
+
+  <h3>B. Student flow</h3>
+  <pre class="mermaid">
+flowchart TD
+  O["Open Bloom"] --> R["Recommended next (gap check)"]
+  R --> S["Start path"]
+  S --> U["Understand: Learn + Quick check"]
+  U --> M["Make: do the task"]
+  M --> SUB["Submit evidence"]
+  SUB --> FB{"Feedback"}
+  FB -- "not yet (≤2)" --> M
+  FB -- "accepted" --> ART["Artifact version + proposed facts"]
+  ART --> CF["Student confirms facts"]
+  CF --> D["Decide + Reflect"]
+  D --> MS{"Milestone?"}
+  MS -- "yes" --> MEN["Mentor check (non-blocking)"]
+  MS -- "no" --> NX["Next recommendation"]
+  MEN --> NX
+  NX --> R
+  </pre>
+
+  <h3>C. AI orchestration (one call)</h3>
+  <pre class="mermaid">
+sequenceDiagram
+  participant A as Server action
+  participant S as Domain service
+  participant C as Context assembler
+  participant G as AI gateway
+  participant L as LLM
+  participant D as DB
+  A->>S: submitActivity(evidence)
+  S->>S: spec + PII checks (block if failing)
+  S->>D: save submission (submitted)
+  S->>C: assessor context (budgeted)
+  C->>G: assess(input)
+  G->>G: consent, limit, pick model
+  G->>L: prompt + Zod schema
+  L-->>G: criteria + verdict
+  G->>D: ai_runs row
+  G-->>S: validated result (or fail-open)
+  S->>D: assessment row
+  S->>S: map verdict → state (rules, cap)
+  S->>D: activity state, artifact version, proposed facts
+  S-->>A: feedback to show
+  </pre>
+
+  <h3>D. Conceptual data model</h3>
+  <p>See section 14.</p>
+
+  <h3>E. Activity state machine</h3>
+  <p>See section 5.</p>
+
+  <h3>F. MVP scope</h3>
+  <p>See section 16. In one sentence: 8 activity types (Try excluded), submissions with photo and file evidence, rubric-based AI feedback with a capped revision loop, versioned artifacts for 3 templates plus generic images, confirmable project facts, a planner driven by a milestone gap check, threaded Ask Bloom, and a mentor queue with one milestone checkpoint.</p>
+
+  <h3>G. Existing components to reuse</h3>
+  <ul>
+    <li>Tables <code>bloom_paths</code> and <code>bloom_tasks</code>, triggers, RLS helpers (<code>can_view_student</code>, <code>mentors_student</code>, <code>is_admin</code>), audit log, consent model, export function</li>
+    <li><code>loadStudentOverview</code>, <code>currentWeek</code>, <code>stageForWeek</code>, the <code>stages</code> table (milestone map keys), <code>sessions</code> (brief timing)</li>
+    <li><code>BloomPathDetail</code> slot pattern, <code>BloomPathCard</code>, <code>Timeline</code>, <code>LastActive</code>, <code>loadLastActive</code>, <code>loadBloomTotals</code>, <code>ProgressBar</code>, <code>SubmitButton</code></li>
+    <li>The <code>BLOOM_SYSTEM</code> safety rules, the <code>structured()</code> Zod pattern, <code>betaZodOutputFormat</code></li>
+    <li>Course storage patterns (<code>submission_files</code>, <code>signFiles</code>) as the template for evidence uploads</li>
+    <li>The mentor note RPC pattern for mentor review</li>
+  </ul>
+
+  <h3>H. Components and data that need modification</h3>
+  <ul>
+    <li><code>lib/ai.ts</code> → gateway plus capability modules; <code>bloomContext</code> → context assembler</li>
+    <li><code>actions.ts</code>: <code>createPath</code> (transactional, catalogue-based), <code>updateTask</code> (→ state service), <code>askQuestion</code> (→ threads), <code>addTask</code> (student activities choose a type)</li>
+    <li><code>bloom_tasks</code> and <code>bloom_paths</code> columns and the status enum; <code>projects.target_user</code></li>
+    <li><code>TaskControls</code> → activity players; <code>AskForm</code> → thread; the Bloom home gets the project card and recommendations</li>
+    <li>Mentor student page (queue, artifacts, facts); parent child page (artifacts)</li>
+    <li>The <code>bloom_ai</code> consent text: photos and project work are now sent to the AI, which needs re-consent</li>
+  </ul>
+
+  <h3>I. New components and data</h3>
+  <ul>
+    <li>Tables: submissions, submission files, assessments, artifacts, artifact versions, project facts, messages, AI runs; storage bucket <code>bloom-evidence</code></li>
+    <li>Code: activity catalogue (types, configs, evidence specs, rubrics, templates), state service, evidence service (uploads, EXIF, PII), artifact service, memory service and brief compiler, milestone map and gap check, AI gateway</li>
+    <li>UI: 8 activity players, the fact confirmation card, the artifact view with versions, the mentor queue</li>
+  </ul>
+
+  <h3>J. Major risks and open product decisions</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Item</th><th>Why it matters</th><th>Needs</th></tr></thead>
+    <tbody>
+      <tr><td>Quality and tone of AI assessment for 12–18 year-olds</td><td>Harsh or wrong feedback discourages; overly soft feedback teaches nothing</td><td>Rubric review by educators; sample-based evaluation before launch; the cap and fail-open behaviour</td></tr>
+      <tr><td>Cost and latency per submission</td><td>Every Make or Interview submission is an AI call, some with images</td><td>A model per capability; daily limits; measure via <code>ai_runs</code></td></tr>
+      <tr><td>Photos of children's surroundings</td><td>Faces, addresses and shop names can identify family members</td><td>EXIF stripping, upload guidance, mentor-only visibility for flagged images, a moderation plan, a retention policy</td></tr>
+      <tr><td>Consent scope change</td><td>Today's consent covers age group, step and project, not photos or work</td><td>New consent version and re-consent flow</td></tr>
+      <tr><td>Parent visibility of Ask Bloom</td><td>Autonomy versus the current promise</td><td>Product and safeguarding decision (section 13)</td></tr>
+      <tr><td>Mentor capacity</td><td>Queues can overwhelm mentors with large groups</td><td>Milestones only; a target number of checkpoints per student per stage</td></tr>
+      <tr><td>Course activities versus Bloom</td><td>Two places where students submit work</td><td>Decide whether the course activities later run on the same activity engine (P2 decision)</td></tr>
+      <tr><td>Offline work honesty</td><td>An interview can't be verified</td><td>Accept good faith; mentor spot checks; no accusations by AI</td></tr>
+      <tr><td>Language</td><td>Students may prefer Urdu; the rubrics are English</td><td>Decide the MVP language policy</td></tr>
+      <tr><td>Low bandwidth and mobile</td><td>Photo uploads on mobile data</td><td>Client-side image compression; drafts saved locally</td></tr>
+      <tr><td>Template authoring effort</td><td>Each template needs a schema, rubric, UI and examples</td><td>Start with 3; add more from usage</td></tr>
+    </tbody>
+  </table></div>
+</section>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  const dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches && !matchMedia("print").matches;
+  mermaid.initialize({ startOnLoad: false, theme: dark ? "dark" : "neutral", securityLevel: "loose", fontFamily: "IBM Plex Sans, system-ui, sans-serif" });
+  mermaid.run({ querySelector: ".mermaid" }).then(() => document.body.setAttribute("data-rendered", "1"));
+</script>
+</body>
+</html>

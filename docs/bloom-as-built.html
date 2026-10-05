@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bloom As Built</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: engineering teardown. Sticky section index on wide screens, one reading column, evidence tags on every claim. */
+:root {
+  --bg: #f6f6f9;
+  --surface: #ffffff;
+  --sunk: #eeedf4;
+  --fg: #1c1b26;
+  --muted: #5a586b;
+  --line: #dcdae6;
+  --accent: #5b3fd0;
+  --accent-soft: #ece8fb;
+  --ok: #1d7a4a;
+  --ok-soft: #e2f3e9;
+  --warn: #8a5a00;
+  --warn-soft: #fbefd6;
+  --bad: #b23a3a;
+  --bad-soft: #f9e3e3;
+  --code-bg: #f1f0f7;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-label: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14131b; --surface: #1c1b25; --sunk: #23222e; --fg: #e9e7f2; --muted: #a3a0b6; --line: #33313f;
+    --accent: #a593ff; --accent-soft: #2a2546; --ok: #6fd39d; --ok-soft: #173326; --warn: #f0c065; --warn-soft: #3a2e14;
+    --bad: #f08a8a; --bad-soft: #3b1d1f; --code-bg: #201f2a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14131b; --surface: #1c1b25; --sunk: #23222e; --fg: #e9e7f2; --muted: #a3a0b6; --line: #33313f;
+  --accent: #a593ff; --accent-soft: #2a2546; --ok: #6fd39d; --ok-soft: #173326; --warn: #f0c065; --warn-soft: #3a2e14;
+  --bad: #f08a8a; --bad-soft: #3b1d1f; --code-bg: #201f2a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15.5px/1.6 var(--font-body); padding-inline: 16px; padding-block: 0 64px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 40px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .wrap { grid-template-columns: 220px minmax(0, 1fr); } }
+nav.toc { display: none; }
+@media (min-width: 1000px) {
+  nav.toc { display: block; position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; max-height: 100vh; overflow-y: auto; padding-block: 40px; }
+}
+nav.toc p { font: 600 12px/1 var(--font-label); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; counter-reset: toc; }
+nav.toc li { counter-increment: toc; }
+nav.toc a { display: flex; gap: 8px; padding: 4px 8px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 13.5px; line-height: 1.35; }
+nav.toc a::before { content: counter(toc); font: 500 12px/1.6 var(--font-mono); color: var(--accent); min-width: 1.4em; }
+nav.toc a:hover, nav.toc a:focus-visible { background: var(--sunk); color: var(--fg); outline: none; }
+main { min-width: 0; padding-block: 40px 0; display: flex; flex-direction: column; gap: 56px; }
+header.doc { display: flex; flex-direction: column; gap: 12px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+.eyebrow { font: 600 12px/1 var(--font-label); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 0; }
+h1 { font: 600 clamp(28px, 4vw, 40px)/1.12 var(--font-body); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+h2 { font: 600 24px/1.25 var(--font-body); letter-spacing: -.01em; margin: 0; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+h2 .n { font: 500 15px/1 var(--font-mono); color: var(--accent); }
+h3 { font: 600 17px/1.35 var(--font-body); margin: 8px 0 0; text-wrap: balance; }
+section { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 24px; }
+p, li { max-width: 72ch; }
+p { margin: 0; }
+ul, ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
+.lede { font-size: 17px; color: var(--muted); max-width: 70ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 500; }
+code { font: 0.88em var(--font-mono); background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+pre { margin: 0; }
+pre.src { font: 13px/1.55 var(--font-mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; white-space: pre; }
+pre.src .hl { color: var(--accent); font-weight: 500; }
+.srcref { font: 12.5px var(--font-mono); color: var(--muted); margin-top: -6px; }
+.mermaid { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; text-align: center; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+th { font: 600 12px/1.3 var(--font-label); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--sunk); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td code { white-space: nowrap; }
+.tag { display: inline-block; font: 600 11px/1 var(--font-label); letter-spacing: .06em; text-transform: uppercase; padding: 4px 7px; border-radius: 999px; white-space: nowrap; vertical-align: 1px; }
+.tag.c { background: var(--ok-soft); color: var(--ok); }
+.tag.i { background: var(--warn-soft); color: var(--warn); }
+.tag.g { background: var(--bad-soft); color: var(--bad); }
+.tag.n { background: var(--sunk); color: var(--muted); }
+.yes { color: var(--ok); font-weight: 600; }
+.no { color: var(--bad); font-weight: 600; }
+.part { color: var(--warn); font-weight: 600; }
+.callout { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.callout.warn { border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); background: var(--warn-soft); }
+.flow { display: flex; flex-direction: column; gap: 0; border-left: 2px solid var(--accent); margin-left: 6px; }
+.flow > div { position: relative; padding: 4px 0 14px 20px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.flow > div::before { content: ""; position: absolute; left: -7px; top: 9px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+.flow .k { font: 600 12px/1.3 var(--font-label); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 13px; color: var(--muted); align-items: center; }
+.two { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) { .two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+a { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+<style>
+@page { size: A4; margin: 14mm 12mm; }
+@media print {
+  :root, :root[data-theme] { --bg:#fff; --surface:#fff; --sunk:#f1f0f6; --fg:#1c1b26; --muted:#55536a; --line:#d6d4e0;
+    --accent:#5b3fd0; --accent-soft:#ece8fb; --ok:#1d7a4a; --ok-soft:#e2f3e9; --warn:#8a5a00; --warn-soft:#fbefd6;
+    --bad:#b23a3a; --bad-soft:#f9e3e3; --code-bg:#f4f3f8; color-scheme: light; }
+  body { font-size: 11.5px; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .wrap { display: block; max-width: none; }
+  nav.toc { display: none !important; }
+  main { padding: 0; gap: 28px; }
+  section { break-inside: auto; }
+  h2, h3 { break-after: avoid; }
+  tr, .mermaid, .callout, .flow > div { break-inside: avoid; }
+  pre.src { white-space: pre-wrap; overflow: visible; font-size: 10.5px; }
+  .tbl { overflow: visible; }
+  td code { white-space: normal; }
+  p, li { max-width: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<nav class="toc" aria-label="Sections">
+  <p>Sections</p>
+  <ol>
+    <li><a href="#s1">Executive summary</a></li>
+    <li><a href="#s2">Architecture</a></li>
+    <li><a href="#s3">Generation flow</a></li>
+    <li><a href="#s4">AI integration</a></li>
+    <li><a href="#s5">Prompts</a></li>
+    <li><a href="#s6">Data model</a></li>
+    <li><a href="#s7">Step lifecycle</a></li>
+    <li><a href="#s8">Ask Bloom</a></li>
+    <li><a href="#s9">Add your own step</a></li>
+    <li><a href="#s10">Project context</a></li>
+    <li><a href="#s11">Hierarchy</a></li>
+    <li><a href="#s12">Generation trace</a></li>
+    <li><a href="#s13">Capabilities</a></li>
+    <li><a href="#s14">Key files</a></li>
+    <li><a href="#s15">Gaps &amp; risks</a></li>
+    <li><a href="#s16">Open questions</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="doc">
+  <p class="eyebrow">Youth Idea Lab · Reverse-engineering, phase 1</p>
+  <h1>Bloom as built: what the system does today</h1>
+  <p class="lede">A code-level account of how Bloom learning paths are generated, stored, shown and progressed. It describes, it does not recommend. Every statement cites a file so it can be checked.</p>
+  <div class="meta">
+    <span>Branch <b>feat/youth-idealab-foundation</b> at <b>375f5a6</b> plus working tree</span>
+    <span>Written <b>5 Oct 2026</b></span>
+    <span>Paths are relative to the repo root</span>
+  </div>
+  <div class="legend">
+    <span><span class="tag c">Confirmed</span> read directly in code or schema</span>
+    <span><span class="tag i">Inferred</span> reasoned from code, not observed</span>
+    <span><span class="tag g">Unavailable</span> could not be checked</span>
+  </div>
+  <div class="callout warn">
+    <p><strong>Scope limit.</strong> The live database was not read: a read-only query of the hosted Supabase project was blocked by this session's permission rules. Everything about the example path "How a Small Business Really Works" therefore comes from the code plus the details given in the request, and is marked as such in section 12.</p>
+    <p>The working tree has one uncommitted UI change from earlier today: Bloom buttons now use <code>apps/web/src/components/ui/SubmitButton.tsx</code> for their pending state. It doesn't change any behaviour described here.</p>
+  </div>
+</header>
+
+<!-- 1 -->
+<section id="s1">
+  <h2><span class="n">01</span>Executive summary</h2>
+  <p>Bloom is a per-student, student-initiated space for short learning paths. A path is a title, a goal, an AI-written summary and an ordered list of 3, 5 or 7 tasks. Each task is typed <em>learn</em>, <em>do</em> or <em>reflect</em>. <span class="tag c">Confirmed</span></p>
+  <ul>
+    <li><strong>No API routes.</strong> Everything runs through Next.js server actions in <code>apps/web/src/app/student/bloom/actions.ts</code> that talk to Supabase (Postgres with row-level security). There are no REST endpoints, background jobs or queues.</li>
+    <li><strong>Up to three AI functions, all in <code>apps/web/src/lib/ai.ts</code>.</strong> <code>suggestBloomPaths</code> returns 3 path ideas as JSON. <code>planBloomPath</code> returns a summary and tasks as JSON. <code>askBloom</code> returns a plain-text answer. All use Anthropic model <code>claude-opus-5-5</code> at low effort, and prompts are hard-coded TypeScript strings.</li>
+    <li><strong>What the AI is told about the student.</strong> Age group, current programme step name, week number, the project's area, title, problem and status, and up to 12 earlier path titles. Nothing else from the student's work, reflections, questions, mentor notes or course submissions is sent.</li>
+    <li><strong>Progress is self-reported.</strong> A task moves through <code>todo → doing → done</code> when the student clicks. No evidence, check or approval is needed. When every task is done the path becomes <code>completed</code>; reopening a task sets it back to <code>active</code>.</li>
+    <li><strong>One free-text field per task.</strong> <code>bloom_tasks.reflection</code> stores both "Add a note" and reflect-task answers. Questions to Bloom and the answers are kept in <code>bloom_questions</code>.</li>
+    <li><strong>Others can watch.</strong> Mentors, parents and admins can read everything through RLS (<code>can_view_student</code>). Mentors and admins can leave one note per path. AI features need a parent's <code>bloom_ai</code> consent.</li>
+    <li><strong>Not linked to the course.</strong> A path is tagged with the cohort and programme step it started in, but it has no link to the project row, programme activities or submissions.</li>
+  </ul>
+</section>
+
+<!-- 2 -->
+<section id="s2">
+  <h2><span class="n">02</span>Current architecture</h2>
+  <pre class="mermaid">
+flowchart TD
+  S["Student browser<br/>/student/bloom"] --> P["BloomHome page<br/>app/student/bloom/page.tsx"]
+  P --> F["StartPath client form<br/>app/student/bloom/forms.tsx"]
+  F -- "server action (FormData)" --> A["suggestPaths / createPath<br/>app/student/bloom/actions.ts"]
+  A --> CON["hasConsent(bloom_ai)<br/>lib/data/bloom.ts"]
+  A --> CTX["aiContext()<br/>loadStudentOverview + loadBloomPaths<br/>→ bloomContext()"]
+  CTX --> DB1[("Supabase: memberships, cohorts,<br/>programs, stages, activities,<br/>submissions, projects, sessions,<br/>bloom_paths, bloom_tasks")]
+  A --> AI["lib/ai.ts<br/>suggestBloomPaths / planBloomPath<br/>structured() + BLOOM_SYSTEM"]
+  AI --> LLM["Anthropic Messages API (beta.parse)<br/>claude-opus-5-5, effort low"]
+  LLM --> Z["Zod schema via betaZodOutputFormat<br/>→ parsed_output"]
+  Z --> A
+  A -- "insert" --> DB2[("bloom_paths + bloom_tasks<br/>triggers: copy student, stamp<br/>completion, audit log")]
+  A -- "redirect" --> D["StudentPathPage<br/>app/student/bloom/[id]/page.tsx"]
+  D --> R["BloomPathDetail<br/>components/bloom.tsx"]
+  R --> TC["TaskControls / AskForm /<br/>AddTaskForm / PathActions"]
+  TC -- "updateTask / askQuestion /<br/>addTask / setPathStatus / deletePath" --> A2["actions.ts"]
+  A2 --> DB2
+  A2 -- "askQuestion only" --> AI2["askBloom()<br/>beta.messages.create, plain text"]
+  M["Mentor / admin path page"] -- "saveBloomNote → rpc<br/>set_bloom_mentor_note" --> DB2
+  PA["Parent path page (read-only)"] --> DB2
+  </pre>
+  <div class="tbl"><table>
+    <thead><tr><th>Box</th><th>File</th><th>Main symbol</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td>Bloom home</td><td><code>apps/web/src/app/student/bloom/page.tsx</code></td><td><code>BloomHome</code></td><td>Loads paths and consent, shows stats and the "Start something new" card, and lists active, completed and archived paths.</td></tr>
+      <tr><td>Start form</td><td><code>apps/web/src/app/student/bloom/forms.tsx</code></td><td><code>StartPath</code></td><td>Interest field and "Suggest ideas" button, suggestion cards with "Start this path", and the own-topic form (title, goal, depth, "Let Bloom plan").</td></tr>
+      <tr><td>Server actions</td><td><code>apps/web/src/app/student/bloom/actions.ts</code></td><td><code>suggestPaths</code>, <code>createPath</code>, <code>addTask</code>, <code>updateTask</code>, <code>setPathStatus</code>, <code>deletePath</code>, <code>askQuestion</code></td><td>Every Bloom write. Each checks <code>role === "student"</code>. AI actions also check <code>bloom_ai</code> consent.</td></tr>
+      <tr><td>Context builder</td><td><code>apps/web/src/lib/data/bloom.ts</code> L65–77</td><td><code>bloomContext</code></td><td>Turns the course overview and path titles into the <code>BloomContext</code> object sent to the AI.</td></tr>
+      <tr><td>Course overview</td><td><code>apps/web/src/lib/data/overview.ts</code> L13–80</td><td><code>loadStudentOverview</code></td><td>Most recent student membership, its cohort, programme, stages, activities, submissions, project, sessions and current week.</td></tr>
+      <tr><td>Bloom reads</td><td><code>apps/web/src/lib/data/bloom.ts</code></td><td><code>loadBloomPaths</code>, <code>loadBloomPath</code>, <code>hasConsent</code>, <code>bloomStats</code>, <code>loadTimeline</code>, <code>loadLastActive</code>, <code>loadBloomTotals</code></td><td>Reads and derived counts (done and total per path).</td></tr>
+      <tr><td>AI service and prompts</td><td><code>apps/web/src/lib/ai.ts</code></td><td><code>BLOOM_SYSTEM</code>, <code>structured</code>, <code>suggestBloomPaths</code>, <code>planBloomPath</code>, <code>askBloom</code></td><td>Prompt text, Zod schemas, Anthropic calls and the mapping of errors to reasons.</td></tr>
+      <tr><td>Renderer</td><td><code>apps/web/src/components/bloom.tsx</code></td><td><code>BloomPathCard</code>, <code>BloomPathDetail</code>, <code>QuestionList</code>, <code>BloomPathList</code>, <code>Timeline</code></td><td>Server components shared by the student, mentor, parent and admin views. Role-specific controls are passed in as slots.</td></tr>
+      <tr><td>Path page</td><td><code>apps/web/src/app/student/bloom/[id]/page.tsx</code></td><td><code>StudentPathPage</code></td><td>Path header, the detail view with task controls and Ask forms, and "Add your own step".</td></tr>
+      <tr><td>Schema</td><td><code>supabase/migrations/20261005140000_bloom.sql</code></td><td>3 tables, 3 enums, triggers, RLS, <code>set_bloom_mentor_note</code></td><td>Storage, ownership and visibility rules, completion timestamps, audit log, data export.</td></tr>
+      <tr><td>Mentor note</td><td><code>apps/web/src/app/mentor/actions.ts</code> L173–185, <code>mentor/forms.tsx</code> <code>BloomNoteForm</code></td><td><code>saveBloomNote</code></td><td>Mentor or admin note on a path through a security-definer RPC.</td></tr>
+      <tr><td>Consent</td><td><code>apps/web/src/app/parent/actions.ts</code> L114–140</td><td><code>setConsent</code></td><td>A parent grants or revokes <code>bloom_ai</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <p>State management: React 19 <code>useActionState</code> plus local <code>useState</code> only, with no client store. Suggestions live only in the <code>suggestPaths</code> action state and are never saved. Pages are server components that re-read Supabase after each action's <code>refresh()</code>. <span class="tag c">Confirmed</span></p>
+</section>
+
+<!-- 3 -->
+<section id="s3">
+  <h2><span class="n">03</span>Bloom generation flow</h2>
+  <p>There are two entry routes into the same <code>createPath</code> action.</p>
+  <div class="two">
+    <div class="callout"><h3>Route A: "Suggest ideas", then "Start this path"</h3><p>Two AI calls. The first returns 3 ideas, which are not saved. The second plans the chosen one. The card always submits <code>depth=standard</code> (5 tasks) and <code>useAi=on</code>.</p></div>
+    <div class="callout"><h3>Route B: "I have my own topic"</h3><p>One AI call, or none if "Let Bloom plan" is unticked. The student supplies the title (required), goal (optional) and depth (3, 5 or 7 tasks).</p></div>
+  </div>
+
+  <div class="flow">
+    <div><span class="k">User action</span><p>Route A: types an optional interest (max 300 characters) and clicks <strong>Suggest ideas</strong>, then <strong>Start this path</strong> on a card. Route B: fills the own-topic form and clicks <strong>Create path</strong>.</p></div>
+    <div><span class="k">Frontend</span><p><code>StartPath</code> in <code>forms.tsx</code>. These are native <code>&lt;form action={…}&gt;</code> elements bound to <code>useActionState(suggestPaths)</code> and <code>useActionState(createPath)</code>. No fetch code.</p></div>
+    <div><span class="k">Request</span><p>Server action POST with FormData. Route A step 1 sends <code>interest</code>. <code>createPath</code> receives <code>title</code>, <code>goal</code>, <code>depth</code> and <code>useAi</code>. The suggestion's <code>why</code> is shown on the card but never submitted.</p></div>
+    <div><span class="k">Guards</span><p><code>requireStudent()</code>, then <code>hasBloomAiConsent()</code>, which checks for an unrevoked <code>consents</code> row of type <code>bloom_ai</code>. <code>createPath</code> checks consent only when <code>useAi</code> is on.</p></div>
+    <div><span class="k">Context collection</span><p><code>aiContext()</code> (actions.ts L32–36) runs <code>loadStudentOverview</code> and <code>loadBloomPaths</code> in parallel, then <code>bloomContext()</code>.</p></div>
+    <div><span class="k">Prompt</span><p>Hard-coded template in <code>suggestBloomPaths</code> (ai.ts L136–146) or <code>planBloomPath</code> (L166–180), with context inserted as <code>JSON.stringify(context, null, 2)</code>. The system prompt is <code>BLOOM_SYSTEM</code>.</p></div>
+    <div><span class="k">AI call</span><p><code>structured()</code> (ai.ts L98–119) calls <code>client.beta.messages.parse</code> with model <code>claude-opus-5-5</code>, <code>max_tokens: 8000</code>, <code>effort: "low"</code>, <code>format: betaZodOutputFormat(schema)</code>, beta <code>server-side-fallback-2026-07-01</code> and <code>fallbacks: "default"</code>. There is one user message and no history.</p></div>
+    <div><span class="k">Response and parsing</span><p>The SDK returns <code>parsed_output</code>, validated against the Zod schema. A refusal maps to <code>refused</code>, a missing parse to <code>failed</code>, HTTP 429 to <code>rateLimited</code>, and any other error to <code>failed</code> (logged with <code>console.error</code>). There are no retries.</p></div>
+    <div><span class="k">Database</span><p>One insert into <code>bloom_paths</code>, then a separate bulk insert of up to 10 <code>bloom_tasks</code> with <code>position = 1..n</code> and default status <code>todo</code>. The two inserts are not in a transaction.</p></div>
+    <div><span class="k">UI</span><p><code>redirect('/student/bloom/{id}')</code> renders <code>StudentPathPage</code>, then <code>BloomPathDetail</code>.</p></div>
+  </div>
+
+  <h3>The 20 questions, answered</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>Question</th><th>Answer</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Trigger</td><td>"Suggest ideas", then "Start this path"; or "Create path" with "Let Bloom plan" ticked. Bloom never generates a path on its own.</td></tr>
+      <tr><td>2</td><td>Frontend function</td><td><code>StartPath</code> forms bound to <code>suggest</code> and <code>create</code> from <code>useActionState</code>.</td></tr>
+      <tr><td>3</td><td>Endpoint</td><td>Server actions <code>suggestPaths</code> (L40) and <code>createPath</code> (L51) in <code>app/student/bloom/actions.ts</code>. No route handler.</td></tr>
+      <tr><td>4</td><td>Data sent</td><td>FormData: <code>interest</code>, or <code>title</code>, <code>goal</code>, <code>depth</code> and <code>useAi</code>. The identity comes from the session cookie.</td></tr>
+      <tr><td>5</td><td>Student and project context</td><td><code>BloomContext</code>: <code>ageGroup</code>, <code>step</code> (stage name), <code>week</code>, <code>project {area, title, problem, status}</code>, <code>previousPaths</code>.</td></tr>
+      <tr><td>6</td><td>Previous Bloom history?</td><td>Titles only, up to 12, newest first. All statuses are included, archived too.</td></tr>
+      <tr><td>7</td><td>Project description?</td><td>Yes: <code>projects.title</code> and <code>projects.problem</code>, plus area and status, for the student's most recent cohort.</td></tr>
+      <tr><td>8</td><td>Previous paths?</td><td>Titles only. No goals, summaries or tasks.</td></tr>
+      <tr><td>9</td><td>Completed steps?</td><td>No.</td></tr>
+      <tr><td>10</td><td>Mentor or student notes?</td><td>No. Not <code>mentor_note</code>, <code>reflection</code>, questions, course feedback or progress cards.</td></tr>
+      <tr><td>11–12</td><td>Prompt and where</td><td>Quoted verbatim in section 5. Hard-coded in <code>apps/web/src/lib/ai.ts</code>.</td></tr>
+      <tr><td>13</td><td>Provider and model</td><td>Anthropic, <code>@anthropic-ai/sdk ^0.131.0</code>, <code>MODEL = "claude-opus-5-5"</code> (ai.ts L10). With <code>fallbacks: "default"</code> the API may serve the request from a fallback model. <span class="tag i">Inferred</span> from the parameter name; the response's model field is not logged.</td></tr>
+      <tr><td>14</td><td>One or many calls</td><td>Route A: 2 calls (suggest, then plan). Route B: 1 call, or 0 without AI. Each call is a single turn.</td></tr>
+      <tr><td>15</td><td>What the model generates</td><td>The whole plan in one response: <code>summary</code> plus <code>tasks[]</code>, each with <code>kind</code>, <code>title</code> and <code>details</code>. In route A the path <em>title</em> and <em>goal</em> also come from AI, from the suggestion call. There are no reflection questions as a separate structure; the reflect task's <code>details</code> text holds them. If the goal is blank, the prompt asks the model to infer one, but the schema has no goal field, so the inferred goal is never saved.</td></tr>
+      <tr><td>16–17</td><td>Response format</td><td>Structured JSON through the API's output format, built from Zod. <code>askBloom</code> returns plain text.</td></tr>
+      <tr><td>18</td><td>Validation</td><td>Zod structure only: field presence, string types and the kind enum. Counts ("exactly 3", "exactly 5"), lengths ("under 70 characters", "60–180 words") and ordering are only <code>.describe()</code> hints or prompt text, so they aren't enforced. Code then truncates: suggestions <code>slice(0,3)</code>, tasks <code>slice(0,10)</code>, title 160 characters, details 6000. Database checks require title length 1–160, details ≤6000, goal ≤1000, and the enum kinds.</td></tr>
+      <tr><td>19</td><td>Malformed output</td><td>The action returns <code>{status:"error", message:"ai.failed"}</code> and nothing is saved. If the path insert succeeds but the task insert fails (for example an empty task title breaking the check), the error is only logged (L101). The student is still redirected to a path with no tasks, and its summary may already be saved.</td></tr>
+      <tr><td>20</td><td>Persistence</td><td><code>bloom_paths</code> gets <code>student_id</code>, <code>cohort_id</code>, title, goal, depth, <code>stage_key</code> (programme step for the current week), <code>summary</code> and <code>ai_generated = true</code> when planned. Then <code>bloom_tasks</code> rows are inserted. Triggers copy <code>student_id</code> from the path, stamp <code>completed_at</code> and write the audit log.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 4 -->
+<section id="s4">
+  <h2><span class="n">04</span>Exact AI integration</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Function</th><th>SDK call</th><th>Output</th><th>max_tokens</th><th>Caller</th></tr></thead>
+    <tbody>
+      <tr><td><code>suggestBloomPaths</code></td><td><code>beta.messages.parse</code> through <code>structured()</code></td><td>JSON <code>{suggestions:[{title,goal,why}]}</code></td><td>8000</td><td><code>suggestPaths</code></td></tr>
+      <tr><td><code>planBloomPath</code></td><td><code>beta.messages.parse</code> through <code>structured()</code></td><td>JSON <code>{summary, tasks:[{kind,title,details}]}</code></td><td>8000</td><td><code>createPath</code></td></tr>
+      <tr><td><code>askBloom</code></td><td><code>beta.messages.create</code></td><td>Plain text, text blocks joined</td><td>4000</td><td><code>askQuestion</code></td></tr>
+      <tr><td><code>draftProgressCard</code> (not Bloom)</td><td><code>beta.messages.create</code></td><td>Plain text</td><td>4000</td><td>mentor <code>draftCardWithAi</code></td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li>Common settings: <code>model: "claude-opus-5-5"</code>, <code>betas: ["server-side-fallback-2026-07-01"]</code>, <code>fallbacks: "default"</code>, <code>output_config.effort: "low"</code>. No temperature, tools, streaming, prompt caching or conversation history.</li>
+    <li>The key comes from <code>ANTHROPIC_API_KEY</code>. <code>aiConfigured()</code> only checks that it is set. The Bloom pages hide AI controls unless <code>consent &amp;&amp; aiConfigured()</code>.</li>
+    <li>Logging: only failures, through <code>console.error</code>. Prompts, responses, token usage and the model actually used are <strong>not</strong> stored anywhere. <span class="tag c">Confirmed</span></li>
+    <li>There is no app-level rate limiting or usage cap per student. Only the provider's 429 errors are handled. <span class="tag c">Confirmed</span></li>
+  </ul>
+</section>
+
+<!-- 5 -->
+<section id="s5">
+  <h2><span class="n">05</span>Existing prompts, verbatim</h2>
+  <p>All prompts are hard-coded template strings in <code>apps/web/src/lib/ai.ts</code>. None are stored in the database, config files or environment variables. There is <strong>no</strong> separate reflection, follow-up or "regenerate or change path" prompt. <span class="tag c">Confirmed</span></p>
+
+  <h3>5.1 System prompt <code>BLOOM_SYSTEM</code> (shared by all three Bloom calls)</h3>
+  <p class="srcref">apps/web/src/lib/ai.ts L90–94</p>
+  <pre class="src">You are Bloom, the learning guide inside Youth Idea Lab, an 8-week live online course where students aged 12-18 explore, choose a real problem, build a project and present it at Demo Day. Explorers are 12-14, Builders are 15-18.
+
+You help one student learn what they need for their own project and curiosity. Match the student's age group: short sentences and concrete everyday examples for Explorers; more depth and real tools for Builders. Be warm, encouraging and practical. Prefer doing over reading: small tasks the student can finish in 15-45 minutes with free tools, pen and paper or a phone.
+
+Safety: keep everything age-appropriate. Never ask for or include personal data, contact details, or links to sign-up sites. Never suggest meeting strangers, sharing personal information online, spending money, or anything dangerous. If a question is about wellbeing, safety or something a trusted adult should handle, kindly suggest talking to their parent or mentor.</pre>
+  <p>No variables are inserted.</p>
+
+  <h3>5.2 Suggestion prompt (user message)</h3>
+  <p class="srcref">apps/web/src/lib/ai.ts L139–143 · schema L121–131</p>
+  <pre class="src">Suggest exactly 3 learning paths for this student, each different (e.g. one skill for their project, one thinking skill for their current step, one stretch idea). Do not repeat their earlier paths.
+
+Student context:
+<span class="hl">${JSON.stringify(context, null, 2)}</span>
+<span class="hl">${interest ? `\nThe student says they are curious about: ${interest}` : ""}</span></pre>
+  <pre class="src">SuggestionsSchema = { suggestions: [ {
+  title: string  // "Short, inviting name for the learning path, under 60 characters"
+  goal:  string  // "One sentence: what the student will be able to do afterwards"
+  why:   string  // "One sentence linking it to their project or current step"
+} ] }            // array described as "Exactly 3 suggestions"</pre>
+  <p>Variables: <code>context</code> (<code>BloomContext</code> from <code>bloomContext()</code>) and <code>interest</code> (the form field, trimmed to 300 characters). The student's interest text is inserted as-is.</p>
+
+  <h3>5.3 Plan generation prompt (user message)</h3>
+  <p class="srcref">apps/web/src/lib/ai.ts L172–178 · schema L148–159 · TASK_COUNT L163</p>
+  <pre class="src">Create a learning path called "<span class="hl">${path.title}</span>".
+The student's goal: <span class="hl">${path.goal || "(not given — infer a sensible one from the title)"}</span>
+
+Write exactly <span class="hl">${TASK_COUNT[path.depth]}</span> tasks in a sensible order: start with a "learn" task that explains the core idea simply, include at least one hands-on "do" task that moves their own project forward when possible, and finish with a "reflect" task asking what they learned and how they will use it.
+
+Student context:
+<span class="hl">${JSON.stringify(context, null, 2)}</span></pre>
+  <pre class="src">PlanSchema = {
+  summary: string  // "2-3 sentences, addressed to the student, on what this path covers and why it helps them"
+  tasks: [ {
+    kind:    "learn" | "do" | "reflect"
+    title:   string  // "Short action title, under 70 characters"
+    details: string  // "What to do and how, as a short explanation plus clear steps. Plain text, 60-180 words, no markdown headings"
+  } ]
+}
+TASK_COUNT = { quick: "3", standard: "5", deep: "7" }</pre>
+  <p>Variables: <code>title</code>, <code>goal</code> and <code>depth</code> from the form, and <code>context</code> as above. The interest text and the suggestion's <code>why</code> are <strong>not</strong> passed to this call.</p>
+
+  <h3>5.4 Ask Bloom prompt</h3>
+  <p class="srcref">apps/web/src/lib/ai.ts L197–208</p>
+  <pre class="src">system: <span class="hl">${BLOOM_SYSTEM}</span>
+
+Answer the student's question in at most 150 words of plain text (no markdown headings or tables). Explain with a simple example, then suggest one small next step. If the question is off-topic, answer briefly if it is harmless and guide them back to their path. Don't just hand over finished work for a task — help them think it through.
+
+user: Learning path: <span class="hl">${topic.path}</span><span class="hl">${topic.task ? `\nCurrent task: ${topic.task}\n${topic.taskDetails ?? ""}` : ""}</span>
+
+Student context:
+<span class="hl">${JSON.stringify(context, null, 2)}</span>
+
+The student asks: <span class="hl">${question}</span></pre>
+
+  <h3>5.5 What the prompts say, topic by topic</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Topic</th><th>Covered?</th><th>Where and how</th></tr></thead>
+    <tbody>
+      <tr><td>Student age</td><td class="yes">Yes</td><td>The system prompt says 12–18, Explorers 12–14 and Builders 15–18, and to match the age group. The actual <code>ageGroup</code> is in the context. <code>profiles.birth_year</code> is not sent.</td></tr>
+      <tr><td>Project-based learning</td><td class="yes">Yes</td><td>8-week course: explore, choose a real problem, build, present at Demo Day. The plan prompt says a "do" task should "move their own project forward when possible".</td></tr>
+      <tr><td>Practical activities</td><td class="yes">Yes</td><td>"Prefer doing over reading", tasks of 15–45 minutes using free tools, pen and paper or a phone.</td></tr>
+      <tr><td>Evidence</td><td class="no">No</td><td>Not mentioned.</td></tr>
+      <tr><td>Assessment</td><td class="no">No</td><td>Not mentioned. The reflect task asks "what they learned and how they will use it".</td></tr>
+      <tr><td>Mentor involvement</td><td class="part">Only for safety</td><td>"Suggest talking to their parent or mentor" for wellbeing or safety questions.</td></tr>
+      <tr><td>Project outcomes</td><td class="part">Barely</td><td>Demo Day is named. No deliverable, milestone or success criteria are given.</td></tr>
+      <tr><td>Safety</td><td class="yes">Yes</td><td>No personal data, contact details or sign-up links, no meeting strangers or spending money, nothing dangerous; refer to a trusted adult.</td></tr>
+      <tr><td>Parents</td><td class="part">Only for safety</td><td>As above.</td></tr>
+      <tr><td>Real-world activities</td><td class="part">Implicit</td><td>Hands-on "do" tasks are asked for, while "meeting strangers" is forbidden. Talking to family is not addressed either way.</td></tr>
+      <tr><td>Language and locale</td><td class="no">No</td><td>Prompts are English. <code>profiles.locale</code> is not sent, and stage names use <code>tr(…, "en")</code>.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 6 -->
+<section id="s6">
+  <h2><span class="n">06</span>Data model</h2>
+  <p>Of the entities named in the request, these exist: student (<code>profiles</code>), project (<code>projects</code>), path (<code>bloom_paths</code>), step (<code>bloom_tasks</code>) and conversation-like Q&amp;A (<code>bloom_questions</code>). <code>submissions</code> exists only for course activities, not for Bloom. These do <strong>not</strong> exist: a separate step-progress table, a separate notes table, conversations or messages as threads, and Bloom artifacts. <span class="tag c">Confirmed</span></p>
+  <pre class="mermaid">
+erDiagram
+  profiles ||--o{ bloom_paths : "student_id"
+  cohorts |o--o{ bloom_paths : "cohort_id (set null)"
+  profiles |o--o{ bloom_paths : "mentor_note_by"
+  bloom_paths ||--o{ bloom_tasks : "path_id (cascade)"
+  bloom_paths ||--o{ bloom_questions : "path_id (cascade)"
+  bloom_tasks |o--o{ bloom_questions : "task_id (cascade)"
+  profiles ||--o{ projects : "student_id"
+  cohorts ||--o{ projects : "cohort_id, unique per student"
+  profiles ||--o{ memberships : "user_id (age_group)"
+  programs ||--o{ stages : ""
+  stages ||--o{ activities : ""
+  activities ||--o{ submissions : ""
+  submissions ||--o{ feedback : ""
+  profiles ||--o{ consents : "student_id (bloom_ai)"
+  </pre>
+  <p>Note that there is <strong>no foreign key between <code>bloom_paths</code> and <code>projects</code></strong>, nor between Bloom and <code>stages</code>, <code>activities</code> or <code>submissions</code>. <code>stage_key</code> is a plain text copy of the stage key at creation time. <span class="tag c">Confirmed</span></p>
+
+  <h3>bloom_paths <span class="srcref">migration L14–31</span></h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Written by</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>student_id</code></td><td>uuid → profiles</td><td>action</td><td>Owner. RLS insert requires <code>auth.uid()</code> and a student role.</td></tr>
+      <tr><td><code>cohort_id</code></td><td>uuid → cohorts, nullable</td><td>action</td><td>From the overview (most recent membership).</td></tr>
+      <tr><td><code>title</code></td><td>text 1–120</td><td>student, or AI via suggestion</td><td>Origin is not recorded.</td></tr>
+      <tr><td><code>goal</code></td><td>text ≤1000</td><td>student, or AI via suggestion</td><td>Empty when not given. An AI-inferred goal is not saved.</td></tr>
+      <tr><td><code>summary</code></td><td>text</td><td>AI (plan)</td><td>Empty without AI. Students can't update it (column grant).</td></tr>
+      <tr><td><code>stage_key</code></td><td>text, nullable</td><td>action</td><td>explore, choose, build or present for the current week.</td></tr>
+      <tr><td><code>depth</code></td><td>quick, standard or deep</td><td>student (route A always standard)</td><td>Controls the requested task count only.</td></tr>
+      <tr><td><code>status</code></td><td>enum active, completed or archived</td><td>action and auto-recompute</td><td>See section 7.</td></tr>
+      <tr><td><code>ai_generated</code></td><td>bool</td><td>action</td><td>True when the <em>plan</em> came from AI. It doesn't say whether the title or goal did.</td></tr>
+      <tr><td><code>mentor_note</code>, <code>_by</code>, <code>_at</code></td><td>text, uuid, timestamptz</td><td>mentor or admin RPC</td><td>One note per path, overwritten, max 2000 characters.</td></tr>
+      <tr><td><code>completed_at</code></td><td>timestamptz</td><td>trigger</td><td>Set when the status becomes completed and cleared otherwise.</td></tr>
+      <tr><td><code>created_at</code>, <code>updated_at</code></td><td>timestamptz</td><td>default and trigger</td><td></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>bloom_tasks <span class="srcref">migration L35–48</span></h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Written by</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>path_id</code></td><td>uuid → bloom_paths, cascade</td><td>action</td><td></td></tr>
+      <tr><td><code>student_id</code></td><td>uuid</td><td>trigger <code>bloom_copy_student</code></td><td>Always overwritten from the path.</td></tr>
+      <tr><td><code>position</code></td><td>int</td><td>action</td><td>1..n for AI tasks; count+1 for added tasks. Not unique.</td></tr>
+      <tr><td><code>kind</code></td><td>enum learn, do or reflect</td><td>AI or student</td><td>Defaults to <code>do</code>.</td></tr>
+      <tr><td><code>title</code></td><td>text 1–160</td><td>AI or student</td><td>Origin is not recorded per task.</td></tr>
+      <tr><td><code>details</code></td><td>text ≤6000</td><td>AI or student</td><td>Shown as "How to do it".</td></tr>
+      <tr><td><code>status</code></td><td>enum todo, doing or done</td><td>student</td><td></td></tr>
+      <tr><td><code>reflection</code></td><td>text ≤4000, nullable</td><td>student</td><td>Holds both "Add a note" and reflect answers.</td></tr>
+      <tr><td><code>completed_at</code></td><td>timestamptz</td><td>trigger</td><td>Set on done and cleared otherwise.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>bloom_questions <span class="srcref">migration L54–62</span></h3>
+  <p><code>path_id</code> (cascade), <code>task_id</code> (nullable, cascade), <code>student_id</code> (trigger), <code>question</code> (1–1000 characters, student), <code>answer</code> (AI text), <code>created_at</code>. Rows can't be updated by students (<code>revoke update</code>), and there is no delete policy for students.</p>
+
+  <h3>Related rules</h3>
+  <ul>
+    <li><strong>Read access:</strong> <code>can_view_student(student_id)</code> covers the student, linked parents, the student's mentors and admins. <strong>Writes</strong> are by the student only, plus admins. Students may update only <code>title, goal, status</code> on paths and <code>title, details, status, reflection, position</code> on tasks (column grants, L151–166).</li>
+    <li><strong>Audit:</strong> <code>write_audit_log</code> records actor, action, table, id and changed column <em>names</em>, never values (<code>20261004120000_foundation.sql</code> L479–507).</li>
+    <li><strong>Export:</strong> <code>export_student_data</code> includes all three Bloom tables (migration L204–237).</li>
+  </ul>
+
+  <h3>Simple form</h3>
+  <pre class="src">Student (profiles)
+  ├── Membership (cohort, age_group)
+  ├── Project (one per cohort: area, title, problem, status)       ← not linked to Bloom
+  ├── Course submissions → feedback (per programme activity)       ← not linked to Bloom
+  └── BloomPath (cohort_id?, stage_key, mentor_note)
+        ├── BloomTask (kind, status, reflection)
+        └── BloomQuestion (question, answer, task_id?)</pre>
+
+  <h3>Points to watch</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Topic</th><th>How it works today</th></tr></thead>
+    <tbody>
+      <tr><td>Step status</td><td>Column <code>bloom_tasks.status</code>. There is no history table; the audit log records only that <code>status</code> changed.</td></tr>
+      <tr><td>Mark done</td><td><code>updateTask</code> sets <code>status='done'</code>. The trigger stamps <code>completed_at</code>, then the path status is recomputed.</td></tr>
+      <tr><td>Completion %</td><td>Computed in code, not stored. Per path it is <code>round(done/total×100)</code> (<code>components/course.tsx</code> <code>ProgressBar</code> L29–30, with done and total from <code>loadBloomPaths</code>). The Bloom home "overall" figure counts tasks across <em>all</em> paths, including archived (<code>bloomStats</code>, page L41).</td></tr>
+      <tr><td>Evidence and submissions</td><td>None for Bloom.</td></tr>
+      <tr><td>Notes tied to steps</td><td>Yes, one <code>reflection</code> per task.</td></tr>
+      <tr><td>AI assessments</td><td>None.</td></tr>
+      <tr><td>Project artifacts</td><td>None in Bloom. Course submissions can have files (<code>submission_files</code>, storage bucket <code>submissions</code>).</td></tr>
+      <tr><td>Student answers persisted</td><td>Only as <code>reflection</code> text and <code>bloom_questions.question</code>.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 7 -->
+<section id="s7">
+  <h2><span class="n">07</span>Step lifecycle</h2>
+  <p>Example: "Ask your uncle 5 simple questions", a <code>do</code> task at position 2 in the example path. Its stored content couldn't be read (see section 12). The lifecycle below applies to every task. <span class="tag c">Confirmed</span> from code.</p>
+  <pre class="mermaid">
+stateDiagram-v2
+  [*] --> todo: created (AI plan or Add your own step)
+  todo --> doing: Start
+  todo --> done: Mark done
+  doing --> done: Mark done
+  done --> doing: Reopen
+  note right of done
+    completed_at stamped by trigger.
+    If all tasks are done, the path becomes completed
+    (unless archived).
+  end note
+  </pre>
+  <ol>
+    <li><strong>Generation:</strong> one element of <code>PlanSchema.tasks</code> from <code>planBloomPath</code>, inserted by <code>createPath</code> (L90–102).</li>
+    <li><strong>Fields:</strong> id, path_id, student_id, position, kind, title, details, status=todo, reflection=null, completed_at=null and timestamps.</li>
+    <li><strong>Rendering</strong> (<code>BloomPathDetail</code>, components/bloom.tsx L91–127): a number circle (a check mark when done), a kind badge, a status badge and the title. A "How to do it" <code>&lt;details&gt;</code> shows the details text and is open unless the task is done. Then come any Q&amp;A for this task, then <code>TaskControls</code>, then an "Ask Bloom about this step" toggle (only with consent and AI configured).</li>
+    <li><strong>Start:</strong> posts <code>status=doing</code> to <code>updateTask</code>. The task updates (<code>.eq("student_id")</code> plus RLS), sibling statuses are re-read and the path status recomputed, then <code>refresh()</code>.</li>
+    <li><strong>Mark done:</strong> posts <code>status=done</code> and the optional <code>reflection</code> textarea, which is visible only for reflect tasks or after "Add a note". The result message is "taskDone", or "pathDone" when it was the last task.</li>
+    <li><strong>Evidence required:</strong> none. The reflect textarea is not <code>required</code>.</li>
+    <li><strong>AI checks:</strong> none.</li>
+    <li><strong>Answer or submission required:</strong> none. Answers to the uncle's questions can only go into the free-text note.</li>
+    <li><strong>Mentor involvement:</strong> none in the transition. A mentor can later read the path and leave one note on it.</li>
+    <li><strong>Stored:</strong> <code>status</code>, <code>reflection</code> (or null), <code>completed_at</code> (trigger) and <code>updated_at</code>. The path's <code>status</code> and <code>completed_at</code> may also change, and an audit row is written.</li>
+    <li><strong>Percentage:</strong> recomputed when the page reloads, as done ÷ total. Each task carries equal weight.</li>
+  </ol>
+  <p>Path status machine: <code>active ⇄ completed</code> is automatic, driven only by <code>updateTask</code>. <code>archived</code> is set and cleared manually through <code>setPathStatus</code> (Archive and Restore buttons). Restore always sets <code>active</code>, even if every task is done. Delete removes the path, cascading to its tasks and questions, after a browser <code>confirm()</code>. The backend <code>setPathStatus</code> also accepts <code>completed</code>, but the UI never sends it. <span class="tag c">Confirmed</span></p>
+</section>
+
+<!-- 8 -->
+<section id="s8">
+  <h2><span class="n">08</span>Ask Bloom flow</h2>
+  <div class="flow">
+    <div><span class="k">Click</span><p>"Ask Bloom about this step" opens a compact <code>AskForm</code> under the task with a hidden <code>taskId</code>. A general form also sits at the bottom of the page without a <code>taskId</code>.</p></div>
+    <div><span class="k">Action</span><p><code>askQuestion</code> (actions.ts L182–208) checks the student role, a non-empty question (max 1000 characters) and <code>bloom_ai</code> consent.</p></div>
+    <div><span class="k">Context</span><p>In parallel it loads the path's <code>title</code> with its tasks' <code>id, title, details</code>, and runs <code>aiContext()</code>. It then finds the task by id within the path; an unknown id is treated as a general question.</p></div>
+    <div><span class="k">LLM</span><p><code>askBloom()</code> makes one call to <code>beta.messages.create</code> with the system prompt from 5.4 and returns plain text.</p></div>
+    <div><span class="k">Persist and render</span><p>Inserts into <code>bloom_questions</code> (question, answer, task_id), then <code>refresh()</code>. <code>QuestionList</code> shows the pair under the task or in the general section, and it is visible to parents, mentors and admins.</p></div>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Does Bloom know or do this?</th><th>Answer</th></tr></thead>
+    <tbody>
+      <tr><td>Current project</td><td class="yes">Yes, through <code>context.project</code> (area, title, problem, status).</td></tr>
+      <tr><td>Current path</td><td class="part">Title only. Not the goal or summary.</td></tr>
+      <tr><td>Current step</td><td class="yes">Title and details, when asked from a task.</td></tr>
+      <tr><td>Previous steps in the path</td><td class="no">No. The other tasks are loaded but not sent.</td></tr>
+      <tr><td>Previous student answers or notes</td><td class="no">No.</td></tr>
+      <tr><td>Chat history</td><td class="part">Stored in <code>bloom_questions</code> but never sent back, so every question is answered without memory.</td></tr>
+      <tr><td>Change the path, mark steps complete, create steps</td><td class="no">No. No tools are given and the reply is only stored as text.</td></tr>
+      <tr><td>Affects project state</td><td class="no">No.</td></tr>
+      <tr><td>Other paths</td><td class="part">Up to 12 titles through <code>previousPaths</code>, which includes the current path's own title.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 9 -->
+<section id="s9">
+  <h2><span class="n">09</span>"Add your own step" flow</h2>
+  <ul>
+    <li><strong>Who creates it:</strong> the student, entirely manually (<code>AddTaskForm</code> to <code>addTask</code>, actions.ts L107–127). No AI is involved.</li>
+    <li><strong>Fields:</strong> <code>title</code> is required (≤160 characters). <code>kind</code> comes from a select of learn, do or reflect, defaulting to do; <code>oneOf()</code> enforces it in code and a Postgres enum in the database. <code>details</code> is optional (≤6000 characters).</li>
+    <li><strong>Persistence:</strong> insert with <code>position = count(tasks in path) + 1</code>. Ownership comes from the trigger that copies <code>student_id</code> from the path, plus the RLS check <code>student_id = auth.uid()</code>; the action itself doesn't verify the path.</li>
+    <li><strong>Origin:</strong> indistinguishable from AI tasks in the database. There is no per-task origin flag, and <code>ai_generated</code> is per path.</li>
+    <li><strong>Does Bloom know about it?</strong> Only when the student asks Bloom about that specific task. Suggestion and plan calls see path titles only.</li>
+    <li><strong>Progress:</strong> counts exactly like any other task. However <code>addTask</code> doesn't recompute the path status, so adding a step to a <code>completed</code> path leaves it completed with an open task until another task is updated. <span class="tag c">Confirmed</span></li>
+    <li><strong>Editing and deleting steps:</strong> no UI or action exists, although column grants and an RLS delete policy would allow it. The UI copy "you can add or change steps later" (<code>bloom.letBloomPlan</code>) promises more than the UI offers.</li>
+  </ul>
+</section>
+
+<!-- 10 -->
+<section id="s10">
+  <h2><span class="n">10</span>Project memory and context</h2>
+  <p>There is no persistent "project memory" object. Bloom's knowledge is rebuilt on every call from live rows by <code>bloomContext()</code>.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Context item</th><th>Source → storage</th><th>Sent to Bloom?</th></tr></thead>
+    <tbody>
+      <tr><td>Original idea and problem</td><td>Student project page (<code>saveProject</code>, <code>app/student/actions.ts</code> L81) → <code>projects.title</code>, <code>problem</code></td><td class="yes">Yes, as <code>context.project</code></td></tr>
+      <tr><td>Project goal or deliverable</td><td>No such field</td><td>n/a</td></tr>
+      <tr><td>Selected track</td><td><code>projects.area</code> (technology, design, business, social_impact or undecided)</td><td class="yes">Yes</td></tr>
+      <tr><td>Project status</td><td><code>projects.status</code> (exploring, chosen, building, presenting or done)</td><td class="yes">Yes</td></tr>
+      <tr><td>Interests</td><td>The "curious about" field. Not stored.</td><td class="part">Suggestion call only, once</td></tr>
+      <tr><td>Age group</td><td>Admin sets it on <code>memberships.age_group</code></td><td class="yes">Yes</td></tr>
+      <tr><td>Age or birth year</td><td><code>profiles.birth_year</code></td><td class="no">No</td></tr>
+      <tr><td>Current milestone</td><td><code>stages</code> (seed: explore weeks 1–2, choose 3–4, build 5–6, present 7–8) plus <code>cohorts.start_date</code> → <code>currentWeek()</code></td><td class="yes">Stage name and week number. The week is clamped to 1–8, so before the start the student is reported as in week 1 (Explore).</td></tr>
+      <tr><td>Stage summary and this week's activities</td><td><code>stages.summary</code>, <code>activities.title</code> and <code>instructions</code></td><td class="no">No, even though they are loaded</td></tr>
+      <tr><td>Research, previous work, decisions</td><td>Course <code>submissions</code> (body, link, files) per activity</td><td class="no">No (the progress-card AI does receive them)</td></tr>
+      <tr><td>Mentor feedback</td><td><code>feedback</code> on submissions; <code>bloom_paths.mentor_note</code>; <code>progress_cards</code></td><td class="no">No</td></tr>
+      <tr><td>Bloom history</td><td><code>bloom_paths</code>, <code>bloom_tasks</code>, <code>bloom_questions</code></td><td class="part">Path titles only (≤12)</td></tr>
+      <tr><td>Reflections and notes</td><td><code>bloom_tasks.reflection</code></td><td class="no">No</td></tr>
+      <tr><td>Learning outcomes and skills</td><td>No such data</td><td>n/a</td></tr>
+      <tr><td>Locale, country</td><td><code>profiles.locale</code>, <code>country</code></td><td class="no">No</td></tr>
+      <tr><td>Class sessions</td><td><code>sessions</code></td><td class="no">No</td></tr>
+    </tbody>
+  </table></div>
+  <p>Only one cohort is considered: <code>loadStudentOverview</code> picks the most recent student membership. A student with no membership gets <code>context = {ageGroup:null, step:null, week:null, project:null, previousPaths:[…]}</code>. <span class="tag c">Confirmed</span></p>
+</section>
+
+<!-- 11 -->
+<section id="s11">
+  <h2><span class="n">11</span>Learning-path and course hierarchy</h2>
+  <p><strong>What a path represents:</strong> option <strong>E, a combination</strong>. It is a short, student-chosen learning pathway (C), written by AI as a flat task list (D), sometimes nudged toward project work. It is not a traditional course (A): there are no lessons or content beyond the task text. It is not a project plan (B) either: there are no milestones, deliverables or dependencies, and no link to the project. <span class="tag i">Inferred</span> from the schema and prompts.</p>
+  <pre class="src">Organization
+└── Program (8 weeks)                         programs
+    └── Stage: explore · choose · build · present  stages (week_from..week_to)
+        └── Activity (per week, per age group)     activities → submissions → feedback
+
+Student, within a Cohort (an instance of a Program)
+├── Project (1 per cohort)                     projects
+└── Bloom path (many, any time)                bloom_paths   ← tagged with cohort_id + stage_key only
+    └── Task (flat, ordered)                   bloom_tasks
+        └── Question and answer                bloom_questions</pre>
+  <ul>
+    <li><strong>What causes a new path:</strong> only a student click (section 3). Nothing is automatic or scheduled.</li>
+    <li><strong>Does Bloom know the 8-week journey?</strong> Only as the one-sentence description in <code>BLOOM_SYSTEM</code> plus the current step name and week.</li>
+    <li><strong>Does it plan all 8 weeks?</strong> No. It plans one standalone path of 3, 5 or 7 tasks per request.</li>
+    <li><strong>Do later paths depend on earlier work?</strong> Only to the extent that earlier titles are listed to avoid repeats. There are no prerequisites or ordering between paths.</li>
+    <li><strong>Explicit final deliverable:</strong> none in the data model. "Demo Day" appears in the prompt, and "portfolio page" appears only in the seed stage summary, which isn't sent.</li>
+    <li><strong>How Bloom decides what's next:</strong> it doesn't. The student home "Continue" card is deterministic: the most recently created active path, and its first not-done task by position (<code>app/student/page.tsx</code> L27–28).</li>
+  </ul>
+</section>
+
+<!-- 12 -->
+<section id="s12">
+  <h2><span class="n">12</span>One complete generation trace: "How a Small Business Really Works"</h2>
+  <div class="callout warn">
+    <p><strong>Original model input and output: unavailable, by design.</strong> The app never logs prompts or responses (section 4), and the audit log stores only column names. Even with database access, the only surviving AI output is what was saved: <code>summary</code> and each task's <code>title</code> and <code>details</code>. The suggestion response (including its <code>why</code>) was never saved anywhere. <span class="tag g">Unavailable</span></p>
+    <p>The saved rows themselves couldn't be read in this session (database query blocked). The values below come from the request text, with everything else shown as placeholders.</p>
+  </div>
+
+  <h3>Input to the AI (reconstructed template)</h3>
+  <p>The likely route is A (suggestion, then "Start this path"). <span class="tag i">Inferred</span> Reasons: there are 5 tasks, and suggestion cards always submit <code>depth=standard</code>. The goal is phrased "You will be able to…", which matches the suggestion schema's description "what the student will be able to do afterwards". And the uncle's shop must have come from free text, either the interest field or the project problem. Route B with a student-written goal and standard depth would produce the same rows, so this can't be settled from code.</p>
+  <pre class="src">Call 1 (suggestBloomPaths), user message:
+Suggest exactly 3 learning paths for this student, each different (…). Do not repeat their earlier paths.
+
+Student context:
+{
+  "ageGroup": "&lt;explorer|builder&gt;",          ← memberships.age_group      [not read]
+  "step": "&lt;Explore|Choose|Build|Present&gt;",    ← stage for current week     [not read]
+  "week": &lt;1-8&gt;,
+  "project": { "area": "&lt;…&gt;", "title": "&lt;…&gt;", "problem": "&lt;…&gt;", "status": "&lt;…&gt;" } | null,
+  "previousPaths": [ &lt;earlier titles&gt; ]
+}
+
+The student says they are curious about: &lt;interest text&gt;   [not stored anywhere]
+
+Call 2 (planBloomPath), user message:
+Create a learning path called "How a Small Business Really Works".
+The student's goal: You will be able to draw a simple map of how your uncle's shop gets customers, sells things and makes money.
+
+Write exactly 5 tasks in a sensible order: start with a "learn" task (…), include at least one hands-on "do" task (…), and finish with a "reflect" task (…).
+
+Student context: { …same object… }</pre>
+  <p>For reference, the screenshot shared earlier in this session showed this interest text typed into the field: "…ed to build my own successful business. I need to know how a successful bsuiness work. and how can I start one of my own". It may or may not be the input that produced this path. <span class="tag i">Inferred</span></p>
+
+  <h3>Structured AI response (shape; content only partly known)</h3>
+  <pre class="src">{
+  "summary": "&lt;2-3 sentences: saved in bloom_paths.summary, not read&gt;",
+  "tasks": [
+    { "kind": "learn",   "title": "The 3 big parts of any small shop",         "details": "&lt;not read&gt;" },
+    { "kind": "do",      "title": "Ask your uncle 5 simple questions",         "details": "&lt;not read&gt;" },
+    { "kind": "do",      "title": "Draw your shop money map",                  "details": "&lt;not read&gt;" },
+    { "kind": "do",      "title": "Spot where a logo would help customers",    "details": "&lt;not read&gt;" },
+    { "kind": "reflect", "title": "What did I learn about the shop?",          "details": "&lt;not read&gt;" }
+  ]
+}</pre>
+
+  <h3>Saved records</h3>
+  <pre class="src">bloom_paths: title="How a Small Business Really Works", goal="You will be able to draw…",
+             depth="standard", ai_generated=true, status="active", stage_key=&lt;step at creation&gt;,
+             cohort_id=&lt;cohort&gt;, summary=&lt;AI summary&gt;
+bloom_tasks: 5 rows, position 1..5, kinds learn/do/do/do/reflect, status "todo" at creation</pre>
+
+  <h3>Why these five steps (explained from the prompt)</h3>
+  <ul>
+    <li><strong>5 tasks:</strong> <code>TASK_COUNT.standard = "5"</code>.</li>
+    <li><strong>Learn first, Reflect last:</strong> the plan prompt requires it.</li>
+    <li><strong>Three Do tasks in between:</strong> the prompt requires "at least one hands-on 'do' task", and the system prompt says "prefer doing over reading".</li>
+    <li><strong>Interviewing a relative:</strong> fits "pen and paper or a phone" and the ban on meeting strangers. The goal itself names the uncle's shop.</li>
+    <li><strong>"Spot where a logo would help customers":</strong> fits "moves their own project forward when possible". This suggests the student's project mentions a logo or the design area. <span class="tag i">Inferred</span>; the project row wasn't read.</li>
+    <li><strong>"What did I learn about the shop?":</strong> the prompt's required reflect task ("what they learned and how they will use it").</li>
+  </ul>
+
+  <h3>What the student sees</h3>
+  <p>On the path page: header with the Active badge, the stage badge and "Standard", the path title, and the goal as the description. Then the summary, a progress bar showing "0 of 5 steps done" and 0%, and five task cards, each with a Learn, Do or Reflect badge, a To do badge, the title, an open "How to do it" section, Start and Mark done buttons ("Not finished? Reopen" once done), "Add a note" (not on the reflect task, which shows its textarea), and "Ask Bloom about this step". Below them come "Ask Bloom" and "Add your own step".</p>
+</section>
+
+<!-- 13 -->
+<section id="s13">
+  <h2><span class="n">13</span>Current capabilities matrix</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Capability</th><th>Exists?</th><th>Where</th><th>AI or deterministic</th><th>Persisted?</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Path generation</td><td class="yes">Yes</td><td><code>suggestBloomPaths</code>, <code>planBloomPath</code>, <code>createPath</code></td><td>AI (titles from AI or student)</td><td>Path yes; suggestions no</td><td>Only when the student asks.</td></tr>
+      <tr><td>Step generation</td><td class="yes">Yes</td><td><code>planBloomPath</code></td><td>AI, all at once</td><td>Yes</td><td>Never regenerated or added to by AI later.</td></tr>
+      <tr><td>Student progress</td><td class="yes">Yes</td><td><code>updateTask</code>, <code>loadBloomPaths</code></td><td>Deterministic</td><td>Status yes; % computed</td><td>Self-reported.</td></tr>
+      <tr><td>Mark done</td><td class="yes">Yes</td><td><code>TaskControls</code> → <code>updateTask</code></td><td>Deterministic</td><td>Yes</td><td>No requirements.</td></tr>
+      <tr><td>Notes</td><td class="yes">Yes</td><td><code>bloom_tasks.reflection</code></td><td>Student</td><td>Yes</td><td>One per task, overwritten.</td></tr>
+      <tr><td>Chat with Bloom</td><td class="part">Partly</td><td><code>askQuestion</code> → <code>askBloom</code></td><td>AI</td><td>Yes</td><td>Single question and answer, no memory.</td></tr>
+      <tr><td>Quizzes</td><td class="no">No</td><td>—</td><td>—</td><td>—</td><td></td></tr>
+      <tr><td>Student answers</td><td class="part">Partly</td><td><code>reflection</code></td><td>Student</td><td>Yes</td><td>Free text only.</td></tr>
+      <tr><td>File upload</td><td class="no">No (Bloom)</td><td>Course submissions only</td><td>—</td><td>—</td><td><code>submission_files</code> isn't used by Bloom.</td></tr>
+      <tr><td>Photo upload</td><td class="no">No (Bloom)</td><td>As above</td><td>—</td><td>—</td><td></td></tr>
+      <tr><td>Voice input</td><td class="no">No</td><td>—</td><td>—</td><td>—</td><td></td></tr>
+      <tr><td>Drawing or canvas</td><td class="no">No</td><td>—</td><td>—</td><td>—</td><td>"Draw your money map" is done off-platform.</td></tr>
+      <tr><td>Evidence submission</td><td class="no">No (Bloom)</td><td>Course submissions only</td><td>—</td><td>—</td><td></td></tr>
+      <tr><td>AI assessment</td><td class="no">No</td><td>—</td><td>—</td><td>—</td><td></td></tr>
+      <tr><td>Rubric assessment</td><td class="no">No</td><td>—</td><td>—</td><td>—</td><td></td></tr>
+      <tr><td>Mentor approval</td><td class="no">No</td><td>—</td><td>—</td><td>—</td><td>Only a free-text <code>mentor_note</code> per path. Course submissions have mentor review instead.</td></tr>
+      <tr><td>Project artifacts</td><td class="no">No</td><td>—</td><td>—</td><td>—</td><td></td></tr>
+      <tr><td>Project memory</td><td class="part">Partly</td><td><code>bloomContext</code></td><td>Deterministic</td><td>Live rows, no memory store</td><td>See section 10.</td></tr>
+      <tr><td>Adaptive learning</td><td class="part">Minimal</td><td>Prompts</td><td>AI</td><td>No</td><td>Age-group tone and avoiding repeated titles.</td></tr>
+      <tr><td>Prerequisite logic</td><td class="no">No</td><td>—</td><td>—</td><td>—</td><td>Tasks can be done in any order.</td></tr>
+      <tr><td>Revision and resubmission</td><td class="part">Reopen only</td><td><code>updateTask</code> done → doing</td><td>Deterministic</td><td>Latest state only</td><td>No history.</td></tr>
+      <tr><td>Skill tracking</td><td class="no">No</td><td>—</td><td>—</td><td>—</td><td></td></tr>
+      <tr><td>Learning outcome tracking</td><td class="no">No</td><td>—</td><td>—</td><td>—</td><td>The path <code>goal</code> is never checked.</td></tr>
+      <tr><td>Portfolio building</td><td class="no">No (Bloom)</td><td>—</td><td>—</td><td>—</td><td>A <code>public_portfolio</code> consent and <code>projects.is_public</code> exist, unrelated to Bloom.</td></tr>
+      <tr><td>Visibility for others</td><td class="yes">Yes</td><td>RLS <code>can_view_student</code>; mentor, parent and admin pages; <code>Timeline</code></td><td>Deterministic</td><td>Yes</td><td>Parents need no extra consent to read.</td></tr>
+      <tr><td>Archive and delete</td><td class="yes">Yes</td><td><code>setPathStatus</code>, <code>deletePath</code></td><td>Deterministic</td><td>Yes</td><td>Delete is a hard cascade.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 14 -->
+<section id="s14">
+  <h2><span class="n">14</span>Important files and their responsibilities</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td><code>apps/web/src/lib/ai.ts</code></td><td>Model constant, all prompts, Zod schemas, Anthropic calls and the error reasons.</td></tr>
+      <tr><td><code>apps/web/src/app/student/bloom/actions.ts</code></td><td>All student Bloom server actions and AI context assembly.</td></tr>
+      <tr><td><code>apps/web/src/app/student/bloom/forms.tsx</code></td><td>Client forms: <code>StartPath</code>, <code>TaskControls</code>, <code>AddTaskForm</code>, <code>AskForm</code>, <code>PathActions</code>.</td></tr>
+      <tr><td><code>apps/web/src/app/student/bloom/page.tsx</code></td><td>Bloom home: stats, start card, path lists.</td></tr>
+      <tr><td><code>apps/web/src/app/student/bloom/[id]/page.tsx</code></td><td>Student path page.</td></tr>
+      <tr><td><code>apps/web/src/components/bloom.tsx</code></td><td>Shared renderers: path card, detail, Q&amp;A list, timeline, last-active badge, compact list.</td></tr>
+      <tr><td><code>apps/web/src/lib/data/bloom.ts</code></td><td>Reads, consent check, stats, AI context builder, timeline, totals per student.</td></tr>
+      <tr><td><code>apps/web/src/lib/data/overview.ts</code></td><td>Student course overview, the source of Bloom's context.</td></tr>
+      <tr><td><code>apps/web/src/lib/programme.ts</code></td><td><code>currentWeek</code>, <code>stageForWeek</code>, <code>tr</code>.</td></tr>
+      <tr><td><code>supabase/migrations/20261005140000_bloom.sql</code></td><td>Bloom schema, triggers, RLS, mentor-note RPC, export.</td></tr>
+      <tr><td><code>supabase/seed.sql</code></td><td>Programme and stage definitions (8 weeks, 4 stages).</td></tr>
+      <tr><td><code>apps/web/scripts/seed-demo.mjs</code> L109–145</td><td>Demo consents and one demo path, "Talking to people about a problem", with 3 tasks.</td></tr>
+      <tr><td><code>supabase/tests/rls.test.sql</code> L259–323</td><td>pgTAP tests for Bloom visibility, ownership, the mentor note and completion stamping.</td></tr>
+      <tr><td><code>apps/web/src/app/mentor/actions.ts</code>, <code>mentor/forms.tsx</code>, <code>mentor/groups/[cohortId]/students/[studentId]/bloom/[pathId]/page.tsx</code></td><td>Mentor read view and note.</td></tr>
+      <tr><td><code>apps/web/src/app/parent/children/[id]/bloom/[pathId]/page.tsx</code>, <code>parent/actions.ts</code></td><td>Parent read view; <code>bloom_ai</code> consent toggle.</td></tr>
+      <tr><td><code>apps/web/src/app/student/page.tsx</code></td><td>Home "Continue" card and timeline.</td></tr>
+      <tr><td><code>apps/web/messages/en.json</code> (<code>bloom.*</code>)</td><td>All UI copy, including the AI error messages.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 15 -->
+<section id="s15">
+  <h2><span class="n">15</span>Confirmed gaps in understanding, and risks found</h2>
+  <h3>Could not trace</h3>
+  <ul>
+    <li><span class="tag g">Unavailable</span> The content of real paths in the hosted database, including the example path's summary, task details, project row and interest text.</li>
+    <li><span class="tag g">Unavailable</span> Original AI requests and responses, which are never logged.</li>
+    <li><span class="tag g">Unavailable</span> Which model actually served each request when <code>fallbacks: "default"</code> is set.</li>
+    <li><span class="tag g">Unavailable</span> Whether the Bloom migrations are applied on the hosted project, and the RLS test results (no local Supabase was running).</li>
+    <li><span class="tag i">Inferred</span> How <code>betaZodOutputFormat</code> converts the <code>.describe()</code> text. I assume the descriptions reach the model as JSON-schema descriptions and that only structure is enforced; I didn't read the SDK source.</li>
+  </ul>
+
+  <h3>Code behaviour where the frontend and backend differ, or logic conflicts <span class="tag c">Confirmed</span> by reading; not reproduced</h3>
+  <ul>
+    <li><strong>A note can be wiped.</strong> <code>updateTask</code> always writes <code>reflection: reflection || null</code>. For a reopened non-reflect task, the textarea is hidden until "Add a note" is clicked. Clicking "Mark done" then sends no reflection and clears the saved note.</li>
+    <li><strong>Path and tasks are inserted separately.</strong> If the task insert fails, the path is kept with no tasks and only a server log entry.</li>
+    <li><strong>Counts and lengths aren't enforced.</strong> Task count, suggestion count and length limits are prompt hints, not schema rules. Up to 10 tasks are accepted regardless of the chosen depth.</li>
+    <li><strong>An inferred goal is discarded.</strong> When the goal is blank the model is told to infer one, but there is no field to return it in.</li>
+    <li><strong>The suggestion's <code>why</code></strong> is shown and then lost. It isn't saved or passed to the plan call.</li>
+    <li><strong>Path status can go stale.</strong> <code>addTask</code> doesn't recompute it, so a completed path can hold open tasks. Restoring an archived path always sets <code>active</code>, even when every task is done.</li>
+    <li><strong>The backend accepts more than the UI sends.</strong> <code>setPathStatus</code> accepts <code>completed</code> with no task check. <code>updateTask</code> accepts any status from any state, including <code>todo</code>.</li>
+    <li><strong>Unused permissions.</strong> Task <code>title</code>, <code>details</code> and <code>position</code> update grants and the task delete policy exist with no UI, and the UI copy says steps can be changed later.</li>
+    <li><strong>Totals disagree.</strong> Bloom home "overall %" and the mentor group totals (<code>loadBloomTotals</code>) count tasks of archived paths, while the mentor path count excludes archived paths.</li>
+    <li><strong><code>previousPaths</code></strong> includes archived paths and, in Ask Bloom, the current path itself.</li>
+    <li><strong>Week before the start.</strong> Before the cohort starts (week 0), the context reports week 1 and Explore, and <code>stage_key</code> is saved as <code>explore</code>.</li>
+    <li><strong>No limits on archived paths.</strong> Ask Bloom and task updates work on archived paths.</li>
+    <li><strong>Duplicate positions are possible.</strong> <code>position</code> for added tasks is count+1 and not unique, so concurrent adds can collide.</li>
+    <li><strong><code>ai_generated</code> is ambiguous.</strong> It marks AI-planned tasks, not AI-written titles or goals, and per-task origin isn't recorded.</li>
+  </ul>
+
+  <h3>Dead code, duplicates, unused fields</h3>
+  <ul>
+    <li><code>askBloom</code> and <code>draftProgressCard</code> repeat the same create, refusal, text-join and error-mapping logic instead of sharing <code>structured()</code>. This is a duplication note, not a defect.</li>
+    <li>The tasks loaded in <code>askQuestion</code> (all <code>bloom_tasks</code> with details) are used only to find one task; the rest are discarded.</li>
+    <li>The <code>loadStudentOverview</code> fields used by Bloom are a small subset: activities, submissions, sessions and stats are loaded and then ignored for AI context.</li>
+    <li>No unused Bloom columns were found. Every column is written or read somewhere.</li>
+  </ul>
+</section>
+
+<!-- 16 -->
+<section id="s16">
+  <h2><span class="n">16</span>Questions that still need investigation</h2>
+  <ol>
+    <li>What are the saved <code>summary</code> and task <code>details</code> for "How a Small Business Really Works", and what are that student's <code>projects</code> row and <code>age_group</code>? This needs a database read, which is blocked here.</li>
+    <li>Was that path created through route A (suggestion) or route B (own topic)? The audit log can't tell. If the goal text matches the suggestion style word for word, route A is more likely.</li>
+    <li>How often does the model return a task count other than the requested 3, 5 or 7? Nothing records it.</li>
+    <li>Which model actually answers under <code>fallbacks: "default"</code>, and what does each call cost? There is no usage logging.</li>
+    <li>Are the three Bloom migrations applied on the hosted project, and do the pgTAP tests pass?</li>
+    <li>Does the product intend Bloom paths to belong to the project (there is no <code>project_id</code>) or to the student? The code does the latter.</li>
+    <li>Should parents see Bloom content without a separate consent? Today the RLS lets them, and the consent text says "you and their mentor can read every question and answer".</li>
+  </ol>
+</section>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  const dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches && !matchMedia("print").matches;
+  mermaid.initialize({ startOnLoad: false, theme: dark ? "dark" : "neutral", securityLevel: "loose", fontFamily: "IBM Plex Sans, system-ui, sans-serif" });
+  mermaid.run({ querySelector: ".mermaid" }).then(() => document.body.setAttribute("data-rendered", "1"));
+</script>
+</body>
+</html>

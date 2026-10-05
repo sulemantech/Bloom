@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bloom v2 Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: engineering teardown. Sticky section index on wide screens, one reading column, evidence tags on every claim. */
+:root {
+  --bg: #f6f6f9;
+  --surface: #ffffff;
+  --sunk: #eeedf4;
+  --fg: #1c1b26;
+  --muted: #5a586b;
+  --line: #dcdae6;
+  --accent: #5b3fd0;
+  --accent-soft: #ece8fb;
+  --ok: #1d7a4a;
+  --ok-soft: #e2f3e9;
+  --warn: #8a5a00;
+  --warn-soft: #fbefd6;
+  --bad: #b23a3a;
+  --bad-soft: #f9e3e3;
+  --code-bg: #f1f0f7;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-label: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14131b; --surface: #1c1b25; --sunk: #23222e; --fg: #e9e7f2; --muted: #a3a0b6; --line: #33313f;
+    --accent: #a593ff; --accent-soft: #2a2546; --ok: #6fd39d; --ok-soft: #173326; --warn: #f0c065; --warn-soft: #3a2e14;
+    --bad: #f08a8a; --bad-soft: #3b1d1f; --code-bg: #201f2a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14131b; --surface: #1c1b25; --sunk: #23222e; --fg: #e9e7f2; --muted: #a3a0b6; --line: #33313f;
+  --accent: #a593ff; --accent-soft: #2a2546; --ok: #6fd39d; --ok-soft: #173326; --warn: #f0c065; --warn-soft: #3a2e14;
+  --bad: #f08a8a; --bad-soft: #3b1d1f; --code-bg: #201f2a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15.5px/1.6 var(--font-body); padding-inline: 16px; padding-block: 0 64px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 40px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .wrap { grid-template-columns: 220px minmax(0, 1fr); } }
+nav.toc { display: none; }
+@media (min-width: 1000px) {
+  nav.toc { display: block; position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; max-height: 100vh; overflow-y: auto; padding-block: 40px; }
+}
+nav.toc p { font: 600 12px/1 var(--font-label); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; counter-reset: toc; }
+nav.toc li { counter-increment: toc; }
+nav.toc a { display: flex; gap: 8px; padding: 4px 8px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 13.5px; line-height: 1.35; }
+nav.toc a::before { content: counter(toc); font: 500 12px/1.6 var(--font-mono); color: var(--accent); min-width: 1.4em; }
+nav.toc a:hover, nav.toc a:focus-visible { background: var(--sunk); color: var(--fg); outline: none; }
+main { min-width: 0; padding-block: 40px 0; display: flex; flex-direction: column; gap: 56px; }
+header.doc { display: flex; flex-direction: column; gap: 12px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+.eyebrow { font: 600 12px/1 var(--font-label); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 0; }
+h1 { font: 600 clamp(28px, 4vw, 40px)/1.12 var(--font-body); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+h2 { font: 600 24px/1.25 var(--font-body); letter-spacing: -.01em; margin: 0; text-wrap: balance; display: flex; gap: 12px; align-items: baseline; }
+h2 .n { font: 500 15px/1 var(--font-mono); color: var(--accent); }
+h3 { font: 600 17px/1.35 var(--font-body); margin: 8px 0 0; text-wrap: balance; }
+section { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 24px; }
+p, li { max-width: 72ch; }
+p { margin: 0; }
+ul, ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
+.lede { font-size: 17px; color: var(--muted); max-width: 70ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 500; }
+code { font: 0.88em var(--font-mono); background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+pre { margin: 0; }
+pre.src { font: 13px/1.55 var(--font-mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; white-space: pre; }
+pre.src .hl { color: var(--accent); font-weight: 500; }
+.srcref { font: 12.5px var(--font-mono); color: var(--muted); margin-top: -6px; }
+.mermaid { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; text-align: center; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+th { font: 600 12px/1.3 var(--font-label); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--sunk); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td code { white-space: nowrap; }
+.tag { display: inline-block; font: 600 11px/1 var(--font-label); letter-spacing: .06em; text-transform: uppercase; padding: 4px 7px; border-radius: 999px; white-space: nowrap; vertical-align: 1px; }
+.tag.c { background: var(--ok-soft); color: var(--ok); }
+.tag.i { background: var(--warn-soft); color: var(--warn); }
+.tag.g { background: var(--bad-soft); color: var(--bad); }
+.tag.n { background: var(--sunk); color: var(--muted); }
+.yes { color: var(--ok); font-weight: 600; }
+.no { color: var(--bad); font-weight: 600; }
+.part { color: var(--warn); font-weight: 600; }
+.callout { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.callout.warn { border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); background: var(--warn-soft); }
+.flow { display: flex; flex-direction: column; gap: 0; border-left: 2px solid var(--accent); margin-left: 6px; }
+.flow > div { position: relative; padding: 4px 0 14px 20px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.flow > div::before { content: ""; position: absolute; left: -7px; top: 9px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+.flow .k { font: 600 12px/1.3 var(--font-label); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 13px; color: var(--muted); align-items: center; }
+.two { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) { .two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+a { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+<style>
+.learn { border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); background: var(--accent-soft); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.learn > .lbl { font: 600 12px/1 var(--font-label); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.learn h3 { margin: 0; }
+.phasehead { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; font-size: 13.5px; color: var(--muted); }
+.phasehead b { color: var(--fg); font-weight: 500; }
+td.id { font: 500 13px var(--font-mono); white-space: nowrap; color: var(--accent); }
+td.sz { font: 500 13px var(--font-mono); text-align: center; }
+td ul { padding-left: 1.1em; gap: 3px; }
+td li { max-width: none; }
+.exit { border-left: 3px solid var(--ok); padding: 4px 0 4px 12px; }
+</style>
+
+<style>
+@page { size: A4; margin: 14mm 12mm; }
+@media print {
+  :root, :root[data-theme] { --bg:#fff; --surface:#fff; --sunk:#f1f0f6; --fg:#1c1b26; --muted:#55536a; --line:#d6d4e0;
+    --accent:#5b3fd0; --accent-soft:#ece8fb; --ok:#1d7a4a; --ok-soft:#e2f3e9; --warn:#8a5a00; --warn-soft:#fbefd6;
+    --bad:#b23a3a; --bad-soft:#f9e3e3; --code-bg:#f4f3f8; color-scheme: light; }
+  body { font-size: 11.5px; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .wrap { display: block; max-width: none; }
+  nav.toc { display: none !important; }
+  main { padding: 0; gap: 28px; }
+  section { break-inside: auto; }
+  h2, h3 { break-after: avoid; }
+  .mermaid svg { max-height: 235mm; width: auto !important; }
+  tr, .mermaid, .callout, .flow > div { break-inside: avoid; }
+  pre.src { white-space: pre-wrap; overflow: visible; font-size: 10.5px; }
+  .tbl { overflow: visible; }
+  td code { white-space: normal; }
+  p, li { max-width: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="Sections">
+  <p>Sections</p>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#map">Repo &amp; organizations</a></li>
+    <li><a href="#p0">Phase 0 · Groundwork</a></li>
+    <li><a href="#p1">Phase 1 · Activities</a></li>
+    <li><a href="#p2">Phase 2 · Feedback</a></li>
+    <li><a href="#p3">Phase 3 · Evidence</a></li>
+    <li><a href="#p4">Phase 4 · Memory</a></li>
+    <li><a href="#p5">Phase 5 · Coach &amp; mentors</a></li>
+    <li><a href="#p6">Phase 6 · Clean-up</a></li>
+    <li><a href="#deps">Dependencies</a></li>
+    <li><a href="#after">After the MVP</a></li>
+    <li><a href="#glossary">Glossary</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="doc">
+  <p class="eyebrow">Youth Idea Lab · Bloom v2 delivery plan</p>
+  <h1>Bloom v2 roadmap</h1>
+  <p class="lede">The approved blueprint turned into seven small phases, each with concrete tasks, dependencies and testable acceptance criteria. Along the way, "Learn" boxes explain how the system and the codebase are organised and why each step is built the way it is.</p>
+  <div class="meta">
+    <span>Source <b>docs/bloom-coach-blueprint</b></span>
+    <span>Baseline <b>docs/bloom-as-built</b></span>
+    <span>Written <b>5 Oct 2026</b></span>
+  </div>
+  <div class="legend">
+    <span>Size: <b>S</b> ≈ 1 day · <b>M</b> ≈ 2–3 days · <b>L</b> ≈ 1 week, for one developer. These are rough, for ordering only.</span>
+  </div>
+</header>
+
+<section id="overview">
+  <h2><span class="n">00</span>Overview</h2>
+  <p>Each phase ships something usable on its own, behind the existing per-cohort feature flag, so one pilot group can try it first. Old paths keep working the whole time.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Phase</th><th>Outcome for students and mentors</th><th>Visible change</th><th>Size</th></tr></thead>
+    <tbody>
+      <tr><td><strong>0 · Groundwork</strong></td><td>Decisions recorded; AI calls logged and limited; the known Bloom bugs fixed; a test runner in place</td><td>Bug fixes only</td><td>~1.5 wk</td></tr>
+      <tr><td><strong>1 · Activities</strong></td><td>Paths made of interactive activities (lesson cards, quick checks, short answers, decisions, reflections) instead of tick boxes</td><td>Yes, in the pilot cohort</td><td>~3 wk</td></tr>
+      <tr><td><strong>2 · Feedback</strong></td><td>Written answers get instant, rubric-based feedback and can be improved</td><td>Yes</td><td>~2 wk</td></tr>
+      <tr><td><strong>3 · Evidence &amp; artifacts</strong></td><td>Interviews, templates and photo or file uploads; accepted work becomes a versioned project artifact</td><td>Yes</td><td>~3 wk</td></tr>
+      <tr><td><strong>4 · Project memory</strong></td><td>Bloom remembers confirmed project facts and recommends what's missing for the current stage</td><td>Yes</td><td>~2 wk</td></tr>
+      <tr><td><strong>5 · Coach &amp; mentors</strong></td><td>Ask Bloom becomes a conversation with memory; mentors get a review queue and the problem-statement checkpoint</td><td>Yes. <strong>MVP complete.</strong></td><td>~2.5 wk</td></tr>
+      <tr><td><strong>6 · Clean-up</strong></td><td>Old columns and compatibility code removed after full rollout</td><td>No</td><td>~0.5 wk</td></tr>
+    </tbody>
+  </table></div>
+  <p>Phase 5's Ask Bloom work only needs phases 0 and 2, so a second developer can build it alongside phases 3 and 4 (see <a href="#deps">dependencies</a>).</p>
+</section>
+
+<section id="map">
+  <h2><span class="n">01</span>Before we start: how the repo and the organizations are set up</h2>
+
+  <div class="learn">
+    <span class="lbl">Learn · repository</span>
+    <h3>Two products live in one repository</h3>
+    <p>This repo began as a fork of an open-source AI tutor called <em>Bloom</em> (<code>upstream</code> remote, Li-Evan/Bloom). Youth Idea Lab was then built beside it. What you'll find:</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Folder</th><th>What it is</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><code>apps/web/</code></td><td>The Youth Idea Lab product: Next.js 16, React 19, server components and server actions; student, parent, mentor and admin views. Bloom v2 is built here.</td><td>Active</td></tr>
+        <tr><td><code>supabase/</code></td><td>The database as code: <code>migrations/</code> (schema, RLS, triggers), <code>seed.sql</code> (the 8-week programme), <code>tests/</code> (pgTAP permission tests).</td><td>Active</td></tr>
+        <tr><td>root <code>package.json</code></td><td>Database scripts: <code>db:push</code>, <code>db:test</code>, <code>db:types</code>.</td><td>Active</td></tr>
+        <tr><td><code>backend/</code>, <code>frontend/</code>, <code>skills/</code>, <code>example/</code>, <code>Makefile</code></td><td>The original Bloom tutor (FastAPI + SQLite + React/Vite), with Chinese sample courses.</td><td>Legacy. The README says this lives on <code>bloom/legacy</code>, yet the files are still tracked on this branch.</td></tr>
+        <tr><td><code>site/</code></td><td>An Astro website.</td><td>Separate, not part of this plan</td></tr>
+        <tr><td><code>docs/ARCHITECTURE.md</code></td><td>Describes the <em>legacy</em> tutor, not <code>apps/web</code>.</td><td>Misleading; task 0.5 fixes it</td></tr>
+      </tbody>
+    </table></div>
+    <p>Why it matters: the old tutor already has ideas we want, such as recommendations and a learning profile. But copying from it, or reading its architecture doc by mistake, will confuse new contributors. Phase 0 labels it clearly.</p>
+  </div>
+
+  <div class="learn">
+    <span class="lbl">Learn · data model</span>
+    <h3>Organizations, programmes, cohorts and roles</h3>
+    <p>The schema separates the <strong>template</strong> (what the course is) from the <strong>instance</strong> (a group of real people taking it). The first migration says so in its header comment.</p>
+    <pre class="src">organizations                 who runs the course (one row today: Youth Idea Lab)
+├── programs   (template)     "8-week course", weeks = 8
+│   └── stages                Explore 1–2 · Choose 3–4 · Build 5–6 · Present 7–8
+│       └── activities        weekly tasks, per age group (null = both)
+└── cohorts    (instance)     "Group 1", start_date, timezone, schedule
+    ├── memberships           user + cohort_role (student | mentor) + age_group
+    ├── sessions              live classes
+    └── per student: projects (1 per cohort) · submissions → feedback · progress_cards · bloom_paths
+
+profiles.role (app_role)      student | parent | mentor | admin   (one global role per account)
+guardian_links                parent ↔ student
+consents                      parent grants per student: platform, ai, bloom_ai, media, public_portfolio</pre>
+    <p><strong>How access works.</strong> Every table has row-level security (RLS): Postgres itself filters rows for the signed-in user. Small helper functions answer one question each, and policies combine them:</p>
+    <ul>
+      <li><code>is_admin()</code>: the account's role is admin.</li>
+      <li><code>is_cohort_member(c)</code> / <code>is_cohort_mentor(c)</code>: the user belongs to, or mentors, cohort c.</li>
+      <li><code>is_parent_of(s)</code>: there is a guardian link.</li>
+      <li><code>mentors_student(s)</code>: the user mentors a cohort that student s is in.</li>
+      <li><code>can_view_student(s)</code>: self, or parent, or mentor, or admin. Bloom uses this one.</li>
+    </ul>
+    <p><strong>The organization caveat.</strong> <code>organization_id</code> is stored on profiles, programs, cohorts and invitations, but <strong>no policy uses it</strong>. <code>is_admin()</code> doesn't check the organization, so an admin can see every organization's data, and any signed-in user can read the organizations list. In practice the platform is <em>single-tenant</em>. That's fine for one organization; before a second partner organization is onboarded, admin rights must be scoped to an organization. Bloom v2 doesn't depend on this. New tables reach the organization through the student, so they need no <code>organization_id</code> of their own.</p>
+  </div>
+
+  <div class="learn">
+    <span class="lbl">Learn · layers</span>
+    <h3>Who enforces what</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>Layer</th><th>In this codebase</th><th>Job</th><th>Bloom v2 uses it for</th></tr></thead>
+      <tbody>
+        <tr><td>Server components</td><td><code>app/**/page.tsx</code></td><td>Read data and render HTML on the server</td><td>Path, activity and mentor pages</td></tr>
+        <tr><td>Client components</td><td><code>"use client"</code> forms</td><td>Interaction in the browser</td><td>Activity players, feedback, threads</td></tr>
+        <tr><td>Server actions</td><td><code>actions.ts</code> (<code>"use server"</code>)</td><td>Validate input, run the business rules, call services</td><td>submitActivity, confirmFact, …</td></tr>
+        <tr><td>Domain modules</td><td><code>lib/</code> (new <code>lib/bloom/</code>)</td><td>Pure rules that are easy to unit test</td><td>Catalogue, state machine, verdict mapping, brief</td></tr>
+        <tr><td>RLS policies</td><td>migrations</td><td>The last line of defence: who can read and write which rows</td><td>Drafts hidden from parents, ownership</td></tr>
+        <tr><td>Triggers</td><td>migrations</td><td>Rules that must hold no matter who writes</td><td>Copying student_id, timestamps, path status</td></tr>
+        <tr><td>Security-definer RPCs</td><td><code>set_bloom_mentor_note</code></td><td>Privileged operations with their own checks</td><td>Mentor review, atomic path creation</td></tr>
+      </tbody>
+    </table></div>
+    <p>Rule of thumb: <strong>the UI is for convenience, actions for business rules, the database for guarantees.</strong> If something must never happen (a parent reading a draft), the database blocks it, not just the UI.</p>
+  </div>
+</section>
+
+<section id="p0">
+  <h2><span class="n">P0</span>Phase 0: Groundwork</h2>
+  <p class="phasehead"><span>Goal <b>make the next phases safe to build</b></span><span>Flag <b>none</b></span><span>Depends on <b>nothing</b></span></p>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>Task</th><th>Needs</th><th>Size</th><th>Acceptance criteria</th></tr></thead>
+    <tbody>
+      <tr><td class="id">0.1</td><td><strong>Decision record</strong> <code>docs/decisions/0001-bloom-v2.md</code>, settling the blueprint's open questions with defaults: parents keep full Ask Bloom visibility (matches the current consent); photos allowed with guidance and location data removed; English only for the MVP; course activities stay separate; model per AI capability.</td><td>—</td><td class="sz">S</td><td><ul><li>Each decision has an owner, a date and a reason</li><li>Product and safeguarding leads have signed off</li></ul></td></tr>
+      <tr><td class="id">0.2</td><td><strong>Unit test runner</strong>: add Vitest to <code>apps/web</code> with an <code>npm test</code> script.</td><td>—</td><td class="sz">S</td><td><ul><li><code>npm test</code> runs and passes, including one sample test of <code>lib/programme.ts</code> <code>currentWeek</code></li></ul></td></tr>
+      <tr><td class="id">0.3</td><td><strong>AI gateway</strong>: move <code>lib/ai.ts</code> to <code>lib/ai/</code> (<code>gateway.ts</code> plus one file per capability). Add an <code>ai_runs</code> table (capability, student, model, tokens in and out, latency, outcome, input hash) written with the server key. Add a daily call limit per student.</td><td>0.2</td><td class="sz">M</td><td><ul><li>Suggest, plan, ask and the progress card behave exactly as before</li><li>Every call writes exactly one <code>ai_runs</code> row; no prompt text is stored</li><li>Going over the daily limit returns the existing "rate limited" message</li><li>Only admins can read <code>ai_runs</code> (pgTAP)</li></ul></td></tr>
+      <tr><td class="id">0.4</td><td><strong>Fix the as-built defects</strong>: a <code>create_bloom_path</code> RPC that inserts the path and its tasks in one transaction; a trigger on <code>bloom_tasks</code> that recomputes the path status; restoring an archived path recomputes it; saving no longer wipes the note.</td><td>—</td><td class="sz">M</td><td><ul><li>pgTAP: a failing task insert leaves no path behind</li><li>pgTAP: adding a task to a completed path makes it active</li><li>pgTAP: restoring an all-done path makes it completed</li><li>Manual: reopen a task with a note, then Mark done; the note is kept</li></ul></td></tr>
+      <tr><td class="id">0.5</td><td><strong>Docs</strong>: rename <code>docs/ARCHITECTURE.md</code> to <code>docs/legacy-tutor-architecture.md</code>, add <code>docs/architecture.md</code> for <code>apps/web</code> (a one-page map plus links to as-built, blueprint and roadmap), and decide whether to remove the legacy folders from this branch.</td><td>—</td><td class="sz">S</td><td><ul><li>A new contributor following the README reaches the right architecture page</li></ul></td></tr>
+      <tr><td class="id">0.6</td><td><strong>Rollout flag</strong>: use the existing <code>isEnabled("bloom_v2", cohortId)</code> from <code>lib/flags.ts</code> (built but unused today) in the Bloom pages and actions.</td><td>—</td><td class="sz">S</td><td><ul><li>Flag off: the UI is identical to today</li><li>Flag on for one cohort: only that cohort sees v2 entry points</li></ul></td></tr>
+    </tbody>
+  </table></div>
+  <p class="exit"><strong>Exit:</strong> all pgTAP and unit tests green; AI usage visible per day; decisions signed off.</p>
+  <div class="learn">
+    <span class="lbl">Learn</span>
+    <h3>Why a gateway before features</h3>
+    <p>Today each AI function builds its own client and handles errors itself, and nothing is recorded. With a single gateway, consent, limits, model choice and logging happen in one place. Every later capability (assessor, coach, memory proposer) gets them for free, and we can answer "what does Bloom cost per student?" from <code>ai_runs</code>. The input <em>hash</em> lets us spot repeated calls without storing what children wrote.</p>
+  </div>
+</section>
+
+<section id="p1">
+  <h2><span class="n">P1</span>Phase 1: Interactive activities</h2>
+  <p class="phasehead"><span>Goal <b>paths made of activities students actually do</b></span><span>Flag <b>bloom_v2</b> (pilot cohort)</span><span>Depends on <b>0.2, 0.4, 0.6</b></span></p>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>Task</th><th>Needs</th><th>Size</th><th>Acceptance criteria</th></tr></thead>
+    <tbody>
+      <tr><td class="id">1.1</td><td><strong>Expand migration</strong> on <code>bloom_tasks</code>: <code>type</code> (default <code>legacy</code>), <code>config</code> jsonb, <code>config_version</code>, <code>required</code>, <code>is_milestone</code>, <code>origin</code>, <code>revision_count</code>, and a new <code>state</code> column using the new enum (available … skipped). Backfill <code>state</code> from <code>status</code> and keep the two in sync with a trigger. Regenerate types.</td><td>0.4</td><td class="sz">M</td><td><ul><li>Every existing row has a matching state (todo→available, doing→in_progress, done→complete)</li><li>The existing UI works unchanged</li><li>pgTAP: students can't change <code>type</code>, <code>config</code> or <code>is_milestone</code> (column grants)</li></ul></td></tr>
+      <tr><td class="id">1.2</td><td><strong>Activity catalogue</strong> <code>lib/bloom/activities/</code>: a registry plus <code>learn</code>, <code>quick-check</code> (choice, sort), <code>respond</code>, <code>decide</code>, <code>reflect</code> and <code>legacy</code>. Each defines a config schema (Zod), an evidence spec and a completion rule.</td><td>0.2</td><td class="sz">M</td><td><ul><li>Unit tests: valid and invalid config samples for every type</li><li>A quiz whose answer key points to a missing option is rejected</li></ul></td></tr>
+      <tr><td class="id">1.3</td><td><strong>State machine</strong> <code>lib/bloom/state.ts</code>: a pure <code>transition(activity, event)</code> plus an apply step that updates <code>where state = expected</code>.</td><td>1.1, 1.2</td><td class="sz">M</td><td><ul><li>A unit test for every edge in the blueprint diagram; illegal moves rejected</li><li>Double-clicking Submit produces exactly one submission</li></ul></td></tr>
+      <tr><td class="id">1.4</td><td><strong>Submissions table</strong> <code>bloom_submissions</code> (activity, attempt, content jsonb, status draft or submitted) with RLS: the student reads and writes their own; others read <em>submitted</em> rows only. Add the audit trigger and include the table in <code>export_student_data</code>.</td><td>1.1</td><td class="sz">M</td><td><ul><li>pgTAP: a parent can't see drafts; a mentor sees submitted work of their own students only; a student can't write to someone else's activity</li><li>The data export contains submissions</li></ul></td></tr>
+      <tr><td class="id">1.5</td><td><strong>Actions</strong> <code>saveDraft</code>, <code>submitActivity</code>, <code>reopenActivity</code>, using the catalogue and the state service.</td><td>1.3, 1.4</td><td class="sz">M</td><td><ul><li>Content is validated on the server against the evidence spec, with errors per field</li><li>Instant types complete on submit; the path status updates</li></ul></td></tr>
+      <tr><td class="id">1.6</td><td><strong>Activity players</strong>: Learn cards; Quick check with choice and tap-to-sort (no drag, so it works on phones and with a keyboard); Respond; Decide; Reflect. Legacy tasks keep <code>TaskControls</code>.</td><td>1.5</td><td class="sz">L</td><td><ul><li>Works at 360 px wide and by keyboard alone</li><li>Drafts survive a reload</li><li>Pending states use <code>SubmitButton</code></li><li>A wrong quick-check answer shows a hint and allows one retry, then completes</li></ul></td></tr>
+      <tr><td class="id">1.7</td><td><strong>Planner v2</strong>: outputs <code>{phase, type, config}</code> as a Zod discriminated union over the catalogue; normalises counts and phase order; one repair retry; saves through <code>create_bloom_path</code>. Behind the flag.</td><td>0.3, 1.2</td><td class="sz">M</td><td><ul><li>Of 20 generated plans (both age groups, 4 stages), at least 95% pass validation without the retry</li><li>A failed plan saves nothing and shows a clear message</li><li>Every plan has a Do-phase activity</li></ul></td></tr>
+      <tr><td class="id">1.8</td><td><strong>Migrate notes</strong>: each non-empty <code>bloom_tasks.reflection</code> becomes a submitted <code>bloom_submissions</code> row; the legacy UI reads notes from submissions.</td><td>1.4</td><td class="sz">S</td><td><ul><li>The number of migrated rows equals the number of non-empty reflections</li><li>Notes show as before</li></ul></td></tr>
+    </tbody>
+  </table></div>
+  <p class="exit"><strong>Exit:</strong> in the pilot cohort, a student completes a 5-activity v2 path on a phone; legacy paths in the same account still work.</p>
+  <div class="learn">
+    <span class="lbl">Learn</span>
+    <h3>Expand, migrate, contract</h3>
+    <p>Changing a live schema safely happens in three moves. <strong>Expand:</strong> add new columns and tables beside the old ones, keeping them in sync (1.1). <strong>Migrate:</strong> move the code and the data over gradually (1.5–1.8, and later phases). <strong>Contract:</strong> remove the old parts only once nothing uses them (phase 6). At every point the app works, and a bad deploy can roll back without data loss. Postgres enums are a good example: you can add values but not easily remove them, so the plan adds a new <code>state</code> column instead of reshaping <code>status</code>.</p>
+    <h3>Why the state machine is a pure function</h3>
+    <p><code>transition(current, event) → next</code> has no database or network inside it, so every rule can be unit tested in milliseconds. The database step then writes with a guard (<code>where state = 'in_progress'</code>). If two requests race, only the first matches, which is called <em>optimistic concurrency</em>.</p>
+  </div>
+</section>
+
+<section id="p2">
+  <h2><span class="n">P2</span>Phase 2: The feedback loop</h2>
+  <p class="phasehead"><span>Goal <b>students improve work based on specific feedback</b></span><span>Flag <b>bloom_v2</b></span><span>Depends on <b>phase 1</b></span></p>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>Task</th><th>Needs</th><th>Size</th><th>Acceptance criteria</th></tr></thead>
+    <tbody>
+      <tr><td class="id">2.1</td><td><strong>Assessments table</strong> <code>bloom_assessments</code> (submission, by auto, ai or mentor, criteria jsonb, verdict, feedback, <code>ai_run_id</code>). Parents can't read AI assessments (blueprint section 13).</td><td>1.4</td><td class="sz">S</td><td><ul><li>pgTAP: student and mentor read; parent doesn't; nobody updates (rows are append-only)</li></ul></td></tr>
+      <tr><td class="id">2.2</td><td><strong>Rubrics</strong> in the catalogue for <code>respond</code>: criteria with <code>required</code> flags and wording for each age group.</td><td>1.2</td><td class="sz">S</td><td><ul><li>An educator has reviewed every criterion's wording</li></ul></td></tr>
+      <tr><td class="id">2.3</td><td><strong>Context assembler v1</strong> <code>lib/bloom/context.ts</code>: named slices with token budgets (estimated as characters ÷ 4); replaces <code>bloomContext</code>.</td><td>0.3</td><td class="sz">M</td><td><ul><li>Unit: no slice exceeds its budget</li><li>Unit: a fixture containing the student's name or username never appears in the output</li></ul></td></tr>
+      <tr><td class="id">2.4</td><td><strong>Assessor and verdict mapping</strong>: AI returns met or not yet per criterion; the app decides the state. Any required criterion not yet, with fewer than 2 revisions, means needs revision. Otherwise complete. An AI error means complete, flagged "not reviewed".</td><td>2.1–2.3</td><td class="sz">M</td><td><ul><li>Unit tests for the mapping, including the cap and fail-open</li><li><strong>Eval:</strong> 30 sample answers labelled by an educator; at least 80% agreement on required criteria; no marks or percentages in any feedback</li><li>p95 submit-to-feedback under 12 s</li></ul></td></tr>
+      <tr><td class="id">2.5</td><td><strong>Feedback UI</strong>: per-criterion list, Resubmit, "Keep as is", attempt history.</td><td>2.4</td><td class="sz">M</td><td><ul><li>Feedback persists on reload</li><li>"Keep as is" completes a non-milestone activity and flags it for the mentor</li></ul></td></tr>
+    </tbody>
+  </table></div>
+  <p class="exit"><strong>Exit:</strong> the pilot shows a revision rate and an accept rate per activity (queried from <code>bloom_assessments</code>); no student is ever stuck because of AI.</p>
+  <div class="learn">
+    <span class="lbl">Learn</span>
+    <h3>Evals: testing AI like any other function</h3>
+    <p>Unit tests can't tell you whether feedback is <em>good</em>. An <strong>eval</strong> is a fixed set of inputs with expected judgements, made by a human expert. You run it whenever a prompt, rubric or model changes, and compare the agreement number. Keep the set in the repo (anonymised and invented, never real student work) and treat a drop in agreement like a failing test.</p>
+    <h3>Fail-open versus fail-closed</h3>
+    <p>When a check can't run, you either allow (fail-open) or block (fail-closed). Bloom's <em>learning</em> checks fail open, because a child shouldn't be stuck when an API is down; the mentor sees the "not reviewed" flag. <em>Safety and permission</em> checks fail closed: no consent means no AI call, and a failed PII check means no submission.</p>
+  </div>
+</section>
+
+<section id="p3">
+  <h2><span class="n">P3</span>Phase 3: Evidence and artifacts</h2>
+  <p class="phasehead"><span>Goal <b>real-world work captured and kept on the project</b></span><span>Flag <b>bloom_v2</b></span><span>Depends on <b>phase 2, decision 0.1</b></span></p>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>Task</th><th>Needs</th><th>Size</th><th>Acceptance criteria</th></tr></thead>
+    <tbody>
+      <tr><td class="id">3.1</td><td><strong>Consent v2</strong>: new <code>bloom_ai</code> consent version covering project work and photos; a parent re-consent prompt; the gateway refuses image input without v2.</td><td>0.1, 0.3</td><td class="sz">M</td><td><ul><li>A v1-only student can still use text features</li><li>Image assessment needs v2 (unit plus manual)</li><li>Parent page shows the new wording</li></ul></td></tr>
+      <tr><td class="id">3.2</td><td><strong>Evidence storage</strong>: private bucket <code>bloom-evidence</code>, path <code>{student}/{submission}/{uuid}.{ext}</code>, storage policies (owner writes; <code>can_view_student</code> reads submitted work); a <code>bloom_submission_files</code> table; images resized in the browser to a 1600 px max edge; location (EXIF) data stripped on the server; 10 MB limit.</td><td>1.4</td><td class="sz">L</td><td><ul><li>A test photo with GPS data is stored without it</li><li>A parent can't fetch a draft's file</li><li>An 11 MB file is rejected by the server, not just the browser</li></ul></td></tr>
+      <tr><td class="id">3.3</td><td><strong>PII check</strong> <code>lib/bloom/pii.ts</code>: emails, phone numbers (including +92 and 03xx formats) and street-address patterns; blocks the submit with a friendly explanation.</td><td>0.2</td><td class="sz">S</td><td><ul><li>Unit: true positives and a list of known false positives ("5 questions", prices) pass</li></ul></td></tr>
+      <tr><td class="id">3.4</td><td><strong>Interview type</strong>: config, player (question picker that flags closed questions, answer per question, interviewee role, optional photos), rubric.</td><td>2.4, 3.2, 3.3</td><td class="sz">L</td><td><ul><li>Worked-example step 2 runs end to end</li><li>A 1-word answer to a required question gets a "not yet" in the eval</li></ul></td></tr>
+      <tr><td class="id">3.5</td><td><strong>Make type</strong>: templates <code>business_map</code> and <code>problem_statement</code>, plus a generic image or file; images passed to the assessor (vision) for consistency only.</td><td>3.1, 3.2, 3.4</td><td class="sz">L</td><td><ul><li>Worked-example step 3 runs end to end</li><li>Feedback never comments on drawing skill (eval)</li></ul></td></tr>
+      <tr><td class="id">3.6</td><td><strong>Artifacts</strong>: <code>artifacts</code> and <code>artifact_versions</code> tables plus a service. An accepted Interview or Make submission creates version n+1 and moves <code>current</code>; versions can never be edited. Artifact page with the version list.</td><td>3.4</td><td class="sz">M</td><td><ul><li>pgTAP: no update grant on versions</li><li>An improved resubmission creates v2 and v1 stays readable</li><li>The parent sees the current version only</li></ul></td></tr>
+    </tbody>
+  </table></div>
+  <p class="exit"><strong>Exit:</strong> the pilot produces real interview sets and business maps, with photos and no location data.</p>
+  <div class="learn">
+    <span class="lbl">Learn</span>
+    <h3>How file security works here</h3>
+    <p>Supabase Storage applies RLS policies to file paths too. The existing course uploads use <code>&lt;cohort_id&gt;/&lt;student_id&gt;/&lt;file&gt;</code> (<code>lib/storage.ts</code>), and the storage policies parse that path to decide access. Files are never public. The app creates <em>signed URLs</em> that expire after 10 minutes. Bloom evidence follows the same pattern with its own bucket, so its rules can differ (drafts stay private).</p>
+    <h3>Evidence versus artifacts</h3>
+    <p>A <strong>submission</strong> answers "did the student do this activity?". An <strong>artifact version</strong> answers "what does the project have now?". Keeping them separate means a quiz never clutters the project, and an artifact can later be fed by course submissions too.</p>
+  </div>
+</section>
+
+<section id="p4">
+  <h2><span class="n">P4</span>Phase 4: Project memory and recommendations</h2>
+  <p class="phasehead"><span>Goal <b>Bloom builds on what the student has already done</b></span><span>Flag <b>bloom_v2</b></span><span>Depends on <b>3.6</b></span></p>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>Task</th><th>Needs</th><th>Size</th><th>Acceptance criteria</th></tr></thead>
+    <tbody>
+      <tr><td class="id">4.1</td><td><strong>Facts table</strong> <code>project_facts</code> (type, statement, status proposed, confirmed, dismissed or superseded, source, <code>confirmed_by</code>, <code>supersedes_id</code>), plus <code>projects.target_user</code>. Only confirm and dismiss RPCs change status.</td><td>3.6</td><td class="sz">M</td><td><ul><li>pgTAP: a student can't insert a confirmed fact directly; a mentor can confirm for their students; editing creates a new row that supersedes the old one</li></ul></td></tr>
+      <tr><td class="id">4.2</td><td><strong>Memory proposer</strong> after an accepted Interview or Make, plus a "Bloom noticed… Save to my project?" card (keep, edit or dismiss).</td><td>4.1, 2.3</td><td class="sz">M</td><td><ul><li>At most 3 proposals per submission</li><li>A dismissed statement isn't proposed again (normalised text match)</li><li>Nothing becomes confirmed without a click</li></ul></td></tr>
+      <tr><td class="id">4.3</td><td><strong>Brief compiler</strong>: deterministic project brief (fields, up to 12 confirmed facts, artifact summaries), cached and rebuilt when its inputs change.</td><td>4.1</td><td class="sz">S</td><td><ul><li>Snapshot test: same inputs give a byte-identical brief</li><li>Always under 1,200 tokens</li></ul></td></tr>
+      <tr><td class="id">4.4</td><td><strong>Milestone map and gap check</strong> <code>lib/bloom/milestones.ts</code>, keyed by stage key (explore, choose, build, present).</td><td>3.6</td><td class="sz">S</td><td><ul><li>Unit test per stage: an empty project lists every expected artifact; a complete one lists none</li></ul></td></tr>
+      <tr><td class="id">4.5</td><td><strong>Project-aware planning</strong>: <code>bloom_paths</code> gains <code>project_id</code>, <code>shape</code> and <code>target_artifact_type</code>; the planner receives the brief and the gaps; "improve" mode when a current version exists; Decide writes decision facts directly.</td><td>4.3, 4.4, 1.7</td><td class="sz">M</td><td><ul><li>The worked example runs end to end</li><li>Asking for a business map when one exists produces an "improve your business map" path</li></ul></td></tr>
+      <tr><td class="id">4.6</td><td><strong>Bloom home</strong>: project card (stage, expected and existing artifacts) and "Recommended next" (1–3).</td><td>4.4, 4.5</td><td class="sz">M</td><td><ul><li>Recommendations change after an artifact is accepted, without a page reload trick</li></ul></td></tr>
+    </tbody>
+  </table></div>
+  <p class="exit"><strong>Exit:</strong> each pilot student's project shows confirmed facts and artifacts, and the recommendation matches the stage gap.</p>
+  <div class="learn">
+    <span class="lbl">Learn</span>
+    <h3>The propose-and-confirm pattern</h3>
+    <p>Language models are good at noticing and phrasing, and unreliable as a source of truth. So AI output goes into a <em>proposed</em> state, and a person's click promotes it. Because changes create new rows that point to the old ones (<em>supersede</em>) instead of overwriting them, you can always answer "what did we believe in week 3, and why?". The same idea is behind the immutable artifact versions.</p>
+    <h3>Why the brief is compiled, not generated</h3>
+    <p>If an LLM summarised the project, the summary could drift or invent details, and you couldn't reproduce it. Compiling it from rows with code gives the same output for the same data, makes it testable, and costs nothing.</p>
+  </div>
+</section>
+
+<section id="p5">
+  <h2><span class="n">P5</span>Phase 5: Coach and mentors (MVP complete)</h2>
+  <p class="phasehead"><span>Goal <b>Ask Bloom with memory; human judgement at milestones</b></span><span>Flag <b>bloom_v2</b>, then all cohorts</span><span>Depends on <b>5.1–5.2: phases 0 and 2 only · 5.3–5.5: phase 4</b></span></p>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>Task</th><th>Needs</th><th>Size</th><th>Acceptance criteria</th></tr></thead>
+    <tbody>
+      <tr><td class="id">5.1</td><td><strong>Threads</strong>: a <code>bloom_messages</code> table (path, activity, role, text, flags); migrate <code>bloom_questions</code> to message pairs; keep a compatibility view.</td><td>0.3</td><td class="sz">M</td><td><ul><li>Migrated count is 2 × the number of questions</li><li>Old Q&amp;A shows in the new thread UI</li><li>pgTAP visibility follows decision 0.1</li></ul></td></tr>
+      <tr><td class="id">5.2</td><td><strong>Coach</strong>: assembled context plus the last 8 messages; suggested-action chips the student must click; safety topics flagged to the mentor and admin.</td><td>5.1, 2.3</td><td class="sz">M</td><td><ul><li>Eval: a follow-up such as "and what about the second one?" is answered correctly</li><li>Prompt size stays under about 6k tokens in a 40-message thread</li><li>Feedback never reveals a quiz answer key</li></ul></td></tr>
+      <tr><td class="id">5.3</td><td><strong>Mentor check</strong>: activity type plus a <code>mentor_review</code> RPC (only <code>mentors_student</code> or admin); the problem statement becomes a milestone in the Choose stage.</td><td>4.4, 3.6</td><td class="sz">M</td><td><ul><li>pgTAP: another cohort's mentor gets "not allowed"</li><li>Waiting for a mentor doesn't block the student's other activities</li></ul></td></tr>
+      <tr><td class="id">5.4</td><td><strong>Mentor queue</strong>: per group, lists awaiting review, "kept as is", "not reviewed", stuck students (2 revisions in a row, or no activity for 5+ days, via <code>loadLastActive</code>) and safety flags. Student view shows the brief, artifacts and facts.</td><td>5.3, 4.3</td><td class="sz">L</td><td><ul><li>Each item links to its source</li><li>Approving clears it from the queue</li><li>Works at tablet width</li></ul></td></tr>
+      <tr><td class="id">5.5</td><td><strong>Parent view</strong>: current artifact versions and milestone outcomes; no drafts, proposals or AI assessments.</td><td>3.6, 5.3</td><td class="sz">S</td><td><ul><li>pgTAP and a manual check against the visibility table in blueprint section 13</li></ul></td></tr>
+    </tbody>
+  </table></div>
+  <p class="exit"><strong>Exit (the MVP):</strong> two pilot cohorts complete a full stage with v2, then the flag is turned on for every cohort. Success measures: share of paths that produce an artifact, revision rate, mentor queue time, and AI cost per active student per week.</p>
+  <div class="learn">
+    <span class="lbl">Learn</span>
+    <h3>Context windows and budgets</h3>
+    <p>Each AI call can only "see" what's in its prompt. If you append every message forever, prompts grow, get slower and costlier, and models pay less attention to what matters. Fixed slices with budgets (project brief, this activity, recent messages) keep calls predictable. A rolling summary of older messages comes later (phase 2 of the blueprint).</p>
+    <h3>Why mentor review is an RPC</h3>
+    <p>Students must never move their own work out of "awaiting mentor". Granting mentors general update rights on student tables would be too broad. A <em>security-definer</em> function runs with elevated rights but checks <code>mentors_student()</code> first and changes exactly one thing, like the existing <code>set_bloom_mentor_note</code>.</p>
+  </div>
+</section>
+
+<section id="p6">
+  <h2><span class="n">P6</span>Phase 6: Contract and clean up</h2>
+  <p class="phasehead"><span>Goal <b>remove transition scaffolding</b></span><span>Depends on <b>full rollout + 2 weeks stable</b></span></p>
+  <div class="tbl"><table>
+    <thead><tr><th>ID</th><th>Task</th><th>Needs</th><th>Size</th><th>Acceptance criteria</th></tr></thead>
+    <tbody>
+      <tr><td class="id">6.1</td><td>Drop the <code>status</code>↔<code>state</code> sync trigger and the <code>status</code> column; drop <code>bloom_tasks.reflection</code>, the <code>bloom_questions</code> view and v1 planner code.</td><td>P5 rolled out</td><td class="sz">S</td><td><ul><li>No code references remain (grep plus type check)</li><li>All tests green</li><li>The data export still includes everything</li></ul></td></tr>
+      <tr><td class="id">6.2</td><td>Update <code>docs/architecture.md</code>, the as-built doc and the README; archive the blueprint as "implemented".</td><td>6.1</td><td class="sz">S</td><td><ul><li>The docs describe the running system</li></ul></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="deps">
+  <h2><span class="n">02</span>Dependencies</h2>
+  <pre class="mermaid">
+flowchart TD
+  P0["Phase 0 · Groundwork<br/>0.1 decisions · 0.2 tests · 0.3 gateway<br/>0.4 bug fixes · 0.6 flag"]
+  P1["Phase 1 · Activities<br/>schema · catalogue · state · submissions<br/>players · planner v2"]
+  P2["Phase 2 · Feedback<br/>assessments · rubrics · context assembler · assessor"]
+  P3["Phase 3 · Evidence &amp; artifacts<br/>consent v2 · storage · PII · interview · make · artifacts"]
+  P4["Phase 4 · Project memory<br/>facts · proposer · brief · milestones · planning"]
+  C5["Phase 5a · Ask Bloom threads<br/>5.1 messages · 5.2 coach"]
+  M5["Phase 5b · Mentors &amp; parents<br/>5.3 check · 5.4 queue · 5.5 parent view"]
+  P6["Phase 6 · Clean-up"]
+  P0 --> P1 --> P2 --> P3 --> P4 --> M5 --> P6
+  P0 --> C5
+  P2 --> C5
+  C5 --> P6
+  D01["0.1 decision record"] -.-> P3
+  D01 -.-> C5
+  </pre>
+  <p><strong>Critical path:</strong> 0.4 → 1.1 → 1.3 → 1.5 → 2.4 → 3.2 → 3.4 → 3.6 → 4.1 → 4.5 → 5.3 → 5.4. Threads (5.1–5.2) are off the critical path and suit a second developer once phase 2's context assembler exists.</p>
+  <p><strong>Decision gates:</strong> consent v2 (3.1) can't ship without decision 0.1 and the new consent wording; thread visibility (5.1) follows the parent-visibility decision.</p>
+</section>
+
+<section id="after">
+  <h2><span class="n">03</span>After the MVP (blueprint phase 2 and later)</h2>
+  <ul>
+    <li>Mentor brief before each session (uses <code>sessions.starts_at</code> and the brief compiler)</li>
+    <li>Try activity type (experiments); rank variant; link evidence</li>
+    <li>Skill evidence and test-out on Learn</li>
+    <li>Customer profile, prototype and pitch artifacts with mentor checkpoints at Build and Present</li>
+    <li>Portfolio from final artifact versions (<code>projects.is_public</code> and <code>public_portfolio</code> consent)</li>
+    <li>Rolling thread summaries; ranked recommendations</li>
+    <li>Course activities producing artifacts, if decision 0.1 is revisited</li>
+    <li>Organization-scoped admin rights, before a second organization joins</li>
+    <li>Later: drawing canvas, voice, image moderation, Urdu, cross-cohort learning analytics</li>
+  </ul>
+</section>
+
+<section id="glossary">
+  <h2><span class="n">04</span>Glossary</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>Meaning here</th></tr></thead>
+    <tbody>
+      <tr><td>RLS</td><td>Row-level security: Postgres policies that decide which rows a signed-in user can read or write.</td></tr>
+      <tr><td>pgTAP</td><td>The SQL test framework used in <code>supabase/tests</code>. Tests run inside a transaction that is rolled back.</td></tr>
+      <tr><td>Server action</td><td>A server function called directly from a form (<code>"use server"</code>); Bloom's only "API".</td></tr>
+      <tr><td>Security-definer RPC</td><td>A Postgres function that runs with its owner's rights and does its own permission check.</td></tr>
+      <tr><td>Feature flag</td><td>A row in <code>feature_flags</code> (global or per cohort), read by <code>isEnabled()</code>.</td></tr>
+      <tr><td>Expand / contract</td><td>Add new schema beside the old, migrate, then remove the old.</td></tr>
+      <tr><td>Eval</td><td>A labelled test set for judging AI output quality.</td></tr>
+      <tr><td>Artifact version</td><td>An immutable snapshot of a project artifact, created from an accepted submission.</td></tr>
+      <tr><td>Project fact</td><td>One confirmed statement about the project (insight, decision, assumption, open question).</td></tr>
+      <tr><td>Template / instance</td><td>Programme definition (programs, stages, activities) versus a running group (cohorts, memberships).</td></tr>
+    </tbody>
+  </table></div>
+</section>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  const dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches && !matchMedia("print").matches;
+  mermaid.initialize({ startOnLoad: false, theme: dark ? "dark" : "neutral", securityLevel: "loose", fontFamily: "IBM Plex Sans, system-ui, sans-serif" });
+  mermaid.run({ querySelector: ".mermaid" }).then(() => document.body.setAttribute("data-rendered", "1"));
+</script>
+</body>
+</html>
