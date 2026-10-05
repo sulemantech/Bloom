@@ -13,7 +13,7 @@ import { AddTaskForm, AskForm, PathActions, TaskControls } from "../forms";
 
 export const metadata: Metadata = { title: "Learning path" };
 
-export default async function StudentPathPage({ params }: PageProps<"/student/bloom/[id]">) {
+export default async function StudentPathPage({ params }: PageProps<"/student/spark/[id]">) {
   const { id } = await params;
   const profile = await requireRole("student");
   const t = await getTranslations("bloom");
@@ -24,7 +24,7 @@ export default async function StudentPathPage({ params }: PageProps<"/student/bl
 
   return (
     <>
-      <Link href="/student/bloom" className="text-sm font-medium text-info">← {t("back")}</Link>
+      <Link href="/student/spark" className="text-sm font-medium text-info">← {t("back")}</Link>
       <PageHeader
         eyebrow={
           <>

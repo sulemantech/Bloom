@@ -45,7 +45,7 @@ export default async function ParentChildPage({ params }: PageProps<"/parent/chi
   );
 
   const { events, lastActive, paths } = await loadTimeline(supabase, id, overview, {
-    bloomHref: (pathId) => `/parent/children/${id}/bloom/${pathId}`,
+    bloomHref: (pathId) => `/parent/children/${id}/spark/${pathId}`,
   });
   const bloom = bloomStats(paths);
   const timeZone = overview?.cohort.timezone ?? profile.timezone;
@@ -114,7 +114,7 @@ export default async function ParentChildPage({ params }: PageProps<"/parent/chi
             <span className="text-[13px] text-soft">{t("bloomSummary", { paths: bloom.paths, done: bloom.tasksDone })}</span>
           </div>
           <p className="text-[13px] text-soft">{t("bloomHint")}</p>
-          <BloomPathList paths={paths} hrefFor={(pathId) => `/parent/children/${id}/bloom/${pathId}`} />
+          <BloomPathList paths={paths} hrefFor={(pathId) => `/parent/children/${id}/spark/${pathId}`} />
         </section>
         <section className="card flex flex-col gap-3 p-5 lg:col-span-2" aria-labelledby="journey-heading">
           <h2 id="journey-heading" className="font-display-tight text-lg">{t("journey")}</h2>

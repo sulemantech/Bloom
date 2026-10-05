@@ -9,7 +9,7 @@ import { bloomV2Enabled } from "@/lib/flags";
 import { createClient } from "@/lib/supabase/server";
 import { StartPath } from "./forms";
 
-export const metadata: Metadata = { title: "Bloom" };
+export const metadata: Metadata = { title: "Spark" };
 
 export default async function BloomHome() {
   const profile = await requireRole("student");
@@ -65,7 +65,7 @@ export default async function BloomHome() {
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {active.map((p) => (
-              <li key={p.id}><BloomPathCard path={p} href={`/student/bloom/${p.id}`} /></li>
+              <li key={p.id}><BloomPathCard path={p} href={`/student/spark/${p.id}`} /></li>
             ))}
           </ul>
         )}
@@ -75,7 +75,7 @@ export default async function BloomHome() {
         <Section title={t("completedTitle")} id="completed">
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {completed.map((p) => (
-              <li key={p.id}><BloomPathCard path={p} href={`/student/bloom/${p.id}`} /></li>
+              <li key={p.id}><BloomPathCard path={p} href={`/student/spark/${p.id}`} /></li>
             ))}
           </ul>
         </Section>
@@ -86,7 +86,7 @@ export default async function BloomHome() {
           <summary className="cursor-pointer text-sm font-medium text-muted">{t("archivedTitle", { count: archived.length })}</summary>
           <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {archived.map((p) => (
-              <li key={p.id}><BloomPathCard path={p} href={`/student/bloom/${p.id}`} /></li>
+              <li key={p.id}><BloomPathCard path={p} href={`/student/spark/${p.id}`} /></li>
             ))}
           </ul>
         </details>

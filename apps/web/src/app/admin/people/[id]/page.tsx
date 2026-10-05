@@ -69,7 +69,7 @@ export default async function PersonPage({ params, searchParams }: PageProps<"/a
   const overview = isStudent ? await loadStudentOverview(supabase, id) : null;
   const studentBase = overview ? `/mentor/groups/${overview.cohort.id}/students/${id}` : null;
   const timeline = isStudent
-    ? await loadTimeline(supabase, id, overview, { bloomHref: studentBase ? (pathId) => `${studentBase}/bloom/${pathId}` : undefined })
+    ? await loadTimeline(supabase, id, overview, { bloomHref: studentBase ? (pathId) => `${studentBase}/spark/${pathId}` : undefined })
     : null;
   const activeConsents = (consents ?? []).filter((c) => !c.revoked_at);
 
@@ -115,7 +115,7 @@ export default async function PersonPage({ params, searchParams }: PageProps<"/a
               {t("bloom")}
             </h2>
             {studentBase ? (
-              <BloomPathList paths={timeline?.paths ?? []} hrefFor={(pathId) => `${studentBase}/bloom/${pathId}`} />
+              <BloomPathList paths={timeline?.paths ?? []} hrefFor={(pathId) => `${studentBase}/spark/${pathId}`} />
             ) : (
               <p className="text-sm text-muted">{t("bloomNeedsGroup", { count: timeline?.paths.length ?? 0 })}</p>
             )}

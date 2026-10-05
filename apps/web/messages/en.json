@@ -116,7 +116,7 @@
     },
     "viewProgress": "View progress",
     "doneOf": "{done} of {total} activities done",
-    "bloomPaths": "{count, plural, one {# Bloom path} other {# Bloom paths}} · {done} steps done"
+    "bloomPaths": "{count, plural, one {# Spark path} other {# Spark paths}} · {done} steps done"
   },
   "privacy": {
     "title": "Privacy and safeguarding",
@@ -200,10 +200,10 @@
     "allActivities": "All activities",
     "activitiesIntro": "Every activity in the 8-week course, by step. Open one to see what to do and submit your work.",
     "journey": "Your journey",
-    "journeyEmpty": "Your work, mentor feedback and Bloom learning will appear here as you go.",
-    "bloomTitle": "Bloom",
-    "bloomIntro": "Learn anything your project needs. Bloom suggests ideas based on your step and project, then plans small steps for you.",
-    "bloomStart": "Open Bloom",
+    "journeyEmpty": "Your work, mentor feedback and Spark learning will appear here as you go.",
+    "bloomTitle": "Spark",
+    "bloomIntro": "Learn anything your project needs. Spark suggests ideas based on your step and project, then plans small steps for you.",
+    "bloomStart": "Open Spark",
     "bloomNext": "Next: {task}",
     "bloomContinue": "Continue"
   },
@@ -303,7 +303,7 @@
     "attentionTitle": "Students who may need a nudge",
     "attentionNone": "Everyone is on track.",
     "reviewCount": "{count} to review",
-    "bloomColumn": "Bloom",
+    "bloomColumn": "Spark",
     "lastActive": "Last active"
   },
   "mentorStudent": {
@@ -345,7 +345,7 @@
     "work": "Work by step",
     "notSubmitted": "Not submitted yet.",
     "olderVersions": "{count, plural, one {# earlier version} other {# earlier versions}}",
-    "bloom": "Bloom learning",
+    "bloom": "Spark learning",
     "bloomHint": "What they’re learning on their own. Open a path to see their steps, reflections and questions, and leave a note.",
     "bloomSummary": "{paths, plural, one {# path} other {# paths}} · {done}/{total} steps",
     "journey": "Journey"
@@ -439,8 +439,8 @@
     "permissionsIntro": "Optional — you can change these at any time.",
     "download": "Download my child’s data",
     "deleteHint": "To delete your child’s account and data, message us on WhatsApp.",
-    "bloom": "What they’re learning in Bloom",
-    "bloomHint": "Bloom is your child’s personal learning space. Open a path to see their steps, reflections and questions.",
+    "bloom": "What they’re learning in Spark",
+    "bloomHint": "Spark is your child’s personal learning space. Open a path to see their steps, reflections and questions.",
     "bloomSummary": "{paths, plural, one {# path} other {# paths}} · {done} steps done",
     "journey": "Their journey"
   },
@@ -459,8 +459,8 @@
       "body": "Let your child’s portfolio page be visible to anyone with the link. Turned off, only your family and mentors can see it."
     },
     "bloom_ai": {
-      "title": "Bloom AI guide",
-      "body": "Let your child use Bloom’s AI to suggest learning topics, plan steps and answer questions. Their age group, course step and project are shared, never their name. You and their mentor can read every question and answer."
+      "title": "Spark AI guide",
+      "body": "Let your child use Spark’s AI to suggest learning topics, plan steps and answer questions. Their age group, course step and project are shared, never their name. You and their mentor can read every question and answer."
     }
   },
   "admin": {
@@ -473,7 +473,7 @@
       "unpaid": "Unpaid",
       "activeWeek": "Active this week",
       "toReview": "Waiting for review",
-      "bloomPaths": "Bloom paths"
+      "bloomPaths": "Spark paths"
     },
     "groups": "Groups",
     "starts": "Starts {date}",
@@ -687,7 +687,7 @@
   },
   "nav": {
     "home": "Home",
-    "bloom": "Bloom",
+    "bloom": "Spark",
     "activities": "Activities",
     "project": "Project",
     "classes": "Classes",
@@ -721,7 +721,7 @@
   "bloom": {
     "eyebrow": "Your learning space",
     "pilot": "Pilot",
-    "title": "Bloom",
+    "title": "Spark",
     "intro": "Learn what your project needs, at your own pace. Pick a topic, follow small steps, write what you learned — your mentor can see your progress and cheer you on.",
     "stats": {
       "active": "In progress",
@@ -730,9 +730,9 @@
       "overall": "Overall"
     },
     "startTitle": "Start something new",
-    "startIntroAi": "Tell Bloom what you’re curious about, or let it suggest ideas from your project and this week’s step.",
+    "startIntroAi": "Tell Spark what you’re curious about, or let it suggest ideas from your project and this week’s step.",
     "startIntroManual": "Name a topic you want to learn and add your own steps.",
-    "noConsentHint": "Bloom’s AI ideas and answers are off until your parent turns on “Bloom AI guide” in their account. You can still make your own learning paths.",
+    "noConsentHint": "Spark’s AI ideas and answers are off until your parent turns on “Spark AI guide” in their account. You can still make your own learning paths.",
     "curious": "What are you curious about? (optional)",
     "curiousPlaceholder": "e.g. how apps make money, drawing logos, talking to customers",
     "suggest": "Suggest ideas",
@@ -758,14 +758,14 @@
       "standard": "5 steps",
       "deep": "7 steps"
     },
-    "letBloomPlan": "Let Bloom plan the steps for me (you can add or change steps later)",
+    "letBloomPlan": "Let Spark plan the steps for me (you can add or change steps later)",
     "createPath": "Create path",
     "activeTitle": "In progress",
     "noActive": "Nothing in progress",
     "noActiveBody": "Start a learning path above — small steps add up fast.",
     "completedTitle": "Completed",
     "archivedTitle": "{count, plural, one {# archived path} other {# archived paths}}",
-    "byBloom": "Planned by Bloom",
+    "byBloom": "Planned by Spark",
     "hasMentorNote": "Mentor note",
     "tasksDone": "{done} of {total} steps done",
     "pathStatus": {
@@ -789,7 +789,7 @@
       "build": "Build",
       "present": "Present"
     },
-    "back": "Back to Bloom",
+    "back": "Back to Spark",
     "backToChild": "Back to your child",
     "backToStudent": "Back to {name}",
     "celebrate": "🎉 You finished this path! Look back at your reflections — and tell your mentor what you learned.",
@@ -811,11 +811,11 @@
     "taskDetails": "Details",
     "taskDetailsPlaceholder": "How you’ll do it (optional)",
     "addTask": "Add step",
-    "askTitle": "Ask Bloom",
-    "askAboutTask": "Ask Bloom about this step",
+    "askTitle": "Ask Spark",
+    "askAboutTask": "Ask Spark about this step",
     "askPlaceholder": "e.g. Can you give me an example?",
     "ask": "Ask",
-    "bloomSays": "Bloom",
+    "bloomSays": "Spark",
     "mentorNote": "Mentor note",
     "mentorNoteFrom": "Note from {name}",
     "yourMentor": "your mentor",
@@ -834,17 +834,17 @@
       "noteSaved": "Note saved."
     },
     "errors": {
-      "notAllowed": "Only students can change their Bloom.",
+      "notAllowed": "Only students can change their Spark.",
       "titleRequired": "Please give it a name.",
       "questionRequired": "Type your question first.",
       "failed": "Something went wrong. Please try again.",
       "ai": {
-        "noConsent": "Bloom’s AI is off until your parent turns on “Bloom AI guide” in their account.",
-        "notConfigured": "Bloom’s AI isn’t set up yet. You can still create your own path.",
-        "refused": "Bloom couldn’t help with that one. Try asking in a different way, or ask your mentor.",
-        "rateLimited": "Bloom is busy right now. Try again in a minute.",
-        "failed": "Bloom couldn’t answer just now. Please try again.",
-        "dailyLimit": "You’ve asked Bloom a lot today. Have a go on your own, ask your mentor, or come back tomorrow."
+        "noConsent": "Spark’s AI is off until your parent turns on “Spark AI guide” in their account.",
+        "notConfigured": "Spark’s AI isn’t set up yet. You can still create your own path.",
+        "refused": "Spark couldn’t help with that one. Try asking in a different way, or ask your mentor.",
+        "rateLimited": "Spark is busy right now. Try again in a minute.",
+        "failed": "Spark couldn’t answer just now. Please try again.",
+        "dailyLimit": "You’ve asked Spark a lot today. Have a go on your own, ask your mentor, or come back tomorrow."
       }
     }
   },
@@ -864,7 +864,7 @@
       "path_started": "Started learning",
       "path_completed": "Completed learning path",
       "task_done": "Finished step",
-      "question": "Asked Bloom:"
+      "question": "Asked Spark:"
     }
   },
   "adminPeople": {
@@ -935,7 +935,7 @@
     "doneOf": "{done} of {total} activities done",
     "overdue": "{count, plural, =0 {Nothing overdue} one {# activity overdue} other {# activities overdue}}",
     "notInGroup": "Not in a group yet.",
-    "bloom": "Bloom learning",
+    "bloom": "Spark learning",
     "bloomNeedsGroup": "{count, plural, =0 {No learning paths yet.} one {# learning path. Add the student to a group to open it.} other {# learning paths. Add the student to a group to open them.}}",
     "details": "Details",
     "journey": "Journey",
@@ -961,7 +961,7 @@
       "public_portfolio": "Public portfolio",
       "media": "Demo Day video",
       "ai": "AI progress cards",
-      "bloom_ai": "Bloom AI guide"
+      "bloom_ai": "Spark AI guide"
     },
     "account": "Sign-in and access",
     "lastSignIn": "Last signed in {date}",
@@ -971,7 +971,7 @@
   },
   "adminAi": {
     "title": "AI usage",
-    "intro": "Every call to the AI, counted per day. No questions or answers are stored, only counts. Each student can make {limit} Bloom AI requests in 24 hours.",
+    "intro": "Every call to the AI, counted per day. No questions or answers are stored, only counts. Each student can make {limit} Spark AI requests in 24 hours.",
     "rangeLabel": "Time range",
     "lastDays": "Last {count} days",
     "stats": {
@@ -981,10 +981,10 @@
       "notAnswered": "Not answered"
     },
     "empty": "No AI use in this period",
-    "emptyBody": "Calls appear here as soon as students use Bloom or mentors draft progress cards with AI.",
+    "emptyBody": "Calls appear here as soon as students use Spark or mentors draft progress cards with AI.",
     "perDay": "Per day",
     "perCapability": "Per feature",
-    "topStudents": "Students using Bloom most",
+    "topStudents": "Students using Spark most",
     "columns": {
       "day": "Day",
       "capability": "Feature",
@@ -996,9 +996,9 @@
       "notAnswered": "Not answered"
     },
     "capabilities": {
-      "bloom_suggest": "Bloom: suggest paths",
-      "bloom_plan": "Bloom: plan a path",
-      "bloom_ask": "Bloom: answer a question",
+      "bloom_suggest": "Spark: suggest paths",
+      "bloom_plan": "Spark: plan a path",
+      "bloom_ask": "Spark: answer a question",
       "progress_card": "Progress card draft"
     },
     "unknownStudent": "Unknown student",
@@ -1053,7 +1053,7 @@
       "people": "People",
       "groups": "Groups",
       "work": "Course work",
-      "bloom": "Bloom"
+      "bloom": "Spark"
     },
     "empty": "Nothing recorded yet",
     "someone": "Someone",
@@ -1084,9 +1084,9 @@
       "feedback": "feedback",
       "progress_cards": "a progress card",
       "invitations": "an invitation",
-      "bloom_paths": "a Bloom path",
-      "bloom_tasks": "a Bloom step",
-      "bloom_questions": "a Bloom question"
+      "bloom_paths": "a Spark path",
+      "bloom_tasks": "a Spark step",
+      "bloom_questions": "a Spark question"
     }
   }
 }

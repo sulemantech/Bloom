@@ -42,7 +42,7 @@ export default async function MentorStudentPage({
   const weeks = Array.from({ length: program.weeks }, (_, i) => i + 1);
   const base = `/mentor/groups/${cohortId}/students/${studentId}`;
   const { events, lastActive, paths } = await loadTimeline(supabase, studentId, overview, {
-    bloomHref: (id) => `${base}/bloom/${id}`,
+    bloomHref: (id) => `${base}/spark/${id}`,
     activityHref: (id) => `${base}#activity-${id}`,
   });
   const bloom = bloomStats(paths);
@@ -101,7 +101,7 @@ export default async function MentorStudentPage({
             <span className="text-[13px] text-soft">{t("bloomSummary", { paths: bloom.paths, done: bloom.tasksDone, total: bloom.tasksTotal })}</span>
           </div>
           <p className="text-[13px] text-soft">{t("bloomHint")}</p>
-          <BloomPathList paths={paths} hrefFor={(id) => `${base}/bloom/${id}`} />
+          <BloomPathList paths={paths} hrefFor={(id) => `${base}/spark/${id}`} />
         </section>
         <section className="card flex flex-col gap-3 p-5 lg:col-span-2" aria-labelledby="journey-heading">
           <h2 id="journey-heading" className="font-display-tight text-lg">{t("journey")}</h2>

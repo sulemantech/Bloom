@@ -21,7 +21,7 @@ linked documents go deeper.
 
 ```
 app/                  one folder per area; page.tsx renders, actions.ts changes data
-  student/            home, activities, project, classes, bloom/ (learning paths)
+  student/            home, activities, project, classes, spark/ (learning paths, Spark)
   parent/             children, consents, approved progress cards
   mentor/             groups, students, feedback, progress cards, Bloom notes
   admin/              people, groups, programme, payments, activity log

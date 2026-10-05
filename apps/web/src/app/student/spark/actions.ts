@@ -92,7 +92,7 @@ export async function createPath(_prev: BloomState, formData: FormData): Promise
     return { status: "error", message: "failed" };
   }
 
-  redirect(`/student/bloom/${pathId}`);
+  redirect(`/student/spark/${pathId}`);
 }
 
 export async function addTask(_prev: BloomState, formData: FormData): Promise<BloomState> {
@@ -163,7 +163,7 @@ export async function deletePath(_prev: BloomState, formData: FormData): Promise
   const supabase = await createClient();
   const { error } = await supabase.from("bloom_paths").delete().eq("id", str(formData, "pathId")).eq("student_id", student.id);
   if (error) return { status: "error", message: "failed" };
-  redirect("/student/bloom");
+  redirect("/student/spark");
 }
 
 export async function askQuestion(_prev: BloomState, formData: FormData): Promise<BloomState> {

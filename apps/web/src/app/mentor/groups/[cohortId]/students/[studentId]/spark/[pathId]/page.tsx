@@ -12,7 +12,7 @@ import { BloomNoteForm } from "../../../../../../forms";
 
 export const metadata: Metadata = { title: "Learning path" };
 
-export default async function MentorBloomPath({ params }: PageProps<"/mentor/groups/[cohortId]/students/[studentId]/bloom/[pathId]">) {
+export default async function MentorBloomPath({ params }: PageProps<"/mentor/groups/[cohortId]/students/[studentId]/spark/[pathId]">) {
   const { cohortId, studentId, pathId } = await params;
   const profile = await requireRole("mentor", "admin");
   const t = await getTranslations("bloom");

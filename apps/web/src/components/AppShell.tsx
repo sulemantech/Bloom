@@ -17,7 +17,7 @@ async function navFor(profile: Profile): Promise<NavItem[]> {
     case "student":
       return [
         { href: "/student", label: t("home"), icon: "home", exact: true },
-        { href: "/student/bloom", label: t("bloom"), icon: "sparkle" },
+        { href: "/student/spark", label: t("bloom"), icon: "sparkle" },
         { href: "/student/activities", label: t("activities"), icon: "list" },
         { href: "/student/project", label: t("project"), icon: "folder" },
         { href: "/student/classes", label: t("classes"), icon: "calendar" },

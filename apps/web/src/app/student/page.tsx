@@ -21,7 +21,7 @@ export default async function StudentHome() {
   const supabase = await createClient();
   const overview = await loadStudentOverview(supabase, profile.id);
   const { events, paths } = await loadTimeline(supabase, profile.id, overview, {
-    bloomHref: (id) => `/student/bloom/${id}`,
+    bloomHref: (id) => `/student/spark/${id}`,
     activityHref: (id) => `/student/activities/${id}`,
   });
 
@@ -43,12 +43,12 @@ export default async function StudentHome() {
           <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-gradient-to-r from-lime to-cyan" style={{ width: `${current.total ? Math.round((current.done / current.total) * 100) : 0}%` }} />
           </div>
-          <Link href={`/student/bloom/${current.id}`} className="btn btn-primary mt-1 self-start px-4 py-2 text-sm">{t("bloomContinue")}</Link>
+          <Link href={`/student/spark/${current.id}`} className="btn btn-primary mt-1 self-start px-4 py-2 text-sm">{t("bloomContinue")}</Link>
         </div>
       ) : (
         <div className="relative flex flex-col gap-2">
           <p className="text-sm text-mist">{t("bloomIntro")}</p>
-          <Link href="/student/bloom" className="btn btn-primary self-start px-4 py-2 text-sm">{t("bloomStart")}</Link>
+          <Link href="/student/spark" className="btn btn-primary self-start px-4 py-2 text-sm">{t("bloomStart")}</Link>
         </div>
       )}
     </section>

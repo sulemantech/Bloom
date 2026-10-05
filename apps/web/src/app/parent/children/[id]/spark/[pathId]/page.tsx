@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Learning path" };
 
 /** Read-only: parents follow what their child is learning; row-level security limits it to their own child. */
-export default async function ParentBloomPath({ params }: PageProps<"/parent/children/[id]/bloom/[pathId]">) {
+export default async function ParentBloomPath({ params }: PageProps<"/parent/children/[id]/spark/[pathId]">) {
   const { id, pathId } = await params;
   const profile = await requireRole("parent");
   const t = await getTranslations("bloom");
