@@ -71,37 +71,28 @@ export async function createPath(_prev: BloomState, formData: FormData): Promise
 
   const week = overview?.week ?? null;
   const stage = overview && week ? stageForWeek(overview.stages, Math.min(Math.max(week, 1), overview.program.weeks)) : undefined;
-  const { data: path, error } = await supabase
-    .from("bloom_paths")
-    .insert({
-      student_id: student.id,
-      cohort_id: overview?.cohort.id ?? null,
-      title,
-      goal,
-      depth,
-      stage_key: stage?.key ?? null,
-      summary: plan?.summary ?? "",
-      ai_generated: Boolean(plan),
-    })
-    .select("id")
-    .single();
-  if (error || !path) return { status: "error", message: "failed" };
-
-  if (plan?.tasks.length) {
-    const { error: taskError } = await supabase.from("bloom_tasks").insert(
-      plan.tasks.slice(0, 10).map((task, i) => ({
-        path_id: path.id,
-        student_id: student.id,
-        position: i + 1,
-        kind: task.kind,
-        title: task.title.slice(0, 160),
-        details: task.details.slice(0, 6000),
-      })),
-    );
-    if (taskError) console.error("Bloom tasks insert failed", taskError);
+  // The path and its steps are saved in one transaction: a bad step fails the whole path instead of
+  // leaving an empty one. Steps the model returned without a title are dropped first.
+  const tasks = (plan?.tasks ?? [])
+    .map((task) => ({ kind: task.kind, title: task.title.trim().slice(0, 160), details: task.details.slice(0, 6000) }))
+    .filter((task) => task.title)
+    .slice(0, 10);
+  const { data: pathId, error } = await supabase.rpc("create_bloom_path", {
+    p_title: title,
+    p_goal: goal,
+    p_depth: depth,
+    p_summary: plan?.summary ?? "",
+    p_ai_generated: Boolean(plan),
+    p_tasks: tasks,
+    p_cohort: overview?.cohort.id,
+    p_stage_key: stage?.key,
+  });
+  if (error || !pathId) {
+    if (error) console.error("Bloom path create failed", error);
+    return { status: "error", message: "failed" };
   }
 
-  redirect(`/student/bloom/${path.id}`);
+  redirect(`/student/bloom/${pathId}`);
 }
 
 export async function addTask(_prev: BloomState, formData: FormData): Promise<BloomState> {
@@ -131,29 +122,25 @@ export async function updateTask(_prev: BloomState, formData: FormData): Promise
   if (!student) return { status: "error", message: "notAllowed" };
   const taskId = str(formData, "taskId");
   const status = oneOf(TASK_STATUSES, str(formData, "status"), "todo");
-  const reflection = str(formData, "reflection", 4000);
+  // Only touch the note when the form showed the note field, so finishing a step never wipes it.
+  const reflection = formData.has("reflection") ? str(formData, "reflection", 4000) || null : undefined;
 
   const supabase = await createClient();
   const { data: task, error } = await supabase
     .from("bloom_tasks")
-    .update({ status, reflection: reflection || null })
+    .update(reflection === undefined ? { status } : { status, reflection })
     .eq("id", taskId)
     .eq("student_id", student.id)
     .select("path_id")
     .single();
   if (error || !task) return { status: "error", message: "failed" };
 
-  // Finishing the last task completes the path; reopening a task reopens it.
-  const { data: siblings } = await supabase.from("bloom_tasks").select("status").eq("path_id", task.path_id);
-  const allDone = (siblings ?? []).length > 0 && (siblings ?? []).every((s) => s.status === "done");
+  // The database keeps the path's status in step with its steps (bloom_tasks_sync_path).
   const { data: path } = await supabase.from("bloom_paths").select("status").eq("id", task.path_id).single();
-  if (path && path.status !== "archived") {
-    const next = allDone ? "completed" : "active";
-    if (next !== path.status) await supabase.from("bloom_paths").update({ status: next }).eq("id", task.path_id);
-  }
+  const pathDone = path?.status === "completed";
 
   refresh();
-  return { status: "ok", message: status === "done" ? (allDone ? "pathDone" : "taskDone") : "saved" };
+  return { status: "ok", message: status === "done" ? (pathDone ? "pathDone" : "taskDone") : "saved" };
 }
 
 export async function setPathStatus(_prev: BloomState, formData: FormData): Promise<BloomState> {

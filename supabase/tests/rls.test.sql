@@ -322,6 +322,55 @@ select is((select count(*)::int from public.bloom_paths
            where id in ('70000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002')), 2,
           'admin sees every Bloom path');
 
+-- ---------------------------------------------------------------------------
+-- Bloom path integrity: atomic creation, status follows the steps
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+
+select lives_ok(
+  $$select public.create_bloom_path('Planned path', 'A goal', 'quick', 'Summary', true,
+      '[{"kind": "learn", "title": "Read"}, {"kind": "do", "title": "Try", "details": "How"}]'::jsonb,
+      '00000000-0000-0000-0000-000000001001', 'explore')$$,
+  'student can create a path with its steps in one call');
+select is((select count(*)::int from public.bloom_tasks t join public.bloom_paths p on p.id = t.path_id
+           where p.title = 'Planned path'), 2, 'the planned steps were saved with the path');
+select is((select string_agg(t.title, ',' order by t.position) from public.bloom_tasks t
+           join public.bloom_paths p on p.id = t.path_id where p.title = 'Planned path'),
+          'Read,Try', 'steps keep their planned order');
+
+select throws_ok(
+  $$select public.create_bloom_path('Broken plan', '', 'quick', '', true,
+      '[{"kind": "learn", "title": "Fine"}, {"kind": "do", "title": ""}]'::jsonb)$$,
+  '23514', null, 'a step that breaks a rule fails the whole path');
+select is((select count(*)::int from public.bloom_paths where title = 'Broken plan'), 0,
+          'no empty path is left behind when a step fails');
+
+-- S1's path: its only step was finished above, so the path is completed.
+select is((select status::text from public.bloom_paths where id = '70000000-0000-0000-0000-000000000001'),
+          'completed', 'finishing the last step completes the path');
+insert into public.bloom_tasks (id, path_id, student_id, title)
+values ('71000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', 'One more');
+select is((select status::text from public.bloom_paths where id = '70000000-0000-0000-0000-000000000001'),
+          'active', 'adding a step to a completed path makes it active again');
+update public.bloom_tasks set status = 'done' where id = '71000000-0000-0000-0000-000000000002';
+update public.bloom_paths set status = 'archived' where id = '70000000-0000-0000-0000-000000000001';
+select is((select status::text from public.bloom_paths where id = '70000000-0000-0000-0000-000000000001'),
+          'archived', 'a student can archive a path');
+update public.bloom_tasks set status = 'doing' where id = '71000000-0000-0000-0000-000000000002';
+select is((select status::text from public.bloom_paths where id = '70000000-0000-0000-0000-000000000001'),
+          'archived', 'changing a step does not unarchive the path');
+update public.bloom_tasks set status = 'done' where id = '71000000-0000-0000-0000-000000000002';
+update public.bloom_paths set status = 'active' where id = '70000000-0000-0000-0000-000000000001';
+select is((select status::text from public.bloom_paths where id = '70000000-0000-0000-0000-000000000001'),
+          'completed', 'restoring a path whose steps are all done brings it back completed');
+update public.bloom_tasks set status = 'doing' where id = '71000000-0000-0000-0000-000000000002';
+update public.bloom_paths set status = 'completed' where id = '70000000-0000-0000-0000-000000000001';
+select is((select status::text from public.bloom_paths where id = '70000000-0000-0000-0000-000000000001'),
+          'active', 'a path with an unfinished step cannot be marked completed');
+
 set local role postgres;
+select is((select completed_at is not null from public.bloom_paths where title = 'Planned path'), false,
+          'a new path is not completed');
 select * from finish();
 rollback;

@@ -1046,7 +1046,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      bloom_path_derived_status: {
+        Args: { p_path: string }
+        Returns: Database["public"]["Enums"]["bloom_path_status"]
+      }
       can_view_student: { Args: { p_student: string }; Returns: boolean }
+      create_bloom_path: {
+        Args: {
+          p_ai_generated: boolean
+          p_cohort?: string
+          p_depth: string
+          p_goal: string
+          p_stage_key?: string
+          p_summary: string
+          p_tasks: Json
+          p_title: string
+        }
+        Returns: string
+      }
       export_student_data: { Args: { p_student: string }; Returns: Json }
       has_active_consent: {
         Args: {
