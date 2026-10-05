@@ -215,6 +215,17 @@ body {
   color: transparent;
 }
 
+/* Page-change bar (NavigationProgress): appears after a short delay so fast pages don't flash it,
+   then creeps towards the end. With reduced motion it simply shows, without moving. */
+@keyframes nav-progress {
+  0% { width: 0; opacity: 0; }
+  2% { width: 12%; opacity: 1; }
+  100% { width: 88%; opacity: 1; }
+}
+.nav-progress {
+  animation: nav-progress 12s cubic-bezier(0.1, 0.7, 0.3, 1) 120ms both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

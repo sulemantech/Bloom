@@ -57,6 +57,7 @@
   },
   "shell": {
     "signOut": "Sign out",
+    "loading": "Loading the page",
     "roles": {
       "student": "Student",
       "parent": "Parent",
