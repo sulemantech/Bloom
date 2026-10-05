@@ -5,6 +5,7 @@ import { BloomPathCard } from "@/components/bloom";
 import { requireRole } from "@/lib/auth";
 import { aiConfigured } from "@/lib/ai";
 import { bloomStats, hasConsent, loadBloomPaths } from "@/lib/data/bloom";
+import { bloomV2Enabled } from "@/lib/flags";
 import { createClient } from "@/lib/supabase/server";
 import { StartPath } from "./forms";
 
@@ -14,7 +15,11 @@ export default async function BloomHome() {
   const profile = await requireRole("student");
   const t = await getTranslations("bloom");
   const supabase = await createClient();
-  const [paths, consent] = await Promise.all([loadBloomPaths(supabase, profile.id), hasConsent(supabase, profile.id, "bloom_ai")]);
+  const [paths, consent, v2] = await Promise.all([
+    loadBloomPaths(supabase, profile.id),
+    hasConsent(supabase, profile.id, "bloom_ai"),
+    bloomV2Enabled(profile.id),
+  ]);
   const aiAllowed = consent && aiConfigured();
   const stats = bloomStats(paths);
   const active = paths.filter((p) => p.status === "active");
@@ -27,7 +32,10 @@ export default async function BloomHome() {
         <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-violet/30 blur-3xl" aria-hidden="true" />
         <div className="pointer-events-none absolute -bottom-20 left-10 size-56 rounded-full bg-cyan/20 blur-3xl" aria-hidden="true" />
         <div className="relative flex flex-col gap-2">
-          <p className="label-caps text-lime">{t("eyebrow")}</p>
+          <p className="label-caps flex items-center gap-2 text-lime">
+            {t("eyebrow")}
+            {v2 && <span className="rounded-full bg-lime/20 px-2 py-0.5">{t("pilot")}</span>}
+          </p>
           <h1 className="font-display-tight text-[30px] leading-tight sm:text-[36px]">{t("title")}</h1>
           <p className="max-w-xl text-mist">{t("intro")}</p>
         </div>

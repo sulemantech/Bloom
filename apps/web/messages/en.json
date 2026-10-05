@@ -718,6 +718,7 @@
   },
   "bloom": {
     "eyebrow": "Your learning space",
+    "pilot": "Pilot",
     "title": "Bloom",
     "intro": "Learn what your project needs, at your own pace. Pick a topic, follow small steps, write what you learned — your mentor can see your progress and cheer you on.",
     "stats": {
