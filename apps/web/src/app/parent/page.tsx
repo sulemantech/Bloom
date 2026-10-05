@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { AppShell } from "@/components/AppShell";
 import { AGE_GROUP_TONE, Badge } from "@/components/ui/Badge";
@@ -65,6 +66,9 @@ export default async function ParentHome() {
                       ? t("inGroup", { group: membership.cohort.name })
                       : t("notInGroup")}
                   </p>
+                  <Link href={`/parent/children/${child.id}`} className="btn btn-primary self-start px-4 py-2 text-sm">
+                    {t("viewProgress")}
+                  </Link>
                   <ResetPasswordForm studentId={child.id} />
                 </li>
               );

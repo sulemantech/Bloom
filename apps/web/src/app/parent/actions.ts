@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/supabase/database.types";
 import {
   CONSENT_VERSION,
   getCurrentProfile,
@@ -106,5 +107,33 @@ export async function resetChildPassword(_prev: FormState, formData: FormData): 
 
   const { error } = await createAdminClient().auth.admin.updateUserById(studentId, { password });
   if (error) return { status: "error", message: "resetFailed" };
+  return { status: "ok" };
+}
+
+type ConsentType = Database["public"]["Enums"]["consent_type"];
+const TOGGLEABLE: ConsentType[] = ["ai", "public_portfolio", "media"];
+
+/** A parent grants or withdraws an optional consent for their child. */
+export async function setConsent(_prev: FormState, formData: FormData): Promise<FormState> {
+  const parent = await getCurrentProfile();
+  if (parent?.role !== "parent") return { status: "error", message: "notAllowed" };
+
+  const studentId = String(formData.get("studentId") ?? "");
+  const type = String(formData.get("type") ?? "") as ConsentType;
+  const grant = formData.get("grant") === "true";
+  if (!TOGGLEABLE.includes(type)) return { status: "error", message: "notAllowed" };
+
+  const supabase = await createClient();
+  const { error } = grant
+    ? await supabase.from("consents").insert({ student_id: studentId, parent_id: parent.id, type, version: CONSENT_VERSION })
+    : await supabase
+        .from("consents")
+        .update({ revoked_at: new Date().toISOString() })
+        .eq("student_id", studentId)
+        .eq("type", type)
+        .is("revoked_at", null);
+  if (error) return { status: "error", message: "consentFailed" };
+
+  refresh();
   return { status: "ok" };
 }

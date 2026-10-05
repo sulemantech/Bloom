@@ -34,10 +34,6 @@ export async function studentSignIn(_prev: LoginState, formData: FormData): Prom
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email: studentEmail(username), password });
-  // TEMP DEBUG (remove): never logs the password itself.
-  if (process.env.NODE_ENV !== "production") {
-    console.info("[studentSignIn]", JSON.stringify({ email: studentEmail(username), passwordLength: password.length, error: error ? { status: error.status, code: error.code, message: error.message } : null }));
-  }
   if (error) {
     return { status: "error", message: error.status === 429 ? "tooManyRequests" : "wrongCredentials" };
   }

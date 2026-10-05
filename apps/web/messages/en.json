@@ -57,7 +57,7 @@
   },
   "parent": {
     "title": "Hello {name}",
-    "intro": "Here you'll see your child's progress, project and weekly progress cards.",
+    "intro": "See each child’s progress, project, mentor feedback and weekly progress cards.",
     "children": "Your children",
     "noChildren": "You haven't added a child yet. Add them below so they can sign in.",
     "usernameLabel": "Username",
@@ -102,17 +102,8 @@
         "passwordShort": "The password must be at least 8 characters.",
         "resetFailed": "The password couldn't be changed. Please try again."
       }
-    }
-  },
-  "comingSoon": {
-    "hello": "Hello {name}",
-    "intro": {
-      "student": "Your weekly activities and your project will appear here.",
-      "parent": "Your child's progress will appear here.",
-      "mentor": "Your group, students' submissions and progress cards will appear here.",
-      "admin": "Groups, invitations and activities will be managed here."
     },
-    "body": "This page is being built and will be ready before the first group starts."
+    "viewProgress": "View progress"
   },
   "privacy": {
     "title": "Privacy and safeguarding",
@@ -141,6 +132,409 @@
     "contact": {
       "title": "Contact",
       "body": "Youth IdeaLab is run by MetaFront LLP, Islamabad. Contact us on WhatsApp with any questions about your child's data."
+    }
+  },
+  "status": {
+    "todo": "To do",
+    "overdue": "Overdue",
+    "submitted": "Waiting for review",
+    "needs_changes": "Needs changes",
+    "done": "Done"
+  },
+  "course": {
+    "weeksLabel": "Programme weeks",
+    "startTbc": "Your group start date will be confirmed soon. You can look at the activities already.",
+    "notStarted": "Your group starts on {date}.",
+    "finished": "The course is complete — well done!",
+    "weekOf": "Week {week} of {total}",
+    "week": "Week {week}",
+    "submittedAt": "Submitted {date}",
+    "feedbackFrom": "Feedback from {name}",
+    "mentor": "your mentor"
+  },
+  "student": {
+    "hello": "Hello {name}",
+    "noGroup": "You are not in a group yet. Our team will add you before the first class.",
+    "ageGroups": {
+      "explorer": "Explorer (12–14)",
+      "builder": "Builder (15–18)"
+    },
+    "areas": {
+      "technology": "Technology",
+      "design": "Design",
+      "business": "Business",
+      "social_impact": "Social impact",
+      "undecided": "Not sure yet"
+    },
+    "thisWeek": "This week (week {week})",
+    "nothingThisWeek": "No activities this week.",
+    "catchUp": "{count, plural, one {# activity to catch up on} other {# activities to catch up on}}",
+    "progress": "Your progress",
+    "doneOf": "{done} of {total} activities done",
+    "submittedOf": "{submitted} of {total} submitted",
+    "myProject": "My project",
+    "edit": "Edit",
+    "start": "Start",
+    "untitled": "Untitled project",
+    "noProject": "Describe the problem you want to solve. You can change it any time.",
+    "allWeeks": "All 8 weeks",
+    "weeks": "Weeks {from}–{to}",
+    "back": "Back to my course",
+    "weekLabel": "Week {week}",
+    "instructions": "What to do",
+    "yourSubmissions": "Your submissions"
+  },
+  "submit": {
+    "title": "Submit your work",
+    "titleAgain": "Submit a new version",
+    "answer": "Your answer",
+    "noteOptional": "A short note (optional)",
+    "link": "Link to your work",
+    "files": "Files",
+    "filesHint": "Images, PDF, video, slides or documents. Up to 25 MB each.",
+    "send": "Submit",
+    "sending": "Submitting…",
+    "uploading": "Uploading files…",
+    "sent": "Submitted! Your mentor will review it.",
+    "errors": {
+      "empty": "Add an answer, a link or a file before submitting.",
+      "badLink": "Links must start with http:// or https://",
+      "tooBig": "Each file must be 25 MB or smaller.",
+      "upload": "A file could not be uploaded. Please try again.",
+      "failed": "Something went wrong. Please try again.",
+      "notAllowed": "Only students can submit work."
+    }
+  },
+  "project": {
+    "back": "Back to my course",
+    "heading": "My project",
+    "intro": "Your project is your answer to a real problem. Keep it up to date as it grows — your mentor and parent can see it.",
+    "area": "Project area",
+    "areas": {
+      "technology": "Technology",
+      "design": "Design",
+      "business": "Business",
+      "social_impact": "Social impact",
+      "undecided": "Not sure yet"
+    },
+    "title": "Project name",
+    "titlePlaceholder": "e.g. Tiffin service ordering page",
+    "problem": "The problem you are solving",
+    "problemPlaceholder": "[Who] struggles with [what] because [why].",
+    "status": "Where you are",
+    "statuses": {
+      "exploring": "Exploring ideas",
+      "chosen": "Problem chosen",
+      "building": "Building",
+      "presenting": "Preparing to present",
+      "done": "Finished"
+    },
+    "save": "Save project",
+    "saving": "Saving…",
+    "saved": "Project saved.",
+    "error": "The project could not be saved. Please try again."
+  },
+  "sessions": {
+    "title": "Live classes",
+    "liveClass": "Live class",
+    "join": "Join class",
+    "none": "The next class time will appear here.",
+    "recordings": "Recordings"
+  },
+  "mentor": {
+    "myGroups": "My groups",
+    "noGroups": "You are not mentoring a group yet. An admin will add you to one.",
+    "starts": "Starts {date}",
+    "startTbc": "Start date to be confirmed",
+    "backToAdmin": "Back to admin",
+    "toReview": "Waiting for your review",
+    "allReviewed": "All caught up — nothing to review.",
+    "week": "Week {week}",
+    "students": "{count, plural, one {# student} other {# students}}",
+    "noStudents": "No students in this group yet.",
+    "student": "Student",
+    "weekShort": "W{week}",
+    "cardFor": "Card W{week}",
+    "ageGroups": {
+      "explorer": "Explorer",
+      "builder": "Builder"
+    },
+    "overdueCount": "{count} overdue",
+    "cardNone": "Not written",
+    "cardDraft": "Draft",
+    "cardSent": "Sent",
+    "cardSeen": "Seen by parent",
+    "legend": "Each cell shows activities done that week. Green: all done · Yellow: waiting for review · Red: overdue or needs changes.",
+    "sessions": "Live classes",
+    "liveClass": "Live class",
+    "joinLink": "Join link",
+    "recording": "Recording"
+  },
+  "mentorStudent": {
+    "back": "Back to {group}",
+    "ageGroups": {
+      "explorer": "Explorer",
+      "builder": "Builder"
+    },
+    "username": "Username: {username}",
+    "parents": "Parent: {names}",
+    "femaleMentor": "Prefers a female mentor",
+    "progress": "Progress",
+    "doneOf": "{done} of {total} activities done",
+    "overdue": "{count, plural, =0 {Nothing overdue} one {# activity overdue} other {# activities overdue}}",
+    "project": "Project",
+    "untitled": "Untitled project",
+    "areas": {
+      "technology": "Technology",
+      "design": "Design",
+      "business": "Business",
+      "social_impact": "Social impact",
+      "undecided": "Not sure yet"
+    },
+    "projectStatus": {
+      "exploring": "Exploring ideas",
+      "chosen": "Problem chosen",
+      "building": "Building",
+      "presenting": "Preparing to present",
+      "done": "Finished"
+    },
+    "noProject": "No project yet.",
+    "progressCard": "Weekly progress card",
+    "cardDraft": "Draft — parent can’t see it",
+    "cardSent": "Approved — sent to parent",
+    "cardSeen": "Approved — seen by parent",
+    "chooseWeek": "Choose a week",
+    "weekShort": "W{week}",
+    "cardHint": "Parents only see a card after you approve it.",
+    "work": "Work by step",
+    "notSubmitted": "Not submitted yet.",
+    "olderVersions": "{count, plural, one {# earlier version} other {# earlier versions}}"
+  },
+  "review": {
+    "feedback": "Your feedback",
+    "placeholder": "What went well, and what to try next…",
+    "markDone": "Mark done",
+    "askChanges": "Ask for changes",
+    "commentOnly": "Comment only",
+    "saved": "Feedback saved.",
+    "errors": {
+      "empty": "Write some feedback or choose a decision.",
+      "explainChanges": "Explain what to change so the student knows what to do.",
+      "failed": "Could not save. Please try again.",
+      "notAllowed": "Only mentors can review work."
+    }
+  },
+  "cards": {
+    "bodyLabel": "Card for week {week}",
+    "placeholder": "What they worked on, what went well, what is next, and how the family can help.",
+    "approve": "Approve and send to parent",
+    "updateApproved": "Update approved card",
+    "saveDraft": "Save draft",
+    "backToDraft": "Unpublish (back to draft)",
+    "approved": "Approved — the parent can now see this card.",
+    "draftSaved": "Draft saved. The parent can’t see it yet.",
+    "saved": "Saved.",
+    "errors": {
+      "emptyCard": "Write the card before saving.",
+      "failed": "Could not save the card. Please try again.",
+      "notAllowed": "Only mentors can write cards."
+    }
+  },
+  "sessionForm": {
+    "startsAt": "Date and time ({zone})",
+    "title": "Title",
+    "titlePlaceholder": "e.g. Week 3 — Choose your problem",
+    "joinUrl": "Join link (Zoom/Meet)",
+    "recordingUrl": "Recording link",
+    "add": "Add class",
+    "saveRecording": "Save recording",
+    "saved": "Saved.",
+    "errors": {
+      "badTime": "Choose a date and time.",
+      "badLink": "Links must start with http:// or https://",
+      "failed": "Could not save. Please try again.",
+      "notAllowed": "Only mentors and admins can manage classes."
+    }
+  },
+  "aiDraft": {
+    "button": "Draft with AI",
+    "drafting": "Drafting…",
+    "hint": "Uses this week’s work and your feedback. You edit and approve it.",
+    "label": "AI draft — not yet reviewed",
+    "use": "Use this draft",
+    "errors": {
+      "noConsent": "The parent hasn’t allowed AI help for this student. Write the card yourself, or ask the parent to turn it on in their account.",
+      "notConfigured": "AI drafting isn’t set up yet (missing API key).",
+      "refused": "The AI couldn’t write this draft. Please write it yourself.",
+      "rateLimited": "The AI is busy. Try again in a minute.",
+      "failed": "The draft couldn’t be created. Please try again.",
+      "notAllowed": "Only mentors can use AI drafts."
+    }
+  },
+  "parentChild": {
+    "back": "Back to your family",
+    "ageGroups": {
+      "explorer": "Explorer",
+      "builder": "Builder"
+    },
+    "noGroup": "Not in a group yet — our team will add them before the first class.",
+    "progress": "Progress",
+    "doneOf": "{done} of {total} activities done",
+    "overdue": "{count, plural, =0 {Nothing overdue} one {# activity to catch up on} other {# activities to catch up on}}",
+    "project": "Project",
+    "untitled": "Untitled project",
+    "areas": {
+      "technology": "Technology",
+      "design": "Design",
+      "business": "Business",
+      "social_impact": "Social impact",
+      "undecided": "Not sure yet"
+    },
+    "noProject": "No project yet — it takes shape in weeks 3–4.",
+    "cards": "Weekly progress cards",
+    "noCards": "Your child’s mentor sends a progress card each week. The first one will appear here.",
+    "cardTitle": "Week {week}",
+    "recentWork": "Recent work and mentor feedback",
+    "permissions": "Permissions",
+    "permissionsIntro": "Optional — you can change these at any time.",
+    "download": "Download my child’s data",
+    "deleteHint": "To delete your child’s account and data, message us on WhatsApp."
+  },
+  "consents": {
+    "failed": "Could not save. Please try again.",
+    "ai": {
+      "title": "AI help for mentors",
+      "body": "Let mentors use AI to draft weekly progress cards from your child’s work. A mentor always reviews the draft. Only your child’s first name and work are shared."
+    },
+    "media": {
+      "title": "Demo Day video",
+      "body": "Let us record your child’s Demo Day presentation and edit it into a showcase video for your family."
+    },
+    "public_portfolio": {
+      "title": "Public portfolio page",
+      "body": "Let your child’s portfolio page be visible to anyone with the link. Turned off, only your family and mentors can see it."
+    }
+  },
+  "admin": {
+    "title": "Admin",
+    "stats": {
+      "groups": "Groups",
+      "students": "Students",
+      "parents": "Parents",
+      "mentors": "Mentors & admins",
+      "unpaid": "Unpaid"
+    },
+    "groups": "Groups",
+    "starts": "Starts {date}",
+    "startTbc": "Start date to be confirmed",
+    "studentsCount": "{count, plural, one {# student} other {# students}}",
+    "mentorsCount": "{count, plural, one {# mentor} other {# mentors}}",
+    "unpaidCount": "{count} unpaid",
+    "newGroup": "New group",
+    "invite": "Invite a parent or mentor",
+    "inviteIntro": "They’ll get an email with a sign-in link. Parents then add their own children.",
+    "ungrouped": "{count, plural, one {# student isn’t in a group} other {# students aren’t in a group}}",
+    "ungroupedIntro": "Open a group and add them, choosing their age group.",
+    "people": "People",
+    "students": "Students",
+    "parents": "Parents",
+    "mentors": "Mentors & admins",
+    "ageGroups": {
+      "explorer": "Explorer",
+      "builder": "Builder"
+    },
+    "noGroup": "No group",
+    "parentOf": "Parent: {names}",
+    "children": "Children: {names}",
+    "noChildren": "No children added yet",
+    "adminBadge": "Admin"
+  },
+  "adminGroup": {
+    "back": "Back to admin",
+    "openMentorView": "Open mentor view",
+    "settings": "Group settings",
+    "students": "{count, plural, one {# student} other {# students}}",
+    "mentors": "{count, plural, one {# mentor} other {# mentors}}",
+    "paid": "Paid",
+    "unpaid": "Unpaid",
+    "refunded": "Refunded",
+    "addStudent": "Add a student",
+    "addMentor": "Add a mentor"
+  },
+  "adminForms": {
+    "groupName": "Group name",
+    "startDate": "Start date (first Saturday)",
+    "timezone": "Time zone",
+    "createGroup": "Create group",
+    "fullName": "Full name",
+    "email": "Email",
+    "role": "Role",
+    "roles": {
+      "parent": "Parent",
+      "mentor": "Mentor"
+    },
+    "mentorGroup": "Group (mentors only)",
+    "noGroup": "No group",
+    "tempPassword": "Temporary password (development only)",
+    "tempPasswordHint": "Leave empty to send an invitation email instead. With a password, the account is created at once and they sign in with the development password box.",
+    "invite": "Send invitation",
+    "classDay": "Class day",
+    "classStart": "Class starts",
+    "classEnd": "Class ends",
+    "days": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    },
+    "save": "Save",
+    "add": "Add",
+    "pickStudent": "Choose a student",
+    "pickMentor": "Choose a mentor",
+    "ageGroup": "Age group",
+    "ageGroups": {
+      "explorer": "Explorer (12–14)",
+      "builder": "Builder (15–18)"
+    },
+    "noFreeStudents": "Every student is already in a group. Parents add their children from their account.",
+    "noFreeMentors": "No other mentors. Invite one first.",
+    "fee": "Fee (Rs)",
+    "discount": "Discount",
+    "discountPlaceholder": "e.g. sibling 20%",
+    "payment": "Payment",
+    "payments": {
+      "unpaid": "Unpaid",
+      "paid": "Paid",
+      "refunded": "Refunded"
+    },
+    "removeFromGroup": "Remove from group",
+    "deleteStudent": "Delete this student’s account and data",
+    "deleteWarning": "This permanently deletes the account, all submissions, files, feedback and progress cards. It cannot be undone. Type the username “{username}” to confirm.",
+    "typeUsername": "Type the username to confirm",
+    "deleteForever": "Delete permanently",
+    "saved": "Saved.",
+    "invited": "Invitation sent.",
+    "created": "Account created. Share the temporary password with them.",
+    "deleted": "Student deleted.",
+    "errors": {
+      "notAllowed": "Only admins can do this.",
+      "nameRequired": "Please enter a name.",
+      "badDate": "Please choose a valid date.",
+      "badTimeZone": "Unknown time zone. Use a name like Asia/Karachi.",
+      "badSchedule": "Please check the class day and times.",
+      "pickPerson": "Choose someone first.",
+      "pickAgeGroup": "Choose an age group.",
+      "alreadyMember": "They are already in this group.",
+      "badFee": "The fee must be a number.",
+      "badEmail": "Please enter a valid email address.",
+      "badTempPassword": "Temporary passwords need 8+ characters and are only allowed in development.",
+      "emailExists": "An account with this email already exists.",
+      "inviteFailed": "The invitation could not be sent. Supabase only emails team members until custom email (SMTP) is set up.",
+      "confirmMismatch": "The username doesn’t match.",
+      "failed": "Something went wrong. Please try again."
     }
   }
 }

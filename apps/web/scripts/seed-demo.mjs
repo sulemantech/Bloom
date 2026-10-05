@@ -85,6 +85,43 @@ await admin.from("memberships").upsert(
   { onConflict: "cohort_id,user_id", ignoreDuplicates: true },
 );
 
+// Demo group: started on the Saturday before last (so it's in week 2), with classes and AI consent.
+const today = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Karachi" }));
+const lastSaturday = new Date(today);
+lastSaturday.setDate(today.getDate() - ((today.getDay() + 1) % 7));
+const start = new Date(lastSaturday);
+start.setDate(lastSaturday.getDate() - 7);
+const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+await admin.from("cohorts").update({ start_date: iso(start) }).eq("id", COHORT_ID).is("start_date", null);
+
+const { count: sessionCount } = await admin.from("sessions").select("*", { count: "exact", head: true }).eq("cohort_id", COHORT_ID);
+if (!sessionCount) {
+  const at = (d) => `${iso(d)}T06:00:00Z`; // 11:00 in Pakistan
+  const nextSaturday = new Date(lastSaturday);
+  nextSaturday.setDate(lastSaturday.getDate() + 7);
+  await admin.from("sessions").insert([
+    { cohort_id: COHORT_ID, starts_at: at(start), title: "Week 1 — Explore", recording_url: "https://example.com/recordings/week-1" },
+    { cohort_id: COHORT_ID, starts_at: at(lastSaturday), title: "Week 2 — Try two areas", recording_url: "https://example.com/recordings/week-2" },
+    { cohort_id: COHORT_ID, starts_at: at(nextSaturday), title: "Week 3 — Choose your problem", join_url: "https://zoom.us/j/0000000000" },
+  ]);
+}
+
+const { count: aiConsent } = await admin
+  .from("consents")
+  .select("*", { count: "exact", head: true })
+  .eq("student_id", studentId)
+  .eq("type", "ai")
+  .is("revoked_at", null);
+if (!aiConsent) {
+  await admin.from("consents").insert({ student_id: studentId, parent_id: parentId, type: "ai", version: "2026-10-v1" });
+}
+await admin
+  .from("memberships")
+  .update({ fee_amount: 15000, paid_at: new Date().toISOString() })
+  .eq("cohort_id", COHORT_ID)
+  .eq("user_id", studentId)
+  .is("paid_at", null);
+
 console.log("Demo accounts ready:");
 for (const [email, password] of Object.entries(ADULT_PASSWORDS)) {
   console.log(`  ${email.split(".")[0].padEnd(8)} ${email} / password ${password}`);

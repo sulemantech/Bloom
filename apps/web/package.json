@@ -12,6 +12,7 @@
     "login-link": "node --experimental-websocket --no-warnings --env-file=.env.local scripts/login-link.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "@sentry/nextjs": "^11.4.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.109.0",
