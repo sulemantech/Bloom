@@ -13,6 +13,7 @@ import {
   type BloomState,
   type SuggestState,
 } from "./actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 const initial: BloomState = { status: "idle" };
 
@@ -73,11 +74,10 @@ export function StartPath({ aiAllowed }: { aiAllowed: boolean }) {
             <input name="interest" maxLength={300} placeholder={t("curiousPlaceholder")} className="field" />
           </label>
           <div className="flex flex-wrap items-center gap-3">
-            <button type="submit" disabled={suggesting} className="btn btn-primary">
-              <span aria-hidden="true">✦</span>
-              {suggesting ? t("thinking") : suggestState.suggestions ? t("suggestAgain") : t("suggest")}
-            </button>
-            <button type="button" onClick={() => setOwn(true)} className="text-sm font-medium text-info underline">
+            <SubmitButton icon={<span aria-hidden="true">✦</span>} pendingLabel={t("thinking")} disabled={creating}>
+              {suggestState.suggestions ? t("suggestAgain") : t("suggest")}
+            </SubmitButton>
+            <button type="button" onClick={() => setOwn(true)} disabled={suggesting} className="text-sm font-medium text-info underline disabled:opacity-50">
               {t("writeOwn")}
             </button>
           </div>
@@ -97,9 +97,9 @@ export function StartPath({ aiAllowed }: { aiAllowed: boolean }) {
                 <p className="font-display-tight text-[17px] leading-snug">{s.title}</p>
                 <p className="text-sm">{s.goal}</p>
                 <p className="text-[13px] text-soft">{s.why}</p>
-                <button type="submit" disabled={creating} className="btn btn-secondary mt-auto px-4 py-2 text-sm">
-                  {creating ? t("planning") : t("startThis")}
-                </button>
+                <SubmitButton pendingLabel={t("planning")} disabled={creating || suggesting} className="btn btn-secondary mt-auto px-4 py-2 text-sm">
+                  {t("startThis")}
+                </SubmitButton>
               </form>
             </li>
           ))}
@@ -124,9 +124,7 @@ export function StartPath({ aiAllowed }: { aiAllowed: boolean }) {
             </label>
           ) : null}
           <div className="flex flex-wrap items-center gap-3">
-            <button type="submit" disabled={creating} className="btn btn-primary">
-              {creating ? t("planning") : t("createPath")}
-            </button>
+            <SubmitButton pendingLabel={t("planning")}>{t("createPath")}</SubmitButton>
             {aiAllowed && (
               <button type="button" onClick={() => setOwn(false)} className="text-sm font-medium text-info underline">
                 {t("backToIdeas")}
@@ -144,7 +142,7 @@ export function StartPath({ aiAllowed }: { aiAllowed: boolean }) {
 /** Start, finish (with an optional reflection) or reopen one task. */
 export function TaskControls({ task }: { task: { id: string; status: "todo" | "doing" | "done"; reflection: string | null; kind: string } }) {
   const t = useTranslations("bloom");
-  const [state, action, pending] = useActionState(updateTask, initial);
+  const [state, action] = useActionState(updateTask, initial);
   const [open, setOpen] = useState(false);
 
   if (task.status === "done") {
@@ -159,7 +157,7 @@ export function TaskControls({ task }: { task: { id: string; status: "todo" | "d
             <input type="hidden" name="reflection" value={task.reflection} />
           </div>
         )}
-        <button type="submit" disabled={pending} className="self-start text-sm font-medium text-info underline">{t("reopen")}</button>
+        <SubmitButton className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-info underline disabled:opacity-50">{t("reopen")}</SubmitButton>
         <Message state={state} />
       </form>
     );
@@ -176,13 +174,13 @@ export function TaskControls({ task }: { task: { id: string; status: "todo" | "d
       )}
       <div className="flex flex-wrap items-center gap-2">
         {task.status === "todo" && (
-          <button type="submit" name="status" value="doing" disabled={pending} className="btn btn-secondary px-4 py-2 text-sm">
+          <SubmitButton name="status" value="doing" className="btn btn-secondary px-4 py-2 text-sm">
             {t("startTask")}
-          </button>
+          </SubmitButton>
         )}
-        <button type="submit" name="status" value="done" disabled={pending} className="btn btn-primary px-4 py-2 text-sm">
+        <SubmitButton name="status" value="done" className="btn btn-primary px-4 py-2 text-sm">
           {t("markDone")}
-        </button>
+        </SubmitButton>
         {!open && task.kind !== "reflect" && (
           <button type="button" onClick={() => setOpen(true)} className="text-sm font-medium text-info underline">
             {t("addNote")}
@@ -196,7 +194,7 @@ export function TaskControls({ task }: { task: { id: string; status: "todo" | "d
 
 export function AddTaskForm({ pathId }: { pathId: string }) {
   const t = useTranslations("bloom");
-  const [state, action, pending] = useActionState(addTask, initial);
+  const [state, action] = useActionState(addTask, initial);
   const ref = useReset(state);
   return (
     <form ref={ref} action={action} className="flex flex-col gap-3">
@@ -210,7 +208,7 @@ export function AddTaskForm({ pathId }: { pathId: string }) {
         </select>
       </div>
       <textarea name="details" rows={2} maxLength={6000} placeholder={t("taskDetailsPlaceholder")} aria-label={t("taskDetails")} className="field resize-y" />
-      <button type="submit" disabled={pending} className="btn btn-secondary self-start px-4 py-2 text-sm">{t("addTask")}</button>
+      <SubmitButton className="btn btn-secondary self-start px-4 py-2 text-sm">{t("addTask")}</SubmitButton>
       <Message state={state} />
     </form>
   );
@@ -218,7 +216,7 @@ export function AddTaskForm({ pathId }: { pathId: string }) {
 
 export function AskForm({ pathId, taskId, compact }: { pathId: string; taskId: string | null; compact?: boolean }) {
   const t = useTranslations("bloom");
-  const [state, action, pending] = useActionState(askQuestion, initial);
+  const [state, action] = useActionState(askQuestion, initial);
   const ref = useReset(state);
   const [open, setOpen] = useState(!compact);
 
@@ -236,9 +234,9 @@ export function AskForm({ pathId, taskId, compact }: { pathId: string; taskId: s
       {taskId && <input type="hidden" name="taskId" value={taskId} />}
       <div className="flex flex-col gap-2 sm:flex-row">
         <input name="question" required maxLength={1000} placeholder={t("askPlaceholder")} aria-label={t("askTitle")} className="field" />
-        <button type="submit" disabled={pending} className="btn btn-secondary shrink-0 px-4 py-2 text-sm">
-          {pending ? t("thinking") : t("ask")}
-        </button>
+        <SubmitButton pendingLabel={t("thinking")} className="btn btn-secondary shrink-0 px-4 py-2 text-sm">
+          {t("ask")}
+        </SubmitButton>
       </div>
       <Message state={state} />
     </form>
@@ -247,16 +245,16 @@ export function AskForm({ pathId, taskId, compact }: { pathId: string; taskId: s
 
 export function PathActions({ pathId, status }: { pathId: string; status: "active" | "completed" | "archived" }) {
   const t = useTranslations("bloom");
-  const [state, action, pending] = useActionState(setPathStatus, initial);
-  const [deleteState, del, deleting] = useActionState(deletePath, initial);
+  const [state, action] = useActionState(setPathStatus, initial);
+  const [deleteState, del] = useActionState(deletePath, initial);
   return (
     <div className="flex flex-wrap items-center gap-2">
       <form action={action}>
         <input type="hidden" name="pathId" value={pathId} />
         {status === "archived" ? (
-          <button type="submit" name="status" value="active" disabled={pending} className="btn btn-secondary px-3 py-1.5 text-sm">{t("restore")}</button>
+          <SubmitButton name="status" value="active" className="btn btn-secondary px-3 py-1.5 text-sm">{t("restore")}</SubmitButton>
         ) : (
-          <button type="submit" name="status" value="archived" disabled={pending} className="btn btn-secondary px-3 py-1.5 text-sm">{t("archive")}</button>
+          <SubmitButton name="status" value="archived" className="btn btn-secondary px-3 py-1.5 text-sm">{t("archive")}</SubmitButton>
         )}
       </form>
       <form
@@ -266,7 +264,7 @@ export function PathActions({ pathId, status }: { pathId: string; status: "activ
         }}
       >
         <input type="hidden" name="pathId" value={pathId} />
-        <button type="submit" disabled={deleting} className="px-2 text-sm text-danger underline">{t("delete")}</button>
+        <SubmitButton className="inline-flex items-center gap-1.5 px-2 text-sm text-danger underline disabled:opacity-50">{t("delete")}</SubmitButton>
       </form>
       <Message state={state.status === "error" ? state : deleteState} />
     </div>
