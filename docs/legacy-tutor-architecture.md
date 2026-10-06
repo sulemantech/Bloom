@@ -66,7 +66,7 @@ The selected depth is written into the generated syllabus markdown as visible te
 
 - `LearningRecommendation`: a candidate next topic generated from the full learning record.
 - `status="suggested"`: visible in the current 3-topic recommendation set.
-- `status="saved"`: stored in the待学习清单.
+- `status="saved"`: stored in the to-learn list.
 - `status="started"`: the user created a real course from this recommendation.
 - `status="dismissed"`: replaced by refresh or removed from the saved list.
 
@@ -86,7 +86,7 @@ flowchart LR
   I --> J["Existing course creation flow"]
 ```
 
-`POST /api/recommendations/refresh` generates a new set of 3 recommendations. Existing `suggested` rows become `dismissed`, while `saved` rows remain in the待学习清单.
+`POST /api/recommendations/refresh` generates a new set of 3 recommendations. Existing `suggested` rows become `dismissed`, while `saved` rows remain in the to-learn list.
 
 When the frontend starts a recommendation, it calls the existing `POST /api/courses` endpoint with the recommendation title plus rationale as reference material, then marks the recommendation as `started` through `POST /api/recommendations/{id}/start`.
 

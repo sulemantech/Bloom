@@ -20,25 +20,25 @@ build/
 *.log
 .gstack/
 
-# Playwright MCP 抓取的临时产物（截图 / 控制台日志 / 页面快照）
+# Temporary Playwright MCP output (screenshots / console logs / page snapshots)
 .playwright-mcp/
 
-# 仓库根目录下随手丢的临时截图（frontend/src/assets/*.png 等正经资源不受影响）
+# Stray screenshots dropped in the repo root (real assets in subfolders are not affected)
 /*.png
 
-# IDE / 编辑器配置
+# IDE / editor settings
 .idea/
 .vscode/
 .cursor/
 
-# 密钥 / 证书（永远不该进仓库）
+# Keys / certificates (never commit these)
 *.pem
 *.key
 *.crt
 
 docs/AUTORESEARCH-METHOD.md
 
-# 本地 AI Agent 指令文件：只指导当前工作区，不作为项目内容发布
+# Local AI agent instruction files: for this workspace only, not published with the project
 /CLAUDE.md
 /Claude.md
 /claude.md
@@ -49,6 +49,6 @@ docs/AUTORESEARCH-METHOD.md
 /agent.md
 /agents.md
 
-# 本地 Claude/Codex 配置
+# Local Claude/Codex settings
 /.claude/
 /.codex/
