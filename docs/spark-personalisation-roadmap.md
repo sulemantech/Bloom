@@ -1,6 +1,6 @@
 # Spark personalised learning roadmap
 
-- **Status:** Phase 1 built (6 October 2026), waiting for its live test. Phases 2–7 not started.
+- **Status:** Phase 1 done (6 October 2026). Phase 2 next; phases 3–7 not started.
 - **Date:** 6 October 2026
 - **Source:** the original Bloom tutor, kept on the `bloom/legacy` branch (`backend/app/courses.py`,
   `backend/app/recommendations.py`, `skills/`). File references below point there.
@@ -32,7 +32,7 @@ The core of personalisation. Steps are written one at a time from how the last o
 | 1.7 | **Mentors and parents see the feeling** next to each step's reflection. | — | ✅ Done |
 | 1.8 | **Consent wording.** The "Spark AI guide" consent says only age group, step and project are shared. Update it to say the student's notes and questions on a path are also used to write their next steps. | — | ✅ Done (re-consent for existing families not decided) |
 | 1.9 | **Database tests.** pgTAP tests for the new `feeling` and `planned_only` columns and `create_bloom_path`. | — | ✅ Done (13 tests in `supabase/tests/rls.test.sql`; 106/106 pass) |
-| 1.10 | **Live test.** Apply the migration (`npm run db:push`, then `npm run db:types`), turn on `bloom_v2` for a group and check the "Done when" below with real AI calls. | — | ⏳ Migration applied and types regenerated (6 October 2026); try-out with real AI calls to do |
+| 1.10 | **Live test.** Apply the migration (`npm run db:push`, then `npm run db:types`), turn on `bloom_v2` for a group and check the "Done when" below with real AI calls. | — | ✅ Done: a "too hard" step was followed by a smaller, re-explained step that named the confusion |
 | 1.11 | **Make the loop visible.** "Step 3 of 5" with a step tracker; the current step highlighted as "Now"; done and upcoming steps folded; each step shows the student's feedback and "Spark used this to write step N"; the step Spark wrote opens with "Spark changed this step for you, because on step N you said…" (`bloom_tasks.adaptation`, `adapted_from`). Instructions shown as numbered actions and labelled notes. | — | ✅ Done |
 
 **Done when:** in a `bloom_v2` group, a student finishes step 1 saying "too hard" and the confusing

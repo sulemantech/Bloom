@@ -20,8 +20,8 @@
     "builder": "Builder (15–18)"
   },
   "login": {
-    "title": "Sign in",
-    "subtitle": "Welcome back to Youth IdeaLab.",
+    "title": "Welcome back",
+    "subtitle": "Sign in to pick up where you left off.",
     "chooseAccount": "Choose your account type",
     "tabAdult": "Parent or staff",
     "tabStudent": "Student",
@@ -48,8 +48,8 @@
     "devTitle": "Development only: sign in with a password",
     "staffHint": "Mentors and admins sign in here too — you’ll be taken to the right place.",
     "demo": {
-      "title": "Try the demo",
-      "intro": "See Youth IdeaLab from each side. No account or password needed: pick who you want to be.",
+      "title": "Explore the demo",
+      "intro": "See Youth IdeaLab from each side. Pick who you want to be.",
       "as": {
         "student": "Student",
         "parent": "Parent",
@@ -62,7 +62,26 @@
         "mentor": "Runs a group: reviews work, gives feedback and drafts weekly progress cards",
         "admin": "Manages people, groups, the programme and AI usage"
       },
-      "note": "Demo accounts share sample data that may be reset at any time. Please don’t enter real personal information."
+      "note": "Demo accounts share sample data that may be reset at any time. Please don’t enter real personal information.",
+      "eyebrow": "No account needed",
+      "or": "or sign in to your account"
+    },
+    "emailPlaceholder": "you@example.com",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "useDifferentEmail": "Use a different email",
+    "privacy": "Privacy and safeguarding",
+    "brand": {
+      "headlineStart": "Where young people turn ideas into",
+      "headlineEnd": "real projects",
+      "intro": "An 8-week, mentor-led course: students explore, choose a real problem, build their answer and present it at Demo Day.",
+      "journey": "The 8-week journey",
+      "weeks": "Weeks {weeks}",
+      "points": {
+        "weeks": "8 weeks, live online",
+        "ages": "Ages 12–18",
+        "mentor": "A mentor at every step"
+      }
     }
   },
   "shell": {
