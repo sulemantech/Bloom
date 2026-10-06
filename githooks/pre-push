@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Runs the secret scan before every push.
+# Turn it on once per clone: git config core.hooksPath githooks
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"

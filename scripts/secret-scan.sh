@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Looks for API keys, private keys and files that must never be committed (.env, .db, .pem, ...).
+# Uses gitleaks when installed, otherwise a regex scan. Run directly or via githooks/pre-push.
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
@@ -13,7 +15,7 @@ if command -v gitleaks >/dev/null 2>&1; then
 else
   echo "gitleaks not found; using fallback regex scan over tracked files."
 
-  tmp="${TMPDIR:-/tmp}/bloom-secret-scan.$$"
+  tmp="${TMPDIR:-/tmp}/secret-scan.$$"
   trap 'rm -f "$tmp"' EXIT
 
   git grep -n -I -E \
