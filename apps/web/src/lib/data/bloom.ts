@@ -8,7 +8,7 @@ import { stageForWeek, tr } from "@/lib/programme";
 type Client = SupabaseClient<Database>;
 
 const PATH_FIELDS =
-  "id, title, goal, summary, stage_key, depth, status, ai_generated, mentor_note, mentor_note_at, completed_at, created_at, updated_at, mentor:profiles!bloom_paths_mentor_note_by_fkey(full_name), bloom_tasks(id, position, kind, title, details, status, reflection, feeling, planned_only, completed_at)";
+  "id, title, goal, summary, stage_key, depth, status, ai_generated, mentor_note, mentor_note_at, completed_at, created_at, updated_at, mentor:profiles!bloom_paths_mentor_note_by_fkey(full_name), bloom_tasks(id, position, kind, title, details, status, reflection, feeling, planned_only, adaptation, adapted_from, completed_at)";
 
 /** A student's learning paths with their tasks (RLS decides who can read them). */
 export async function loadBloomPaths(supabase: Client, studentId: string) {

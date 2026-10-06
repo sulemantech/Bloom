@@ -4,7 +4,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { askBloom, planBloomPath, suggestBloomPaths, writeBloomStep, type AiFailure, type BloomPlan, type BloomSuggestion } from "@/lib/ai";
 import { getCurrentProfile } from "@/lib/auth";
-import { nextStepToWrite, stepWriterInput } from "@/lib/bloom/adaptive";
+import { lastFinishedStep, nextStepToWrite, stepWriterInput } from "@/lib/bloom/adaptive";
 import { bloomContext, hasConsent, loadBloomPaths } from "@/lib/data/bloom";
 import { loadStudentOverview } from "@/lib/data/overview";
 import { bloomV2Enabled } from "@/lib/flags";
@@ -159,7 +159,7 @@ export async function updateTask(_prev: BloomState, formData: FormData): Promise
   // right now, the step keeps its aim and the student can ask again ("Write this step").
   let message = status === "done" ? (pathDone ? "pathDone" : "taskDone") : "saved";
   if (status === "done" && !pathDone) {
-    const written = await writePlannedStep(student.id, task.path_id);
+    const written = await writePlannedStep(student.id, task.path_id, taskId);
     if (written === "written") message = "stepWritten";
     else if (written !== "none") message = "taskDoneNextLater";
   }
@@ -169,10 +169,11 @@ export async function updateTask(_prev: BloomState, formData: FormData): Promise
 }
 
 /**
- * Has Spark write the path's next outline step (see lib/bloom/adaptive). "none" when no step is
- * waiting: every step is written, or an earlier step isn't done yet.
+ * Has Spark write the path's next outline step (see lib/bloom/adaptive), from how `finishedId` (the
+ * step just finished) went. "none" when no step is waiting: every step is written, or an earlier
+ * step isn't done yet.
  */
-async function writePlannedStep(studentId: string, pathId: string): Promise<"written" | "none" | AiFailure> {
+async function writePlannedStep(studentId: string, pathId: string, finishedId?: string): Promise<"written" | "none" | AiFailure> {
   const supabase = await createClient();
   const [{ data: path }, { data: questions }] = await Promise.all([
     supabase
@@ -189,14 +190,21 @@ async function writePlannedStep(studentId: string, pathId: string): Promise<"wri
   if (!(await hasBloomAiConsent(studentId))) return "noConsent";
 
   const { context } = await aiContext(studentId);
-  const input = stepWriterInput(path, path.bloom_tasks, questions ?? [], target.id);
+  const input = stepWriterInput(path, path.bloom_tasks, questions ?? [], target.id, finishedId);
+  const source = lastFinishedStep(path.bloom_tasks, target.id, finishedId);
   const result = await writeBloomStep(studentId, context, oneOf(DEPTHS, path.depth, "standard"), input);
   if (!result.ok) return result.reason;
 
   // Only an outline step is replaced, so a double click can't overwrite a step already written.
   const { error } = await supabase
     .from("bloom_tasks")
-    .update({ title: result.data.title, details: result.data.details.slice(0, 6000), planned_only: false })
+    .update({
+      title: result.data.title,
+      details: result.data.details.slice(0, 6000),
+      adaptation: result.data.adaptation,
+      adapted_from: source?.id ?? null,
+      planned_only: false,
+    })
     .eq("id", target.id)
     .eq("student_id", studentId)
     .eq("planned_only", true);

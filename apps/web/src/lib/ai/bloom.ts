@@ -182,12 +182,13 @@ Write only step 1 in full. For the other ${Number(count) - 1} steps give just a 
 
 const WrittenStepSchema = z.object({
   title: z.string().describe("Short action title, under 60 characters. Keep the planned title unless the step changed"),
-  ...StepFields,
-  intro: z
+  adaptation: z
     .string()
+    .nullable()
     .describe(
-      "1-3 short sentences. If you adapted this step to how the last one went, start with one sentence telling the student what you changed and why. Then say what they will do and why it matters",
+      'One short sentence to the student on what you changed in this step because of their feedback, e.g. "You found the last step hard, so this one is smaller and starts with a new example." Null if their feedback changed nothing',
     ),
+  ...StepFields,
 });
 
 /**
@@ -199,7 +200,7 @@ export async function writeBloomStep(
   context: BloomContext,
   depth: keyof typeof TASK_COUNT,
   input: StepWriterInput,
-): Promise<AiResult<{ title: string; details: string }>> {
+): Promise<AiResult<{ title: string; details: string; adaptation: string | null }>> {
   const result = await generateStructured(
     {
       ...asStudent(studentId),
@@ -209,12 +210,12 @@ export async function writeBloomStep(
       user: `Write step ${input.stepToWrite.step} of this student's learning path in full. It is a "${input.stepToWrite.kind}" step.
 Depth: ${DEPTH_TEACHING[depth]}
 
-Adapt it to how the last step went:
+Adapt it to how the last step went ("lastStep", the one the student just finished, which may be an earlier step they went back to):
 - "too_hard", or a note or question showing confusion: make this step simpler and smaller, re-explain the confusing idea first with a new analogy, and add more support.
 - "too_easy": add more challenge or a stretch, and don't repeat what they already showed they know.
 - Answer anything still unclear from their note and questions, briefly, before moving on.
 - Follow where their note says they want to go next when it still fits the path's goal.
-- Look at earlier feelings too: two hard steps in a row need a gentler step even if the last felt fine.
+- Look at earlier feelings and notes too: two hard steps in a row need a gentler step even if the last felt fine, and anything still unclear from an earlier note should be cleared up.
 Keep to the step's planned aim unless the student clearly needs something else first.
 
 ${TEACHING_RULES}
@@ -228,8 +229,15 @@ ${JSON.stringify(context, null, 2)}`,
     WrittenStepSchema,
   );
   if (!result.ok) return result;
-  const { title, ...parts } = result.data;
-  return { ok: true, data: { title: title.trim().slice(0, 160) || input.stepToWrite.title, details: writeStep(parts) } };
+  const { title, adaptation, ...parts } = result.data;
+  return {
+    ok: true,
+    data: {
+      title: title.trim().slice(0, 160) || input.stepToWrite.title,
+      details: writeStep(parts),
+      adaptation: adaptation?.trim().slice(0, 500) || null,
+    },
+  };
 }
 
 const clampMinutes = (n: number) => (Number.isFinite(n) && n > 0 ? Math.min(Math.max(Math.round(n), 5), 90) : null);

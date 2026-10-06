@@ -185,16 +185,15 @@ export function TaskControls({
       <form action={action} className="flex flex-col gap-2 border-t border-border pt-3">
         <input type="hidden" name="taskId" value={task.id} />
         <input type="hidden" name="status" value="doing" />
-        {task.feeling && <p className="text-sm text-muted">{t("feltIt", { feeling: t(`feelings.${task.feeling}`) })}</p>}
-        {task.reflection && (
-          <div className="rounded-xl bg-surface-2 p-3">
-            <p className="label-caps mb-1 text-soft">{t("yourReflection")}</p>
-            <p className="whitespace-pre-wrap text-[15px]">{task.reflection}</p>
-            <input type="hidden" name="reflection" value={task.reflection} />
-          </div>
-        )}
+        {/* The feedback itself is shown above, with the step (BloomPathDetail). */}
+        {task.reflection && <input type="hidden" name="reflection" value={task.reflection} />}
         <SubmitButton className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-info underline disabled:opacity-50">{t("reopen")}</SubmitButton>
         <Message state={state} />
+        {state.status === "ok" && state.message === "stepWritten" && (
+          <a href="#current-step" className="btn btn-primary self-start px-4 py-2 text-sm">
+            {t("seeNext")}
+          </a>
+        )}
       </form>
     );
   }
@@ -212,7 +211,7 @@ export function TaskControls({
         </label>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        {task.status === "todo" && (
+        {task.status === "todo" && !adaptive && (
           <SubmitButton name="status" value="doing" className="btn btn-secondary px-4 py-2 text-sm">
             {t("startTask")}
           </SubmitButton>

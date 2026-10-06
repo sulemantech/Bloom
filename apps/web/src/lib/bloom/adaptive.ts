@@ -30,19 +30,42 @@ export function nextStepToWrite<T extends AdaptiveTask>(tasks: readonly T[]): T 
   return sorted.slice(0, i).every((t) => t.status === "done") ? sorted[i] : null;
 }
 
-/** What Spark is told when writing `target`: the outline, recent steps and how the last one went. */
+/** The step whose feedback `target` is written from: the one just finished, else the one before it. */
+export function lastFinishedStep<T extends AdaptiveTask>(tasks: readonly T[], targetId: string, finishedId?: string): T | null {
+  const sorted = byPosition(tasks);
+  const before = sorted.slice(0, sorted.findIndex((t) => t.id === targetId));
+  return before.find((t) => t.id === finishedId) ?? before.at(-1) ?? null;
+}
+
+export type StepState = "done" | "current" | "upcoming";
+
+/** Where each step stands for the student: done, the one to do now (the first unfinished), or later. */
+export function stepStates<T extends { id: string; position: number; status: string }>(tasks: readonly T[]): Map<string, StepState> {
+  const sorted = byPosition(tasks);
+  const current = sorted.find((t) => t.status !== "done");
+  return new Map(sorted.map((t) => [t.id, t.status === "done" ? "done" : t === current ? "current" : "upcoming"]));
+}
+
+/**
+ * What Spark is told when writing `target`: the outline, recent steps and how the last one went.
+ * The "last step" is the one the student just finished (`finishedId`), which may be an earlier step
+ * they reopened; otherwise the step right before the target. Notes on other earlier steps are
+ * passed too, so no feedback is lost.
+ */
 export function stepWriterInput(
   path: { title: string; goal: string; summary: string },
   tasks: readonly AdaptiveTask[],
   questions: readonly AdaptiveQuestion[],
   targetId: string,
+  finishedId?: string,
 ) {
   const sorted = byPosition(tasks);
   const at = sorted.findIndex((t) => t.id === targetId);
   if (at < 0) throw new Error("Step not in path");
   const target = sorted[at];
   const before = sorted.slice(0, at);
-  const last = before.at(-1) ?? null;
+  const last = lastFinishedStep(tasks, targetId, finishedId);
+  const others = before.filter((t) => t !== last);
 
   return {
     path: { title: path.title, goal: path.goal, summary: path.summary },
@@ -57,6 +80,7 @@ export function stepWriterInput(
       .slice(-2)
       .map((t) => ({ step: sorted.indexOf(t) + 1, kind: t.kind, title: t.title, details: clip(t.details, 1500) })),
     lastStep: last && {
+      step: sorted.indexOf(last) + 1,
       title: last.title,
       feeling: last.feeling,
       note: last.reflection,
@@ -65,10 +89,11 @@ export function stepWriterInput(
         .slice(-5)
         .map((q) => ({ question: q.question, answer: clip(q.answer, 400) })),
     },
-    earlierFeelings: before
-      .slice(0, -1)
-      .map((t) => t.feeling)
-      .filter((f): f is StepFeeling => f !== null),
+    earlierFeelings: others.map((t) => t.feeling).filter((f): f is StepFeeling => f !== null),
+    earlierNotes: others
+      .filter((t) => t.reflection)
+      .slice(-3)
+      .map((t) => ({ step: sorted.indexOf(t) + 1, feeling: t.feeling, note: clip(t.reflection ?? "", 500) })),
     stepToWrite: { step: at + 1, kind: target.kind, title: target.title, aim: target.details },
   };
 }

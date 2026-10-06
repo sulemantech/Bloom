@@ -303,6 +303,8 @@ export type Database = {
       }
       bloom_tasks: {
         Row: {
+          adaptation: string | null
+          adapted_from: string | null
           completed_at: string | null
           created_at: string
           details: string
@@ -319,6 +321,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          adaptation?: string | null
+          adapted_from?: string | null
           completed_at?: string | null
           created_at?: string
           details?: string
@@ -335,6 +339,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          adaptation?: string | null
+          adapted_from?: string | null
           completed_at?: string | null
           created_at?: string
           details?: string
@@ -351,6 +357,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bloom_tasks_adapted_from_fkey"
+            columns: ["adapted_from"]
+            isOneToOne: false
+            referencedRelation: "bloom_tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bloom_tasks_path_id_fkey"
             columns: ["path_id"]

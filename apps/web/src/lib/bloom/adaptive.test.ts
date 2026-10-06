@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextStepToWrite, stepWriterInput, type AdaptiveTask } from "./adaptive";
+import { nextStepToWrite, stepStates, stepWriterInput, type AdaptiveTask } from "./adaptive";
 
 const task = (id: string, position: number, extra: Partial<AdaptiveTask> = {}): AdaptiveTask => ({
   id,
@@ -29,6 +29,17 @@ describe("nextStepToWrite", () => {
   });
 });
 
+describe("stepStates", () => {
+  it("marks the first unfinished step as current, even after a reopened earlier step", () => {
+    const tasks = [task("a", 1, { status: "doing" }), task("b", 2, { status: "done" }), task("c", 3)];
+    expect([...stepStates(tasks).entries()]).toEqual([["a", "current"], ["b", "done"], ["c", "upcoming"]]);
+  });
+
+  it("has no current step when every step is done", () => {
+    expect([...stepStates([task("a", 1, { status: "done" })]).values()]).toEqual(["done"]);
+  });
+});
+
 describe("stepWriterInput", () => {
   const path = { title: "Interviews", goal: "Ask good questions", summary: "Five steps." };
 
@@ -46,6 +57,7 @@ describe("stepWriterInput", () => {
 
     expect(input.stepToWrite).toEqual({ step: 3, kind: "reflect", title: "Step c", aim: "Look back" });
     expect(input.lastStep).toEqual({
+      step: 2,
       title: "Step b",
       feeling: "too_hard",
       note: "Follow-up questions confused me",
@@ -53,6 +65,26 @@ describe("stepWriterInput", () => {
     });
     expect(input.earlierFeelings).toEqual(["just_right"]);
     expect(input.outline.map((s) => s.status)).toEqual(["done", "done", "not written yet"]);
+  });
+
+  it("uses the step the student just finished, even an earlier one they reopened", () => {
+    const tasks = [
+      task("a", 1, { status: "done", feeling: "too_hard", reflection: "I did not understand it" }),
+      task("b", 2, { status: "done", feeling: "too_easy" }),
+      task("c", 3, { planned_only: true }),
+    ];
+    const input = stepWriterInput(path, tasks, [], "c", "a");
+    expect(input.lastStep).toMatchObject({ step: 1, feeling: "too_hard", note: "I did not understand it" });
+    expect(input.earlierFeelings).toEqual(["too_easy"]);
+  });
+
+  it("keeps notes from other earlier steps", () => {
+    const tasks = [
+      task("a", 1, { status: "done", feeling: "too_hard", reflection: "Confused by loops" }),
+      task("b", 2, { status: "done", feeling: "just_right" }),
+      task("c", 3, { planned_only: true }),
+    ];
+    expect(stepWriterInput(path, tasks, [], "c").earlierNotes).toEqual([{ step: 1, feeling: "too_hard", note: "Confused by loops" }]);
   });
 
   it("sends only the last two written steps, clipped", () => {

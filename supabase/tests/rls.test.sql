@@ -302,7 +302,9 @@ select throws_ok(
   '42501', null, 'parents cannot create Bloom paths');
 
 set local request.jwt.claims to '{"sub": "b0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
-select is((select count(*)::int from public.bloom_paths), 1, 'mentor sees Bloom paths of their own students only');
+select is((select count(*)::int from public.bloom_paths
+           where id in ('70000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002')), 1,
+          'mentor sees Bloom paths of their own students only');
 select lives_ok(
   $$select public.set_bloom_mentor_note('70000000-0000-0000-0000-000000000001', 'Great start!')$$,
   'mentor can leave a note on their student''s path');
@@ -374,6 +376,57 @@ select is((select completed_at is not null from public.bloom_paths where title =
           'a new path is not completed');
 
 -- ---------------------------------------------------------------------------
+-- Spark adaptive steps: outline steps and how the student found each step
+-- ---------------------------------------------------------------------------
+insert into public.bloom_tasks (id, path_id, student_id, title)
+values ('71000000-0000-0000-0000-000000000003', '70000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', 'S2 step');
+
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+
+select lives_ok(
+  $$select public.create_bloom_path('Outline path', '', 'standard', '', true,
+      '[{"kind": "learn", "title": "Written", "details": "Full step"},
+        {"kind": "do", "title": "Later", "details": "Aim only", "planned_only": true}]'::jsonb)$$,
+  'student can create a path whose later steps are an outline');
+select is((select string_agg(t.planned_only::text, ',' order by t.position) from public.bloom_tasks t
+           join public.bloom_paths p on p.id = t.path_id where p.title = 'Outline path'),
+          'false,true', 'outline steps are saved as planned_only; others default to written');
+
+select lives_ok(
+  $$update public.bloom_tasks set feeling = 'too_hard', status = 'done'
+    where id = (select t.id from public.bloom_tasks t join public.bloom_paths p on p.id = t.path_id
+                where p.title = 'Outline path' and t.position = 1)$$,
+  'student can say how a step went as they finish it');
+select throws_ok(
+  $$update public.bloom_tasks set feeling = 'boring' where id = '71000000-0000-0000-0000-000000000002'$$,
+  '22P02', null, 'only too_easy, just_right or too_hard are accepted');
+select lives_ok(
+  $$update public.bloom_tasks set title = 'Later, written', details = 'Full step', planned_only = false
+    where planned_only and path_id = (select id from public.bloom_paths where title = 'Outline path')$$,
+  'the student''s session can replace an outline step with the written step');
+update public.bloom_tasks set feeling = 'too_easy' where id = '71000000-0000-0000-0000-000000000003';
+
+set local role postgres;
+select is((select feeling from public.bloom_tasks where id = '71000000-0000-0000-0000-000000000003'), null,
+          'a student cannot set the feeling on another student''s step');
+select is((select planned_only from public.bloom_tasks t join public.bloom_paths p on p.id = t.path_id
+           where p.title = 'Outline path' and t.position = 2), false, 'the written step is no longer an outline');
+
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "c0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select is((select feeling::text from public.bloom_tasks t join public.bloom_paths p on p.id = t.path_id
+           where p.title = 'Outline path' and t.position = 1), 'too_hard', 'a parent sees how their child found a step');
+select ok((public.export_student_data('d0000000-0000-0000-0000-000000000001') -> 'bloom_tasks') @> '[{"feeling": "too_hard"}]',
+          'data export includes how the student found each step');
+
+set local request.jwt.claims to '{"sub": "b0000000-0000-0000-0000-000000000002", "role": "authenticated"}';
+select is((select count(*)::int from public.bloom_tasks t join public.bloom_paths p on p.id = t.path_id
+           where p.title = 'Outline path'), 0, 'a mentor of another group cannot see the steps');
+
+set local role postgres;
+
+-- ---------------------------------------------------------------------------
 -- AI usage log: written by the server's secret key, read by admins only
 -- ---------------------------------------------------------------------------
 insert into public.ai_runs (capability, student_id, actor_id, model, input_tokens, output_tokens, latency_ms, outcome, input_hash)
@@ -397,8 +450,9 @@ select is((select count(*)::int from public.ai_usage_by_day(now() - interval '1 
           'a mentor gets no AI usage summary');
 
 set local request.jwt.claims to '{"sub": "a0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
-select is((select count(*)::int from public.ai_runs), 1, 'an admin reads AI usage');
-select is((select sum(calls)::int from public.ai_usage_by_day(now() - interval '1 day', 'Asia/Karachi')), 1,
+select is((select count(*)::int from public.ai_runs where input_hash = 'abc123'), 1, 'an admin reads AI usage');
+select is((select sum(calls)::int from public.ai_usage_by_day(now() - interval '1 day', 'Asia/Karachi')),
+          (select count(*)::int from public.ai_runs where created_at >= now() - interval '1 day'),
           'an admin gets the AI usage summary per day');
 select is((select output_tokens::int from public.ai_usage_by_student(now() - interval '1 day')
            where student_id = 'd0000000-0000-0000-0000-000000000001'), 120,

@@ -43,16 +43,26 @@
       "missingFields": "Please enter your username and password.",
       "wrongCredentials": "That username and password don't match. Please try again.",
       "tooManyRequests": "Too many attempts. Please wait a few minutes and try again.",
-      "demoUnavailable": "Demo sign-in isn’t available. Run npm run seed:demo and check the DEMO_* passwords in .env.local."
+      "demoUnavailable": "Demo sign-in isn’t available right now. Please try again later."
     },
     "devTitle": "Development only: sign in with a password",
     "staffHint": "Mentors and admins sign in here too — you’ll be taken to the right place.",
-    "demoTitle": "Development only: sign in as a demo account",
-    "demoAs": {
-      "admin": "Admin",
-      "mentor": "Mentor",
-      "parent": "Parent",
-      "student": "Student"
+    "demo": {
+      "title": "Try the demo",
+      "intro": "See Youth IdeaLab from each side. No account or password needed: pick who you want to be.",
+      "as": {
+        "student": "Student",
+        "parent": "Parent",
+        "mentor": "Mentor",
+        "admin": "Admin"
+      },
+      "sees": {
+        "student": "Explorer, age 12–14: weekly activities, their project and Spark, the AI learning guide",
+        "parent": "Follows their child’s progress, approves consent and reads progress cards",
+        "mentor": "Runs a group: reviews work, gives feedback and drafts weekly progress cards",
+        "admin": "Manages people, groups, the programme and AI usage"
+      },
+      "note": "Demo accounts share sample data that may be reset at any time. Please don’t enter real personal information."
     }
   },
   "shell": {
@@ -813,6 +823,30 @@
     "writeStep": "Write this step",
     "plannedHint": "Spark will write this step when you get here, using how the last one went.",
     "plannedHintViewer": "Not written yet. Spark writes it when the student gets here.",
+    "stepOf": "Step {n} of {total}",
+    "allStepsDone": "All steps done",
+    "stepN": "Step {n}",
+    "now": "Now",
+    "comingUp": "Coming up",
+    "stepState": {
+      "done": "done",
+      "current": "do this now",
+      "upcoming": "coming up"
+    },
+    "yourFeedback": "Your feedback",
+    "feedback": "Feedback",
+    "usedFor": "Spark used this to write step {n}",
+    "adaptedTitle": "Spark changed this step for you",
+    "adaptedBecause": "Because on step {n} you said:",
+    "adaptedBecauseViewer": "Because on step {n} the student said:",
+    "seeNext": "See your next step ↓",
+    "detailLabels": {
+      "example": "Example",
+      "need": "You need",
+      "time": "Time",
+      "tip": "Tip",
+      "next": "Next step"
+    },
     "startTask": "Start",
     "markDone": "Mark done",
     "reopen": "Not finished? Reopen",

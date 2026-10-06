@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Logo } from "@/components/ui/LogoMark";
 import { getCurrentProfile, HOME_PATH } from "@/lib/auth";
+import { demoRoles } from "@/lib/demo";
 import { LoginForms } from "./LoginForms";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -26,6 +27,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       <LoginForms
         linkError={error === "link"}
         devPasswordLogin={process.env.ENABLE_DEV_PASSWORD_LOGIN === "true"}
+        demoRoles={demoRoles()}
       />
     </main>
   );

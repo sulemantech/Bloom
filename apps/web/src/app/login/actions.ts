@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, HOME_PATH, studentEmail } from "@/lib/auth";
+import { demoCredentials } from "@/lib/demo";
 
 export type LoginState = { status: "idle" | "sent" | "error"; message?: string };
 
@@ -58,23 +59,13 @@ export async function devPasswordSignIn(_prev: LoginState, formData: FormData): 
   redirect(profile ? HOME_PATH[profile.role] : "/");
 }
 
-const DEMO_ACCOUNTS = {
-  admin: { email: "admin.demo@example.com", passwordEnv: "DEMO_ADMIN_PASSWORD" },
-  mentor: { email: "mentor.demo@example.com", passwordEnv: "DEMO_MENTOR_PASSWORD" },
-  parent: { email: "parent.demo@example.com", passwordEnv: "DEMO_PARENT_PASSWORD" },
-  student: { email: studentEmail("demo.student"), passwordEnv: "DEMO_STUDENT_PASSWORD" },
-} as const;
-
-/** Development only: one-click sign-in as a demo account (passwords come from .env.local). */
-export async function devDemoSignIn(_prev: LoginState, formData: FormData): Promise<LoginState> {
-  const account = DEMO_ACCOUNTS[String(formData.get("account")) as keyof typeof DEMO_ACCOUNTS];
-  const password = account ? process.env[account.passwordEnv] : undefined;
-  if (process.env.ENABLE_DEV_PASSWORD_LOGIN !== "true" || !account || !password) {
-    return { status: "error", message: "demoUnavailable" };
-  }
+/** One-click sign-in as a demo account (see lib/demo). The password never reaches the browser. */
+export async function demoSignIn(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const account = demoCredentials(String(formData.get("account") ?? ""));
+  if (!account) return { status: "error", message: "demoUnavailable" };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email: account.email, password });
+  const { error } = await supabase.auth.signInWithPassword(account);
   if (error) return { status: "error", message: "demoUnavailable" };
 
   const profile = await getCurrentProfile();

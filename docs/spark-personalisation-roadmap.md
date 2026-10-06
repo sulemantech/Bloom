@@ -31,8 +31,9 @@ The core of personalisation. Steps are written one at a time from how the last o
 | 1.6 | **Teaching rules in every step:** an everyday analogy for each abstract idea, why before what, at most 1–2 new ideas per step. | `FIRST_LESSON_PROMPT`, `NEXT_LESSON_PROMPT` rules 5–8 | ✅ Done |
 | 1.7 | **Mentors and parents see the feeling** next to each step's reflection. | — | ✅ Done |
 | 1.8 | **Consent wording.** The "Spark AI guide" consent says only age group, step and project are shared. Update it to say the student's notes and questions on a path are also used to write their next steps. | — | ✅ Done (re-consent for existing families not decided) |
-| 1.9 | **Database tests.** pgTAP tests for the new `feeling` and `planned_only` columns and `create_bloom_path`. | — | ⏳ To do |
-| 1.10 | **Live test.** Apply the migration (`npm run db:push`, then `npm run db:types`), turn on `bloom_v2` for a group and check the "Done when" below with real AI calls. | — | ⏳ To do |
+| 1.9 | **Database tests.** pgTAP tests for the new `feeling` and `planned_only` columns and `create_bloom_path`. | — | ✅ Done (13 tests in `supabase/tests/rls.test.sql`; 106/106 pass) |
+| 1.10 | **Live test.** Apply the migration (`npm run db:push`, then `npm run db:types`), turn on `bloom_v2` for a group and check the "Done when" below with real AI calls. | — | ⏳ Migration applied and types regenerated (6 October 2026); try-out with real AI calls to do |
+| 1.11 | **Make the loop visible.** "Step 3 of 5" with a step tracker; the current step highlighted as "Now"; done and upcoming steps folded; each step shows the student's feedback and "Spark used this to write step N"; the step Spark wrote opens with "Spark changed this step for you, because on step N you said…" (`bloom_tasks.adaptation`, `adapted_from`). Instructions shown as numbered actions and labelled notes. | — | ✅ Done |
 
 **Done when:** in a `bloom_v2` group, a student finishes step 1 saying "too hard" and the confusing
 part, and step 2 is written simpler and addresses it; paths in other groups behave as before.

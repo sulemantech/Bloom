@@ -14,6 +14,11 @@ Passwords are in `apps/web/.env.local` (`DEMO_*_PASSWORD`), which is never commi
 
 ## Signing in
 
+- **One click:** the login page shows a **Try the demo** panel with a button per account when
+  `ENABLE_DEMO_LOGIN=true` (or `ENABLE_DEV_PASSWORD_LOGIN=true`). `DEMO_LOGIN_ROLES` picks the accounts
+  (default `student,parent,mentor`); an account only appears when its `DEMO_*_PASSWORD` is set. Use
+  this for the online demo on Vercel: set `ENABLE_DEMO_LOGIN` and the `DEMO_*_PASSWORD` variables
+  there, and leave `ENABLE_DEV_PASSWORD_LOGIN` off.
 - **Student:** login page → **Student** tab → username and password.
 - **Parent, mentor, admin:** login page → **Parent or mentor** tab → the dashed
   "Development only" box → email and password. That box only appears when
@@ -31,7 +36,8 @@ Passwords are in `apps/web/.env.local` (`DEMO_*_PASSWORD`), which is never commi
    are deleted with them.
 2. Delete this file and `apps/web/scripts/seed-demo.mjs`, remove the `seed:demo` script from
    `apps/web/package.json`, and remove the `DEMO_*` lines from `.env.local` and `.env.example`.
-3. Remove the development password sign-in: `devPasswordSignIn` in
+3. Turn off `ENABLE_DEMO_LOGIN` (and delete `apps/web/src/lib/demo.ts`, `demoSignIn` and the demo
+   panel in `LoginForms.tsx`), then remove the development password sign-in: `devPasswordSignIn` in
    `apps/web/src/app/login/actions.ts`, its form in `LoginForms.tsx`, and
    `ENABLE_DEV_PASSWORD_LOGIN` from the env files.
 4. Delete `apps/web/scripts/login-link.mjs` and its `login-link` script.

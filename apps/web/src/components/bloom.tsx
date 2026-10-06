@@ -4,12 +4,81 @@ import { getTranslations } from "next-intl/server";
 import { ProgressBar } from "@/components/course";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Badge, STEP_TONE, type Tone } from "@/components/ui/Badge";
+import { stepStates, type StepState } from "@/lib/bloom/adaptive";
+import { parseDetails } from "@/lib/bloom/details";
 import { daysSince, type BloomPath, type TimelineEvent } from "@/lib/data/bloom";
 import { formatDate, formatDateTime } from "@/lib/programme";
 
 const PATH_STATUS_TONE: Record<BloomPath["status"], Tone> = { active: "cyan", completed: "lime", archived: "neutral" };
-const TASK_STATUS_TONE: Record<BloomPath["tasks"][number]["status"], Tone> = { todo: "neutral", doing: "sun", done: "lime" };
-const KIND_TONE: Record<BloomPath["tasks"][number]["kind"], Tone> = { learn: "cyan", do: "violet", reflect: "coral" };
+
+type Task = BloomPath["tasks"][number];
+
+/** Step number circles: done (tick), the one to do now (filled), later (plain). */
+const STEP_DOT: Record<StepState, string> = {
+  done: "bg-lime/25 text-success",
+  current: "bg-violet text-white ring-4 ring-violet/25",
+  upcoming: "bg-surface-2 text-muted",
+};
+
+const FEELING_TEXT: Record<NonNullable<Task["feeling"]>, string> = {
+  too_easy: "text-info",
+  just_right: "text-success",
+  too_hard: "text-warning",
+};
+
+/** Spark's response: what it changed in this step, and the feedback it was answering. */
+async function Adaptation({ task, source, sourceNumber, forStudent }: { task: Task; source: Task; sourceNumber: number; forStudent: boolean }) {
+  const t = await getTranslations("bloom");
+  return (
+    <div className="flex flex-col gap-1.5 rounded-xl border border-ai/30 bg-violet/10 p-4">
+      <p className="label-caps text-ai">
+        <span aria-hidden="true">✦ </span>
+        {t("adaptedTitle")}
+      </p>
+      {(source.feeling || source.reflection) && (
+        <p className="text-sm text-muted">
+          <a href={`#task-${source.id}`} className="underline">{t(forStudent ? "adaptedBecause" : "adaptedBecauseViewer", { n: sourceNumber })}</a>{" "}
+          {source.feeling && <span className="font-medium">{t(`feelings.${source.feeling}`)}</span>}
+          {source.feeling && source.reflection && " · "}
+          {source.reflection && <span>“{source.reflection}”</span>}
+        </p>
+      )}
+      <p className="text-[15px]">{task.adaptation}</p>
+    </div>
+  );
+}
+
+/** Step instructions as readable blocks: paragraphs, numbered actions and labelled notes. */
+async function StepDetails({ text }: { text: string }) {
+  const t = await getTranslations("bloom");
+  return (
+    <div className="flex flex-col gap-3 text-[15px] leading-relaxed">
+      {parseDetails(text).map((block, i) => {
+        if (block.type === "text") return <p key={i}>{block.text}</p>;
+        if (block.type === "steps") {
+          return (
+            <ol key={i} className="flex flex-col gap-2">
+              {block.items.map((item, j) => (
+                <li key={j} className="flex gap-3">
+                  <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[13px] font-semibold text-muted">
+                    {j + 1}
+                  </span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ol>
+          );
+        }
+        return (
+          <p key={i} className={`rounded-xl px-3 py-2 text-sm ${block.type === "tip" ? "bg-lime/15" : "bg-surface-2"}`}>
+            <span className="font-semibold">{t(`detailLabels.${block.type}`)}: </span>
+            {block.text}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
 
 export async function PathStatusBadge({ status }: { status: BloomPath["status"] }) {
   const t = await getTranslations("bloom");
@@ -67,12 +136,42 @@ export async function BloomPathDetail({
 }) {
   const t = await getTranslations("bloom");
   const generalQuestions = path.questions.filter((q) => !q.task_id);
+  const states = stepStates(path.tasks);
+  const number = new Map(path.tasks.map((task, i) => [task.id, i + 1]));
+  const current = path.tasks.find((task) => states.get(task.id) === "current");
+  // Which later step Spark wrote from each finished step's feedback.
+  const usedBy = new Map(path.tasks.filter((task) => task.adapted_from).map((task) => [task.adapted_from!, task]));
 
   return (
     <div className="flex flex-col gap-5">
       <section className="card flex flex-col gap-4 p-5 sm:p-6">
         {path.summary && <p className="text-[15px] leading-relaxed">{path.summary}</p>}
-        <ProgressBar value={path.done} max={path.total} label={t("tasksDone", { done: path.done, total: path.total })} />
+        {path.tasks.length > 0 && (
+          <div className="flex flex-col gap-3">
+            <p className="font-display-tight text-[17px]">
+              {current ? t("stepOf", { n: number.get(current.id)!, total: path.total }) : t("allStepsDone")}
+            </p>
+            <ProgressBar value={path.done} max={path.total} label={t("tasksDone", { done: path.done, total: path.total })} />
+            <ol className="flex flex-wrap gap-2" aria-label={t("tasks")}>
+              {path.tasks.map((task) => {
+                const state = states.get(task.id)!;
+                return (
+                  <li key={task.id}>
+                    <a
+                      href={`#task-${task.id}`}
+                      title={task.title}
+                      aria-label={`${t("stepN", { n: number.get(task.id)! })}: ${task.title} (${t(`stepState.${state}`)})`}
+                      aria-current={state === "current" ? "step" : undefined}
+                      className={`flex size-9 items-center justify-center rounded-full text-sm font-bold transition-colors ${STEP_DOT[state]}`}
+                    >
+                      {state === "done" ? <Icon name="check" size={16} /> : number.get(task.id)}
+                    </a>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        )}
         {(path.mentor_note || mentorSlot) && (
           <div className="rounded-xl bg-cyan/10 p-4">
             <p className="label-caps mb-1 text-info">
@@ -88,27 +187,45 @@ export async function BloomPathDetail({
         <h2 id="tasks-heading" className="label-caps text-soft">{t("tasks")}</h2>
         {path.tasks.length === 0 && <p className="card p-5 text-sm text-muted">{t("noTasks")}</p>}
         <ol className="flex flex-col gap-3">
-          {path.tasks.map((task, i) => {
+          {path.tasks.map((task) => {
+            const state = states.get(task.id)!;
+            const n = number.get(task.id)!;
             const questions = path.questions.filter((q) => q.task_id === task.id);
-            return (
-              <li key={task.id} id={`task-${task.id}`} className="card flex scroll-mt-6 flex-col gap-3 p-5">
-                <div className="flex items-start gap-3">
-                  <span
-                    className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                      task.status === "done" ? "bg-lime/25 text-success" : "bg-surface-2 text-muted"
-                    }`}
-                    aria-hidden="true"
-                  >
-                    {task.status === "done" ? <Icon name="check" size={16} /> : i + 1}
+            const source = task.adapted_from ? path.tasks.find((s) => s.id === task.adapted_from) : undefined;
+            const writtenFrom = usedBy.get(task.id);
+
+            const header = (
+              <div className="flex min-w-0 flex-1 items-start gap-3">
+                <span className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${STEP_DOT[state]}`} aria-hidden="true">
+                  {state === "done" ? <Icon name="check" size={16} /> : n}
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="flex flex-wrap items-center gap-2 text-[13px] text-soft">
+                    {state === "current" && <Badge tone="violet">{t("now")}</Badge>}
+                    <span>{t("stepN", { n })}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{t(`kinds.${task.kind}`)}</span>
+                    {state === "done" && task.feeling && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span className={FEELING_TEXT[task.feeling]}>{t("feltIt", { feeling: t(`feelings.${task.feeling}`) })}</span>
+                      </>
+                    )}
+                    {state === "upcoming" && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{t("comingUp")}</span>
+                      </>
+                    )}
                   </span>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone={KIND_TONE[task.kind]}>{t(`kinds.${task.kind}`)}</Badge>
-                      <Badge tone={TASK_STATUS_TONE[task.status]}>{t(`taskStatus.${task.status}`)}</Badge>
-                    </div>
-                    <p className={`font-display-tight text-[17px] ${task.status === "done" ? "text-muted" : ""}`}>{task.title}</p>
-                  </div>
-                </div>
+                  <span className={`font-display-tight text-[17px] leading-snug ${state === "current" ? "" : "text-muted"}`}>{task.title}</span>
+                </span>
+              </div>
+            );
+
+            const body = (
+              <>
+                {source && task.adaptation && <Adaptation task={task} source={source} sourceNumber={number.get(source.id)!} forStudent={Boolean(taskControls)} />}
                 {task.planned_only ? (
                   <div className="flex flex-col gap-1">
                     {task.details && <p className="text-[15px] text-muted">{task.details}</p>}
@@ -118,23 +235,46 @@ export async function BloomPathDetail({
                     </p>
                   </div>
                 ) : (
-                  task.details && (
-                    <details className="group" open={task.status !== "done"}>
-                      <summary className="cursor-pointer text-sm font-medium text-info">{t("howTo")}</summary>
-                      <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-muted">{task.details}</p>
-                    </details>
-                  )
+                  task.details && <StepDetails text={task.details} />
                 )}
-                {task.feeling && !taskControls && <p className="text-sm text-muted">{t("feltIt", { feeling: t(`feelings.${task.feeling}`) })}</p>}
-                {task.reflection && !taskControls && (
-                  <div className="rounded-xl bg-surface-2 p-3">
-                    <p className="label-caps mb-1 text-soft">{t("reflection")}</p>
-                    <p className="whitespace-pre-wrap text-[15px]">{task.reflection}</p>
+                {(task.feeling || task.reflection) && (
+                  <div className="flex flex-col gap-1.5 rounded-xl bg-surface-2 p-3">
+                    <p className="label-caps text-soft">{taskControls ? t("yourFeedback") : t("feedback")}</p>
+                    {task.feeling && <p className={`text-sm font-medium ${FEELING_TEXT[task.feeling]}`}>{t("feltIt", { feeling: t(`feelings.${task.feeling}`) })}</p>}
+                    {task.reflection && <p className="whitespace-pre-wrap text-[15px]">{task.reflection}</p>}
+                    {writtenFrom && (
+                      <a href={`#task-${writtenFrom.id}`} className="text-sm font-medium text-ai">
+                        <span aria-hidden="true">✦ </span>
+                        {t("usedFor", { n: number.get(writtenFrom.id)! })}
+                      </a>
+                    )}
                   </div>
                 )}
                 {questions.length > 0 && <QuestionList questions={questions} timeZone={timeZone} />}
                 {taskControls?.(task)}
                 {questionSlot?.(task.id)}
+              </>
+            );
+
+            if (state === "current") {
+              return (
+                <li key={task.id} id={`task-${task.id}`} className="card flex scroll-mt-6 flex-col gap-4 border-2 border-violet p-5 sm:p-6">
+                  <span id="current-step" className="scroll-mt-6" />
+                  {header}
+                  {body}
+                </li>
+              );
+            }
+            // Done and upcoming steps fold away so the current step stands out.
+            return (
+              <li key={task.id} id={`task-${task.id}`} className={`card scroll-mt-6 ${state === "upcoming" ? "bg-surface-2/40" : ""}`}>
+                <details className="group">
+                  <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
+                    {header}
+                    <Icon name="chevron" size={16} className="shrink-0 text-soft transition-transform group-open:rotate-90" />
+                  </summary>
+                  <div className="flex flex-col gap-3 border-t border-border px-4 pt-3 pb-4">{body}</div>
+                </details>
               </li>
             );
           })}
