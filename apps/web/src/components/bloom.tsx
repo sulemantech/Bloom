@@ -109,12 +109,23 @@ export async function BloomPathDetail({
                     <p className={`font-display-tight text-[17px] ${task.status === "done" ? "text-muted" : ""}`}>{task.title}</p>
                   </div>
                 </div>
-                {task.details && (
-                  <details className="group" open={task.status !== "done"}>
-                    <summary className="cursor-pointer text-sm font-medium text-info">{t("howTo")}</summary>
-                    <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-muted">{task.details}</p>
-                  </details>
+                {task.planned_only ? (
+                  <div className="flex flex-col gap-1">
+                    {task.details && <p className="text-[15px] text-muted">{task.details}</p>}
+                    <p className="text-[13px] text-ai">
+                      <span aria-hidden="true">✦ </span>
+                      {taskControls ? t("plannedHint") : t("plannedHintViewer")}
+                    </p>
+                  </div>
+                ) : (
+                  task.details && (
+                    <details className="group" open={task.status !== "done"}>
+                      <summary className="cursor-pointer text-sm font-medium text-info">{t("howTo")}</summary>
+                      <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-muted">{task.details}</p>
+                    </details>
+                  )
                 )}
+                {task.feeling && !taskControls && <p className="text-sm text-muted">{t("feltIt", { feeling: t(`feelings.${task.feeling}`) })}</p>}
                 {task.reflection && !taskControls && (
                   <div className="rounded-xl bg-surface-2 p-3">
                     <p className="label-caps mb-1 text-soft">{t("reflection")}</p>

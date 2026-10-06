@@ -460,7 +460,7 @@
     },
     "bloom_ai": {
       "title": "Spark AI guide",
-      "body": "Let your child use Spark’s AI to suggest learning topics, plan steps and answer questions. Their age group, course step and project are shared, never their name. You and their mentor can read every question and answer."
+      "body": "Let your child use Spark’s AI to suggest learning topics, plan steps and answer questions. Their age group, course step and project are shared, never their name. To write each next step, Spark also reads how your child found the last one, their notes and their questions. You and their mentor can read every question and answer."
     }
   },
   "admin": {
@@ -801,6 +801,18 @@
     "reflectPrompt": "What did you learn, and how will you use it?",
     "notePrompt": "A note about what you did (optional)",
     "addNote": "Add a note",
+    "feeling": "How did this step go?",
+    "feelings": {
+      "too_easy": "Too easy",
+      "just_right": "Just right",
+      "too_hard": "Too hard"
+    },
+    "feltIt": "Felt: {feeling}",
+    "nextPrompt": "What was confusing, or where do you want to go next? (optional)",
+    "writingNext": "Spark is writing your next step…",
+    "writeStep": "Write this step",
+    "plannedHint": "Spark will write this step when you get here, using how the last one went.",
+    "plannedHintViewer": "Not written yet. Spark writes it when the student gets here.",
     "startTask": "Start",
     "markDone": "Mark done",
     "reopen": "Not finished? Reopen",
@@ -830,6 +842,9 @@
       "taskAdded": "Step added.",
       "taskDone": "Nice work — step done!",
       "pathDone": "Path complete — well done!",
+      "stepWritten": "Step done! Spark wrote your next step from how this one went.",
+      "stepReady": "Your next step is ready.",
+      "taskDoneNextLater": "Step done! Spark couldn’t write your next step just now. Try “Write this step” in a minute.",
       "saved": "Saved.",
       "noteSaved": "Note saved."
     },
@@ -998,6 +1013,7 @@
     "capabilities": {
       "bloom_suggest": "Spark: suggest paths",
       "bloom_plan": "Spark: plan a path",
+      "bloom_step": "Spark: write the next step",
       "bloom_ask": "Spark: answer a question",
       "progress_card": "Progress card draft"
     },

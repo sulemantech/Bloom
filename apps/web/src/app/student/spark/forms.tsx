@@ -10,6 +10,7 @@ import {
   setPathStatus,
   suggestPaths,
   updateTask,
+  writeNextStep,
   type BloomState,
   type SuggestState,
 } from "./actions";
@@ -139,8 +140,42 @@ export function StartPath({ aiAllowed }: { aiAllowed: boolean }) {
   );
 }
 
-/** Start, finish (with an optional reflection) or reopen one task. */
-export function TaskControls({ task }: { task: { id: string; status: "todo" | "doing" | "done"; reflection: string | null; kind: string } }) {
+const FEELINGS = ["too_easy", "just_right", "too_hard"] as const;
+
+/** "How did this step go?" — steers how Spark writes the next step. */
+function FeelingPicker() {
+  const t = useTranslations("bloom");
+  return (
+    <fieldset className="flex flex-col gap-1.5">
+      <legend className="mb-1.5 text-sm font-medium">{t("feeling")}</legend>
+      <div className="grid grid-cols-3 gap-2">
+        {FEELINGS.map((f) => (
+          <label key={f} className="cursor-pointer">
+            <input type="radio" name="feeling" value={f} className="peer sr-only" />
+            <span className="flex justify-center rounded-xl border border-border px-2 py-2 text-center text-sm font-medium transition-colors peer-checked:border-violet peer-checked:bg-violet/10 peer-focus-visible:ring-2 peer-focus-visible:ring-cyan">
+              {t(`feelings.${f}`)}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+/**
+ * Start, finish (with an optional reflection) or reopen one task. With `adaptive`, finishing asks
+ * how the step went and what to do next, so Spark can write the next step from it; `writesNext`
+ * says Spark will write it right away.
+ */
+export function TaskControls({
+  task,
+  adaptive = false,
+  writesNext = false,
+}: {
+  task: { id: string; status: "todo" | "doing" | "done"; reflection: string | null; kind: string; feeling: string | null };
+  adaptive?: boolean;
+  writesNext?: boolean;
+}) {
   const t = useTranslations("bloom");
   const [state, action] = useActionState(updateTask, initial);
   const [open, setOpen] = useState(false);
@@ -150,6 +185,7 @@ export function TaskControls({ task }: { task: { id: string; status: "todo" | "d
       <form action={action} className="flex flex-col gap-2 border-t border-border pt-3">
         <input type="hidden" name="taskId" value={task.id} />
         <input type="hidden" name="status" value="doing" />
+        {task.feeling && <p className="text-sm text-muted">{t("feltIt", { feeling: t(`feelings.${task.feeling}`) })}</p>}
         {task.reflection && (
           <div className="rounded-xl bg-surface-2 p-3">
             <p className="label-caps mb-1 text-soft">{t("yourReflection")}</p>
@@ -166,10 +202,13 @@ export function TaskControls({ task }: { task: { id: string; status: "todo" | "d
   return (
     <form action={action} className="flex flex-col gap-3 border-t border-border pt-3">
       <input type="hidden" name="taskId" value={task.id} />
-      {(open || task.kind === "reflect") && (
+      {adaptive && <FeelingPicker />}
+      {(open || adaptive || task.kind === "reflect") && (
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium">{task.kind === "reflect" ? t("reflectPrompt") : t("notePrompt")}</span>
-          <textarea name="reflection" rows={3} maxLength={4000} defaultValue={task.reflection ?? ""} className="field resize-y" />
+          <span className="text-sm font-medium">
+            {task.kind === "reflect" ? t("reflectPrompt") : adaptive ? t("nextPrompt") : t("notePrompt")}
+          </span>
+          <textarea name="reflection" rows={adaptive ? 2 : 3} maxLength={4000} defaultValue={task.reflection ?? ""} className="field resize-y" />
         </label>
       )}
       <div className="flex flex-wrap items-center gap-2">
@@ -178,15 +217,30 @@ export function TaskControls({ task }: { task: { id: string; status: "todo" | "d
             {t("startTask")}
           </SubmitButton>
         )}
-        <SubmitButton name="status" value="done" className="btn btn-primary px-4 py-2 text-sm">
+        <SubmitButton name="status" value="done" pendingLabel={writesNext ? t("writingNext") : undefined} className="btn btn-primary px-4 py-2 text-sm">
           {t("markDone")}
         </SubmitButton>
-        {!open && task.kind !== "reflect" && (
+        {!open && !adaptive && task.kind !== "reflect" && (
           <button type="button" onClick={() => setOpen(true)} className="text-sm font-medium text-info underline">
             {t("addNote")}
           </button>
         )}
       </div>
+      <Message state={state} />
+    </form>
+  );
+}
+
+/** Asks Spark to write the next outline step now (when it couldn't as the last step was finished). */
+export function WriteStepButton({ pathId }: { pathId: string }) {
+  const t = useTranslations("bloom");
+  const [state, action] = useActionState(writeNextStep, initial);
+  return (
+    <form action={action} className="flex flex-col gap-2 border-t border-border pt-3">
+      <input type="hidden" name="pathId" value={pathId} />
+      <SubmitButton icon={<span aria-hidden="true">✦</span>} pendingLabel={t("writingNext")} className="btn btn-secondary self-start px-4 py-2 text-sm">
+        {t("writeStep")}
+      </SubmitButton>
       <Message state={state} />
     </form>
   );

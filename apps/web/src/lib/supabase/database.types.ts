@@ -306,9 +306,11 @@ export type Database = {
           completed_at: string | null
           created_at: string
           details: string
+          feeling: Database["public"]["Enums"]["bloom_task_feeling"] | null
           id: string
           kind: Database["public"]["Enums"]["bloom_task_kind"]
           path_id: string
+          planned_only: boolean
           position: number
           reflection: string | null
           status: Database["public"]["Enums"]["bloom_task_status"]
@@ -320,9 +322,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           details?: string
+          feeling?: Database["public"]["Enums"]["bloom_task_feeling"] | null
           id?: string
           kind?: Database["public"]["Enums"]["bloom_task_kind"]
           path_id: string
+          planned_only?: boolean
           position?: number
           reflection?: string | null
           status?: Database["public"]["Enums"]["bloom_task_status"]
@@ -334,9 +338,11 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           details?: string
+          feeling?: Database["public"]["Enums"]["bloom_task_feeling"] | null
           id?: string
           kind?: Database["public"]["Enums"]["bloom_task_kind"]
           path_id?: string
+          planned_only?: boolean
           position?: number
           reflection?: string | null
           status?: Database["public"]["Enums"]["bloom_task_status"]
@@ -1176,6 +1182,7 @@ export type Database = {
       age_group: "explorer" | "builder"
       app_role: "student" | "parent" | "mentor" | "admin"
       bloom_path_status: "active" | "completed" | "archived"
+      bloom_task_feeling: "too_easy" | "just_right" | "too_hard"
       bloom_task_kind: "learn" | "do" | "reflect"
       bloom_task_status: "todo" | "doing" | "done"
       card_status: "draft" | "approved"
@@ -1333,6 +1340,7 @@ export const Constants = {
       age_group: ["explorer", "builder"],
       app_role: ["student", "parent", "mentor", "admin"],
       bloom_path_status: ["active", "completed", "archived"],
+      bloom_task_feeling: ["too_easy", "just_right", "too_hard"],
       bloom_task_kind: ["learn", "do", "reflect"],
       bloom_task_status: ["todo", "doing", "done"],
       card_status: ["draft", "approved"],

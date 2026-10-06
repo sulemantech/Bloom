@@ -2,10 +2,12 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
-import { askBloom, planBloomPath, suggestBloomPaths, type AiFailure, type BloomSuggestion } from "@/lib/ai";
+import { askBloom, planBloomPath, suggestBloomPaths, writeBloomStep, type AiFailure, type BloomPlan, type BloomSuggestion } from "@/lib/ai";
 import { getCurrentProfile } from "@/lib/auth";
+import { nextStepToWrite, stepWriterInput } from "@/lib/bloom/adaptive";
 import { bloomContext, hasConsent, loadBloomPaths } from "@/lib/data/bloom";
 import { loadStudentOverview } from "@/lib/data/overview";
+import { bloomV2Enabled } from "@/lib/flags";
 import { stageForWeek } from "@/lib/programme";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,6 +18,7 @@ const DEPTHS = ["quick", "standard", "deep"] as const;
 const TASK_STATUSES = ["todo", "doing", "done"] as const;
 const KINDS = ["learn", "do", "reflect"] as const;
 const PATH_STATUSES = ["active", "completed", "archived"] as const;
+const FEELINGS = ["too_easy", "just_right", "too_hard"] as const;
 
 const str = (formData: FormData, key: string, max = 200) => String(formData.get(key) ?? "").trim().slice(0, max);
 const oneOf = <T extends string>(list: readonly T[], value: string, fallback: T): T => (list.includes(value as T) ? (value as T) : fallback);
@@ -61,10 +64,13 @@ export async function createPath(_prev: BloomState, formData: FormData): Promise
   const supabase = await createClient();
   const { overview, context } = await aiContext(student.id);
 
-  let plan: { summary: string; tasks: { kind: (typeof KINDS)[number]; title: string; details: string }[] } | null = null;
+  let plan: BloomPlan | null = null;
   if (wantsAi) {
     if (!(await hasBloomAiConsent(student.id))) return { status: "error", message: "ai.noConsent" };
-    const result = await planBloomPath(student.id, context, { title, goal, depth });
+    // In Bloom v2 groups only step 1 is written now; Spark writes each later step when the student
+    // gets there, from how the last one went.
+    const outline = await bloomV2Enabled(student.id);
+    const result = await planBloomPath(student.id, context, { title, goal, depth }, { outline });
     if (!result.ok) return aiError(result.reason);
     plan = result.data;
   }
@@ -74,7 +80,12 @@ export async function createPath(_prev: BloomState, formData: FormData): Promise
   // The path and its steps are saved in one transaction: a bad step fails the whole path instead of
   // leaving an empty one. Steps the model returned without a title are dropped first.
   const tasks = (plan?.tasks ?? [])
-    .map((task) => ({ kind: task.kind, title: task.title.trim().slice(0, 160), details: task.details.slice(0, 6000) }))
+    .map((task) => ({
+      kind: task.kind,
+      title: task.title.trim().slice(0, 160),
+      details: task.details.slice(0, 6000),
+      planned_only: task.planned_only,
+    }))
     .filter((task) => task.title)
     .slice(0, 10);
   const { data: pathId, error } = await supabase.rpc("create_bloom_path", {
@@ -122,13 +133,18 @@ export async function updateTask(_prev: BloomState, formData: FormData): Promise
   if (!student) return { status: "error", message: "notAllowed" };
   const taskId = str(formData, "taskId");
   const status = oneOf(TASK_STATUSES, str(formData, "status"), "todo");
-  // Only touch the note when the form showed the note field, so finishing a step never wipes it.
+  // Only touch the note and feeling when the form showed them, so finishing a step never wipes them.
   const reflection = formData.has("reflection") ? str(formData, "reflection", 4000) || null : undefined;
+  const feeling = formData.has("feeling") ? (FEELINGS.find((f) => f === str(formData, "feeling")) ?? null) : undefined;
 
   const supabase = await createClient();
   const { data: task, error } = await supabase
     .from("bloom_tasks")
-    .update(reflection === undefined ? { status } : { status, reflection })
+    .update({
+      status,
+      ...(reflection === undefined ? {} : { reflection }),
+      ...(feeling === undefined ? {} : { feeling }),
+    })
     .eq("id", taskId)
     .eq("student_id", student.id)
     .select("path_id")
@@ -139,8 +155,64 @@ export async function updateTask(_prev: BloomState, formData: FormData): Promise
   const { data: path } = await supabase.from("bloom_paths").select("status").eq("id", task.path_id).single();
   const pathDone = path?.status === "completed";
 
+  // Finishing a step lets Spark write the next outline step from how this one went. If it can't
+  // right now, the step keeps its aim and the student can ask again ("Write this step").
+  let message = status === "done" ? (pathDone ? "pathDone" : "taskDone") : "saved";
+  if (status === "done" && !pathDone) {
+    const written = await writePlannedStep(student.id, task.path_id);
+    if (written === "written") message = "stepWritten";
+    else if (written !== "none") message = "taskDoneNextLater";
+  }
+
   refresh();
-  return { status: "ok", message: status === "done" ? (pathDone ? "pathDone" : "taskDone") : "saved" };
+  return { status: "ok", message };
+}
+
+/**
+ * Has Spark write the path's next outline step (see lib/bloom/adaptive). "none" when no step is
+ * waiting: every step is written, or an earlier step isn't done yet.
+ */
+async function writePlannedStep(studentId: string, pathId: string): Promise<"written" | "none" | AiFailure> {
+  const supabase = await createClient();
+  const [{ data: path }, { data: questions }] = await Promise.all([
+    supabase
+      .from("bloom_paths")
+      .select("title, goal, summary, depth, bloom_tasks(id, position, kind, title, details, status, reflection, feeling, planned_only)")
+      .eq("id", pathId)
+      .eq("student_id", studentId)
+      .single(),
+    supabase.from("bloom_questions").select("task_id, question, answer").eq("path_id", pathId).order("created_at"),
+  ]);
+  if (!path) return "failed";
+  const target = nextStepToWrite(path.bloom_tasks);
+  if (!target) return "none";
+  if (!(await hasBloomAiConsent(studentId))) return "noConsent";
+
+  const { context } = await aiContext(studentId);
+  const input = stepWriterInput(path, path.bloom_tasks, questions ?? [], target.id);
+  const result = await writeBloomStep(studentId, context, oneOf(DEPTHS, path.depth, "standard"), input);
+  if (!result.ok) return result.reason;
+
+  // Only an outline step is replaced, so a double click can't overwrite a step already written.
+  const { error } = await supabase
+    .from("bloom_tasks")
+    .update({ title: result.data.title, details: result.data.details.slice(0, 6000), planned_only: false })
+    .eq("id", target.id)
+    .eq("student_id", studentId)
+    .eq("planned_only", true);
+  if (error) return "failed";
+  return "written";
+}
+
+/** "Write this step": retry when Spark couldn't write the next step as the last one was finished. */
+export async function writeNextStep(_prev: BloomState, formData: FormData): Promise<BloomState> {
+  const student = await requireStudent();
+  if (!student) return { status: "error", message: "notAllowed" };
+  const result = await writePlannedStep(student.id, str(formData, "pathId"));
+  if (result === "none") return { status: "ok" };
+  if (result !== "written") return aiError(result);
+  refresh();
+  return { status: "ok", message: "stepReady" };
 }
 
 export async function setPathStatus(_prev: BloomState, formData: FormData): Promise<BloomState> {

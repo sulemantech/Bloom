@@ -13,7 +13,7 @@ import { dailyLimitFrom, dayWindowStart, inputHash, joinText } from "./util";
  */
 const MODEL = "claude-opus-5-5";
 
-export type AiCapability = "progress_card" | "bloom_suggest" | "bloom_plan" | "bloom_ask";
+export type AiCapability = "progress_card" | "bloom_suggest" | "bloom_plan" | "bloom_step" | "bloom_ask";
 export type AiFailure = "notConfigured" | "noConsent" | "dailyLimit" | "refused" | "rateLimited" | "failed";
 export type AiResult<T> = { ok: true; data: T } | { ok: false; reason: AiFailure };
 
@@ -36,7 +36,7 @@ export function aiConfigured() {
 }
 
 /** Student-facing capabilities share one daily budget per student. */
-const LIMITED: ReadonlySet<AiCapability> = new Set(["bloom_suggest", "bloom_plan", "bloom_ask"]);
+const LIMITED: ReadonlySet<AiCapability> = new Set(["bloom_suggest", "bloom_plan", "bloom_step", "bloom_ask"]);
 
 export async function generateText(call: AiCall): Promise<AiResult<string>> {
   return run(call, async (client) => {

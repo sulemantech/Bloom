@@ -76,5 +76,6 @@ ai_runs: one row per AI call (no text), admins only
 - [Bloom as built](bloom-as-built.html): what Bloom does today, and its known defects
 - [Bloom v2 blueprint](bloom-coach-blueprint.html): the approved design
 - [Bloom v2 roadmap](bloom-v2-roadmap.html): phases, tasks and acceptance criteria
+- [Spark personalised learning roadmap](spark-personalisation-roadmap.md): bringing the original Bloom's adaptive learning into Spark
 - [Decisions](decisions/): recorded product and safeguarding decisions
-- [Demo accounts](DEMO_ACCOUNTS.md), [UI language](ui-language.md)
+- [Demo accounts](DEMO_ACCOUNTS.md)

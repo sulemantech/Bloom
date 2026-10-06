@@ -7,9 +7,11 @@ import { BloomPathDetail, PathStatusBadge } from "@/components/bloom";
 import { Badge, STEP_TONE } from "@/components/ui/Badge";
 import { requireRole } from "@/lib/auth";
 import { aiConfigured } from "@/lib/ai";
+import { nextStepToWrite } from "@/lib/bloom/adaptive";
 import { hasConsent, loadBloomPath } from "@/lib/data/bloom";
+import { bloomV2Enabled } from "@/lib/flags";
 import { createClient } from "@/lib/supabase/server";
-import { AddTaskForm, AskForm, PathActions, TaskControls } from "../forms";
+import { AddTaskForm, AskForm, PathActions, TaskControls, WriteStepButton } from "../forms";
 
 export const metadata: Metadata = { title: "Learning path" };
 
@@ -18,9 +20,25 @@ export default async function StudentPathPage({ params }: PageProps<"/student/sp
   const profile = await requireRole("student");
   const t = await getTranslations("bloom");
   const supabase = await createClient();
-  const [path, consent] = await Promise.all([loadBloomPath(supabase, id), hasConsent(supabase, profile.id, "bloom_ai")]);
+  const [path, consent, adaptive] = await Promise.all([
+    loadBloomPath(supabase, id),
+    hasConsent(supabase, profile.id, "bloom_ai"),
+    bloomV2Enabled(profile.id),
+  ]);
   if (!path || path.student_id !== profile.id) notFound();
   const canAsk = consent && aiConfigured();
+
+  // Outline steps are written by Spark when the student reaches them. The waiting step offers
+  // "Write this step" (if finishing the last one couldn't), or plain controls without the AI.
+  const waiting = nextStepToWrite(path.tasks);
+  const controls = (task: (typeof path.tasks)[number]) => {
+    if (task.planned_only) {
+      if (task.id !== waiting?.id) return null;
+      return canAsk ? <WriteStepButton pathId={path.id} /> : <TaskControls task={task} />;
+    }
+    const following = path.tasks[path.tasks.indexOf(task) + 1];
+    return <TaskControls task={task} adaptive={adaptive} writesNext={canAsk && Boolean(following?.planned_only)} />;
+  };
 
   return (
     <>
@@ -45,7 +63,7 @@ export default async function StudentPathPage({ params }: PageProps<"/student/sp
       <BloomPathDetail
         path={path}
         timeZone={profile.timezone}
-        taskControls={(task) => <TaskControls task={task} />}
+        taskControls={controls}
         questionSlot={canAsk ? (taskId) => <AskForm pathId={path.id} taskId={taskId} compact={taskId !== null} /> : undefined}
       />
 

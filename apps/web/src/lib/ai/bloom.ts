@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import type { StepWriterInput } from "@/lib/bloom/adaptive";
 import { formatDetails } from "@/lib/bloom/details";
 import { generateStructured, generateText, type AiResult } from "./gateway";
 
@@ -60,65 +61,175 @@ ${interest ? `\nThe student says they are curious about: ${interest}` : ""}`,
   return result.ok ? { ok: true, data: result.data.suggestions.slice(0, 3) } : result;
 }
 
+const KIND = z.enum(["learn", "do", "reflect"]);
+
+/** The written-out parts of one step; stored as plain labelled text by formatDetails. */
+const StepFields = {
+  intro: z.string().describe("1-2 short sentences: what the student will do and why it matters. For a learn task, explain the idea simply"),
+  example: z.string().nullable().describe("One concrete, everyday example in one sentence, or null if it adds nothing"),
+  youNeed: z.string().nullable().describe('What to have ready, as a short comma-separated list (e.g. "A notebook, a pen"), or null if nothing'),
+  minutes: z.number().int().describe("Realistic time in minutes, between 10 and 45"),
+  steps: z
+    .array(z.string())
+    .describe("3-6 steps in order. Each is one clear action that starts with a verb, at most 20 words, no numbering"),
+  tip: z.string().nullable().describe("One short, encouraging tip, or null"),
+};
+
+const StepSchema = z.object({ kind: KIND, title: z.string().describe("Short action title, under 60 characters"), ...StepFields });
+
 const PlanSchema = z.object({
   summary: z.string().describe("2-3 short sentences, addressed to the student, on what this path covers and why it helps them"),
-  tasks: z.array(
-    z.object({
-      kind: z.enum(["learn", "do", "reflect"]),
-      title: z.string().describe("Short action title, under 60 characters"),
-      intro: z.string().describe("1-2 short sentences: what the student will do and why it matters. For a learn task, explain the idea simply"),
-      example: z.string().nullable().describe("One concrete, everyday example in one sentence, or null if it adds nothing"),
-      youNeed: z.string().nullable().describe('What to have ready, as a short comma-separated list (e.g. "A notebook, a pen"), or null if nothing'),
-      minutes: z.number().int().describe("Realistic time in minutes, between 10 and 45"),
-      steps: z
-        .array(z.string())
-        .describe("3-6 steps in order. Each is one clear action that starts with a verb, at most 20 words, no numbering"),
-      tip: z.string().nullable().describe("One short, encouraging tip, or null"),
-    }),
-  ),
+  tasks: z.array(StepSchema),
+});
+
+const OutlineSchema = z.object({
+  summary: PlanSchema.shape.summary,
+  first: StepSchema.describe("Step 1, written in full"),
+  later: z
+    .array(
+      z.object({
+        kind: KIND,
+        title: z.string().describe("Short action title, under 60 characters"),
+        aim: z.string().describe("One short sentence, addressed to the student: what this step is for"),
+      }),
+    )
+    .describe("Every step after the first, in order: title and aim only"),
 });
 
 /** A planned path, with each step's instructions already formatted for storage (see lib/bloom/details). */
-export type BloomPlan = { summary: string; tasks: { kind: "learn" | "do" | "reflect"; title: string; details: string }[] };
+export type BloomPlan = {
+  summary: string;
+  tasks: { kind: "learn" | "do" | "reflect"; title: string; details: string; planned_only: boolean }[];
+};
 
 const TASK_COUNT = { quick: "3", standard: "5", deep: "7" } as const;
 
-/** A step-by-step learning path: a summary plus tasks mixing learning, doing and reflecting. */
+/** How depth changes the teaching, not only the number of steps. */
+const DEPTH_TEACHING = {
+  quick: "Quick: only the core idea and the most common way to use it. No history, side topics or edge cases.",
+  standard: "Standard: the core ideas, how they connect, typical uses and the most common mistakes to avoid.",
+  deep: "Deep dive: why it works underneath, where it stops working, a counter-example, and how to use it in a different situation.",
+} as const;
+
+const TEACHING_RULES = `How to teach:
+- Explain why something matters before what it is.
+- Give every abstract idea an everyday analogy or a concrete situation the student knows.
+- Introduce at most 1-2 new ideas per step; build on what earlier steps taught.
+- The student reads this on a phone, and a parent may read it too. Keep every part short and easy to scan: plain words, one idea per sentence, no jargon without a quick explanation, no markdown. Where the student fills something in, show the pattern with blanks, like "Many ___ have trouble with ___."`;
+
+const writeStep = ({ steps, ...parts }: Omit<z.infer<typeof StepSchema>, "kind" | "title">) =>
+  formatDetails({ ...parts, steps: steps.slice(0, 8), minutes: clampMinutes(parts.minutes) });
+
+/**
+ * A step-by-step learning path: a summary plus tasks mixing learning, doing and reflecting.
+ * With `outline`, only step 1 is written; later steps are titles and aims that writeBloomStep fills
+ * in when the student gets there.
+ */
 export async function planBloomPath(
   studentId: string,
   context: BloomContext,
   path: { title: string; goal: string; depth: keyof typeof TASK_COUNT },
+  { outline = false }: { outline?: boolean } = {},
 ): Promise<AiResult<BloomPlan>> {
-  const result = await generateStructured(
-    {
-      ...asStudent(studentId),
-      capability: "bloom_plan",
-      system: BLOOM_SYSTEM,
-      maxTokens: 8000,
-      user: `Create a learning path called "${path.title}".
+  const count = TASK_COUNT[path.depth];
+  const brief = `Create a learning path called "${path.title}".
 The student's goal: ${path.goal || "(not given — infer a sensible one from the title)"}
+Depth: ${DEPTH_TEACHING[path.depth]}
 
-Write exactly ${TASK_COUNT[path.depth]} tasks in a sensible order: start with a "learn" task that explains the core idea simply, include at least one hands-on "do" task that moves their own project forward when possible, and finish with a "reflect" task asking what they learned and how they will use it.
+Plan exactly ${count} tasks in a sensible order: start with a "learn" task that explains the core idea simply, include at least one hands-on "do" task that moves their own project forward when possible, and finish with a "reflect" task asking what they learned and how they will use it.
 
-The student reads this on a phone, and a parent may read it too. Keep every part short and easy to scan: plain words, one idea per sentence, no jargon without a quick explanation, no markdown. Where the student fills something in, show the pattern with blanks, like "Many ___ have trouble with ___."
+${TEACHING_RULES}
 
 Student context:
-${JSON.stringify(context, null, 2)}`,
-    },
-    PlanSchema,
-  );
+${JSON.stringify(context, null, 2)}`;
+
+  const call = { ...asStudent(studentId), capability: "bloom_plan" as const, system: BLOOM_SYSTEM, maxTokens: 8000 };
+
+  if (outline) {
+    const result = await generateStructured(
+      {
+        ...call,
+        user: `${brief}
+
+Write only step 1 in full. For the other ${Number(count) - 1} steps give just a title and a one-sentence aim: each will be written when the student gets there, adapted to how the earlier steps went.`,
+      },
+      OutlineSchema,
+    );
+    if (!result.ok) return result;
+    const { summary, first, later } = result.data;
+    return {
+      ok: true,
+      data: {
+        summary,
+        tasks: [
+          { kind: first.kind, title: first.title, details: writeStep(first), planned_only: false },
+          ...later.map((s) => ({ kind: s.kind, title: s.title, details: s.aim, planned_only: true })),
+        ],
+      },
+    };
+  }
+
+  const result = await generateStructured({ ...call, user: brief }, PlanSchema);
   if (!result.ok) return result;
   return {
     ok: true,
     data: {
       summary: result.data.summary,
-      tasks: result.data.tasks.map(({ kind, title, steps, ...parts }) => ({
-        kind,
-        title,
-        details: formatDetails({ ...parts, steps: steps.slice(0, 8), minutes: clampMinutes(parts.minutes) }),
-      })),
+      tasks: result.data.tasks.map(({ kind, title, ...parts }) => ({ kind, title, details: writeStep(parts), planned_only: false })),
     },
   };
+}
+
+const WrittenStepSchema = z.object({
+  title: z.string().describe("Short action title, under 60 characters. Keep the planned title unless the step changed"),
+  ...StepFields,
+  intro: z
+    .string()
+    .describe(
+      "1-3 short sentences. If you adapted this step to how the last one went, start with one sentence telling the student what you changed and why. Then say what they will do and why it matters",
+    ),
+});
+
+/**
+ * Writes the next outline step from how the last one went: its feeling (too easy / just right /
+ * too hard), the student's note and the questions they asked.
+ */
+export async function writeBloomStep(
+  studentId: string,
+  context: BloomContext,
+  depth: keyof typeof TASK_COUNT,
+  input: StepWriterInput,
+): Promise<AiResult<{ title: string; details: string }>> {
+  const result = await generateStructured(
+    {
+      ...asStudent(studentId),
+      capability: "bloom_step",
+      system: BLOOM_SYSTEM,
+      maxTokens: 6000,
+      user: `Write step ${input.stepToWrite.step} of this student's learning path in full. It is a "${input.stepToWrite.kind}" step.
+Depth: ${DEPTH_TEACHING[depth]}
+
+Adapt it to how the last step went:
+- "too_hard", or a note or question showing confusion: make this step simpler and smaller, re-explain the confusing idea first with a new analogy, and add more support.
+- "too_easy": add more challenge or a stretch, and don't repeat what they already showed they know.
+- Answer anything still unclear from their note and questions, briefly, before moving on.
+- Follow where their note says they want to go next when it still fits the path's goal.
+- Look at earlier feelings too: two hard steps in a row need a gentler step even if the last felt fine.
+Keep to the step's planned aim unless the student clearly needs something else first.
+
+${TEACHING_RULES}
+
+Path so far:
+${JSON.stringify(input, null, 2)}
+
+Student context:
+${JSON.stringify(context, null, 2)}`,
+    },
+    WrittenStepSchema,
+  );
+  if (!result.ok) return result;
+  const { title, ...parts } = result.data;
+  return { ok: true, data: { title: title.trim().slice(0, 160) || input.stepToWrite.title, details: writeStep(parts) } };
 }
 
 const clampMinutes = (n: number) => (Number.isFinite(n) && n > 0 ? Math.min(Math.max(Math.round(n), 5), 90) : null);
