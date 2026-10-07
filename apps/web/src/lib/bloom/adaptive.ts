@@ -26,8 +26,11 @@ export type AdaptiveQuestion = { task_id: string | null; question: string; answe
 // Check your understanding: questions at the end of a step, the student's answers and Spark's review
 // ---------------------------------------------------------------------------
 
-/** `idea` names what the question tests (e.g. "habit triggers"), so the learner state can track it. */
-export type CheckQuestion = { kind: "apply" | "judge"; question: string; idea?: string };
+/**
+ * `idea` names what the question tests (e.g. "habit triggers"), so the learner state can track it.
+ * `recheck` marks a question that checks an open gap again (lib/bloom/gaps).
+ */
+export type CheckQuestion = { kind: "apply" | "judge"; question: string; idea?: string; recheck?: boolean };
 export type Verdict = "nailed" | "nearly" | "not_yet";
 export type CheckReview = { verdict: Verdict; feedback: string; key_idea: string };
 
@@ -40,7 +43,14 @@ export function checkQuestions(value: unknown): CheckQuestion[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((q) =>
     isObject(q) && text(q.question)
-      ? [{ kind: q.kind === "judge" ? ("judge" as const) : ("apply" as const), question: text(q.question), ...(text(q.idea) ? { idea: text(q.idea) } : {}) }]
+      ? [
+          {
+            kind: q.kind === "judge" ? ("judge" as const) : ("apply" as const),
+            question: text(q.question),
+            ...(text(q.idea) ? { idea: text(q.idea) } : {}),
+            ...(q.recheck === true ? { recheck: true } : {}),
+          },
+        ]
       : [],
   );
 }

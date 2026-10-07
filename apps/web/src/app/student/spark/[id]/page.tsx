@@ -11,12 +11,18 @@ import { checkAnswers, checkQuestions, nextStepToWrite } from "@/lib/bloom/adapt
 import { hasConsent, loadBloomPath } from "@/lib/data/bloom";
 import { bloomV2Enabled } from "@/lib/flags";
 import { createClient } from "@/lib/supabase/server";
+import type { StepNotice } from "../actions";
 import { AddTaskForm, AskForm, PathActions, TaskControls, WriteStepButton } from "../forms";
 
 export const metadata: Metadata = { title: "Learning path" };
 
-export default async function StudentPathPage({ params }: PageProps<"/student/spark/[id]">) {
+/** Notices this page shows after a step is finished (updateTask); anything else in the URL is ignored. */
+const NOTICES: readonly StepNotice[] = ["taskDone", "pathDone", "stepWritten", "taskDoneNextLater", "answersReviewed", "pathDoneReviewed"];
+
+export default async function StudentPathPage({ params, searchParams }: PageProps<"/student/spark/[id]">) {
   const { id } = await params;
+  const { notice: noticeParam } = await searchParams;
+  const notice = NOTICES.find((n) => n === noticeParam);
   const profile = await requireRole("student");
   const t = await getTranslations("bloom");
   const supabase = await createClient();
@@ -73,6 +79,7 @@ export default async function StudentPathPage({ params }: PageProps<"/student/sp
         timeZone={profile.timezone}
         taskControls={controls}
         questionSlot={canAsk ? (taskId) => <AskForm pathId={path.id} taskId={taskId} compact={taskId !== null} /> : undefined}
+        notice={notice && { text: t(`ok.${notice}`), tone: notice === "taskDoneNextLater" ? "warning" : "success" }}
       />
 
       <section className="card flex flex-col gap-3 p-5" aria-labelledby="add-heading">

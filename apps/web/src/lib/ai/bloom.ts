@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import type { CheckQuestion, CheckReview, StepWriterInput } from "@/lib/bloom/adaptive";
+import { CHECK_COUNT, maxRechecks, type Gap } from "@/lib/bloom/gaps";
 import type { LearnerState } from "@/lib/bloom/learner";
 import { formatDetails } from "@/lib/bloom/details";
 import { generateStructured, generateText, type AiResult } from "./gateway";
@@ -88,8 +89,6 @@ const PlanSchema = z.object({
   tasks: z.array(StepSchema),
 });
 
-/** "Check your understanding": questions at the end of each step Spark writes. */
-const CHECK_COUNT = { quick: 2, standard: 3, deep: 3 } as const;
 
 const ChecksField = z
   .array(
@@ -99,6 +98,7 @@ const ChecksField = z
       idea: z
         .string()
         .describe('2-4 words naming the one idea this question tests, e.g. "habit triggers". Reuse the exact name from learner.understands or learner.strugglesWith when it is the same idea'),
+      recheck: z.boolean().describe("True when this question checks an open gap again (use the gap's exact idea name)"),
     }),
   )
   .describe("Check-your-understanding questions for this step, in order");
@@ -118,6 +118,9 @@ const ReviewField = z
   .nullable()
   .describe('Only when lastStep.understandingChecks has at least one answer: one review per question, in the same order. Otherwise null');
 
+/** Tells Spark which gaps to re-check; lib/bloom/gaps enforces it on the result. */
+const recheckRules = (depth: keyof typeof CHECK_COUNT, gaps: readonly Gap[]) => `Re-checking gaps: a gap is an idea the student has not shown they understand yet. Re-check up to ${maxRechecks(depth)} gaps in this step: first any idea whose answer you mark "nearly" or "not_yet" in your review, then these open gaps, in order: ${gaps.length ? gaps.map((g) => `"${g.idea}"`).join(", ") : "(none)"}. For each, write one check question with recheck = true and the gap's exact idea name, asking about it in a new way (a new situation, not the same question again). Re-check questions come first; the remaining questions (at least one) check this step's new idea with recheck = false. Teach a gap's idea again briefly in the step before re-checking it.`;
+
 const REVIEW_RULES = `Reviewing answers: be kind and specific, like a good mentor. Start with what is right. Never mock or use the word "wrong"; say what to add or think about instead. Judge understanding, not spelling or grammar. A blank answer is "not_yet": give the key idea without blame.`;
 
 /** Normalised review, in question order (blank answers keep their verdict; the page shows "Not answered"). */
@@ -128,7 +131,7 @@ const toReview = (review: z.infer<typeof ReviewField>, count: number): CheckRevi
 
 const toChecks = (checks: z.infer<typeof ChecksField>, depth: keyof typeof CHECK_COUNT): CheckQuestion[] =>
   checks
-    .map((c) => ({ kind: c.kind, question: c.question.trim().slice(0, 300), idea: c.idea.trim().slice(0, 80) }))
+    .map((c) => ({ kind: c.kind, question: c.question.trim().slice(0, 300), idea: c.idea.trim().slice(0, 80), recheck: c.recheck }))
     .filter((c) => c.question)
     .slice(0, CHECK_COUNT[depth]);
 
@@ -220,7 +223,8 @@ ${checkRules(path.depth)}`,
             title: first.title,
             details: writeStep(firstStep),
             planned_only: false,
-            check_questions: toChecks(checks, path.depth),
+            // A new path has no gaps of its own: re-checks are decided by code (lib/bloom/gaps), never here.
+            check_questions: toChecks(checks, path.depth).map((c) => ({ ...c, recheck: false })),
           },
           ...later.map((s) => ({ kind: s.kind, title: s.title, details: s.aim, planned_only: true })),
         ],
@@ -271,6 +275,8 @@ export async function writeBloomStep(
   context: BloomContext,
   depth: keyof typeof TASK_COUNT,
   input: StepWriterInput,
+  /** Gaps already known to be open in this path (lib/bloom/gaps); code verifies the re-checks afterwards. */
+  openGaps: readonly Gap[] = [],
 ): Promise<AiResult<WrittenStep>> {
   const result = await generateStructured(
     {
@@ -294,6 +300,8 @@ Keep to the step's planned aim unless the student clearly needs something else f
 ${TEACHING_RULES}
 
 ${checkRules(depth)}
+
+${recheckRules(depth, openGaps)}
 
 ${REVIEW_RULES}
 

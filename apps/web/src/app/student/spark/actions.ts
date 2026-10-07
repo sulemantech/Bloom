@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { askBloom, planBloomPath, reviewBloomAnswers, suggestBloomPaths, writeBloomStep, type AiFailure, type BloomPlan, type BloomSuggestion } from "@/lib/ai";
 import { getCurrentProfile } from "@/lib/auth";
 import { answeredChecks, lastFinishedStep, nextStepToWrite, stepWriterInput } from "@/lib/bloom/adaptive";
+import { CHECK_COUNT, enforceRechecks, gapsToRecheck, maxRechecks } from "@/lib/bloom/gaps";
 import { bloomContext, hasConsent, loadBloomPaths } from "@/lib/data/bloom";
 import { loadLearnerState, recordReview } from "@/lib/data/learner";
 import { loadStudentOverview } from "@/lib/data/overview";
@@ -171,11 +172,17 @@ export async function updateTask(_prev: BloomState, formData: FormData): Promise
     if (written === "written") message = "stepWritten";
     else if (written !== "none") message = "taskDoneNextLater";
     else if ((await reviewAnswers(student.id, task.path_id, taskId)) === "reviewed") message = pathDone ? "pathDoneReviewed" : "answersReviewed";
+    // Finishing a step reshapes the page (the step folds away, the next becomes current), which
+    // would drop a message shown in its form. Reload with the notice instead, at the step to do now.
+    redirect(`/student/spark/${task.path_id}?notice=${message}#current-step`);
   }
 
   refresh();
   return { status: "ok", message };
 }
+
+/** Messages shown after finishing a step (see updateTask), as ?notice= on the path page. */
+export type StepNotice = "taskDone" | "pathDone" | "stepWritten" | "taskDoneNextLater" | "answersReviewed" | "pathDoneReviewed";
 
 const STEP_FIELDS = "id, position, kind, title, details, status, reflection, feeling, planned_only, check_questions, check_answers, check_review";
 
@@ -195,11 +202,30 @@ async function writePlannedStep(studentId: string, pathId: string, finishedId?: 
   if (!target) return "none";
   if (!(await hasBloomAiConsent(studentId))) return "noConsent";
 
-  const { context } = await aiContext(studentId);
+  const depth = oneOf(DEPTHS, path.depth, "standard");
+  const [{ context }, { data: openInPath }] = await Promise.all([
+    aiContext(studentId),
+    // Ideas still being worked on whose latest evidence came from this path: the open gaps.
+    supabase
+      .from("spark_concepts")
+      .select("label, status, struggle_count")
+      .eq("student_id", studentId)
+      .eq("last_path_id", pathId)
+      .eq("status", "struggling"),
+  ]);
   const input = stepWriterInput(path, path.bloom_tasks, questions ?? [], target.id, finishedId);
   const source = lastFinishedStep(path.bloom_tasks, target.id, finishedId);
-  const result = await writeBloomStep(studentId, context, oneOf(DEPTHS, path.depth, "standard"), input);
+  // Gaps known before the call (a retry may follow an earlier review); Spark adds the ones its own review finds.
+  const knownGaps = gapsToRecheck(openInPath ?? [], source?.check_review ? source : null, maxRechecks(depth));
+  const result = await writeBloomStep(studentId, context, depth, input, knownGaps);
   if (!result.ok) return result.reason;
+
+  // The re-check rule is enforced here, not left to the model: every gap from this review and the
+  // path gets a question on the new step; any Spark left out is added from a fixed template.
+  const reviewedSource = source && (source.check_review || result.data.review) ? { ...source, check_review: source.check_review ?? result.data.review } : null;
+  const gaps = gapsToRecheck(openInPath ?? [], reviewedSource, maxRechecks(depth));
+  const checks = enforceRechecks(result.data.check_questions, gaps, CHECK_COUNT[depth]);
+  if (checks.added.length) console.info(`Spark re-check added by rule for: ${checks.added.join(", ")}`);
 
   // Only an outline step is replaced, so a double click can't overwrite a step already written.
   const { error } = await supabase
@@ -209,7 +235,7 @@ async function writePlannedStep(studentId: string, pathId: string, finishedId?: 
       details: result.data.details.slice(0, 6000),
       adaptation: result.data.adaptation,
       adapted_from: source?.id ?? null,
-      check_questions: result.data.check_questions,
+      check_questions: checks.questions,
       planned_only: false,
     })
     .eq("id", target.id)

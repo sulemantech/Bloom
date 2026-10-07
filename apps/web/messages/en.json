@@ -858,7 +858,6 @@
     "adaptedTitle": "Spark changed this step for you",
     "adaptedBecause": "Because on step {n} you said:",
     "adaptedBecauseViewer": "Because on step {n} the student said:",
-    "seeNext": "See your next step ↓",
     "detailLabels": {
       "example": "Example",
       "need": "You need",
@@ -882,7 +881,8 @@
         "nailed": "Nailed it",
         "nearly": "Nearly",
         "not_yet": "Not yet"
-      }
+      },
+      "recheck": "Checking again: {idea}"
     },
     "learner": {
       "title": "What Spark knows about you",

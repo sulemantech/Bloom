@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { ProgressBar } from "@/components/course";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Badge, STEP_TONE, type Tone } from "@/components/ui/Badge";
+import { RecheckBadge } from "@/components/ui/RecheckBadge";
 import { checkAnswers, checkQuestions, checkReview, hasAnswers, stepStates, type CheckReview, type StepState, type Verdict } from "@/lib/bloom/adaptive";
 import { parseDetails } from "@/lib/bloom/details";
 import type { LearnerState } from "@/lib/bloom/learner";
@@ -46,6 +47,15 @@ async function MarksSummary({ review }: { review: CheckReview[] | null }) {
   );
 }
 
+/** A one-off message after finishing a step (?notice= on the student's path page). */
+function Notice({ text, tone }: { text: string; tone: "success" | "warning" }) {
+  return (
+    <p role="status" className={`rounded-xl px-4 py-2.5 text-sm font-medium ${tone === "success" ? "bg-lime/15 text-success" : "bg-sun/15 text-warning"}`}>
+      {text}
+    </p>
+  );
+}
+
 /**
  * Check your understanding. Unfinished steps list the questions for viewers (the student answers
  * them in the finish form); finished steps show each answer with Spark's review.
@@ -61,9 +71,12 @@ async function Checks({ task, showMarks, forStudent }: { task: Task; showMarks: 
         <p className="label-caps text-ai">{t("checks.title")}</p>
         <ol className="flex flex-col gap-1.5 text-[15px]">
           {questions.map((q, i) => (
-            <li key={i}>
-              <span className="mr-1.5 font-semibold text-ai">{i + 1}.</span>
-              {q.question}
+            <li key={i} className="flex flex-col">
+              {q.recheck && q.idea && <RecheckBadge label={t("checks.recheck", { idea: q.idea })} />}
+              <span>
+                <span className="mr-1.5 font-semibold text-ai">{i + 1}.</span>
+                {q.question}
+              </span>
             </li>
           ))}
         </ol>
@@ -86,6 +99,7 @@ async function Checks({ task, showMarks, forStudent }: { task: Task; showMarks: 
           const r = review?.[i];
           return (
             <li key={i} className="flex flex-col gap-1.5">
+              {q.recheck && q.idea && <RecheckBadge label={t("checks.recheck", { idea: q.idea })} />}
               <p className="text-[15px] font-medium">
                 <span className="mr-1.5 text-ai">{i + 1}.</span>
                 {q.question}
@@ -219,6 +233,7 @@ export async function BloomPathDetail({
   mentorSlot,
   questionSlot,
   showMarks = true,
+  notice,
 }: {
   path: PathDetail;
   timeZone: string;
@@ -227,6 +242,8 @@ export async function BloomPathDetail({
   questionSlot?: (taskId: string | null) => ReactNode;
   /** Show Spark's marks on check answers (students, mentors, admins); parents see the answers only. */
   showMarks?: boolean;
+  /** One-off message after the student finished a step; shown where they continue. */
+  notice?: { text: string; tone: "success" | "warning" };
 }) {
   const t = await getTranslations("bloom");
   const generalQuestions = path.questions.filter((q) => !q.task_id);
@@ -284,6 +301,7 @@ export async function BloomPathDetail({
       <section className="flex flex-col gap-3" aria-labelledby="tasks-heading">
         <h2 id="tasks-heading" className="label-caps text-soft">{t("tasks")}</h2>
         {path.tasks.length === 0 && <p className="card p-5 text-sm text-muted">{t("noTasks")}</p>}
+        {notice && !current && <Notice {...notice} />}
         <ol className="flex flex-col gap-3">
           {path.tasks.map((task) => {
             const state = states.get(task.id)!;
@@ -360,6 +378,7 @@ export async function BloomPathDetail({
               return (
                 <li key={task.id} id={`task-${task.id}`} className="card flex scroll-mt-6 flex-col gap-4 border-2 border-violet p-5 sm:p-6">
                   <span id="current-step" className="scroll-mt-6" />
+                  {notice && <Notice {...notice} />}
                   {header}
                   {body}
                 </li>

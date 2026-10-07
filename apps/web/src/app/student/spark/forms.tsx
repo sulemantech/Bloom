@@ -15,6 +15,7 @@ import {
   type SuggestState,
 } from "./actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { RecheckBadge } from "@/components/ui/RecheckBadge";
 import type { CheckQuestion } from "@/lib/bloom/adaptive";
 
 const initial: BloomState = { status: "idle" };
@@ -179,6 +180,7 @@ function CheckAnswers({ checks, answers }: { checks: CheckQuestion[]; answers: s
       </div>
       {checks.map((check, i) => (
         <label key={i} className="flex flex-col gap-1.5">
+          {check.recheck && check.idea && <RecheckBadge label={t("checks.recheck", { idea: check.idea })} />}
           <span className="text-[15px]">
             <span className="mr-1.5 font-semibold text-ai">{i + 1}.</span>
             {check.question}
@@ -222,11 +224,6 @@ export function TaskControls({
         {task.reflection && <input type="hidden" name="reflection" value={task.reflection} />}
         <SubmitButton className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-info underline disabled:opacity-50">{t("reopen")}</SubmitButton>
         <Message state={state} />
-        {state.status === "ok" && state.message === "stepWritten" && (
-          <a href="#current-step" className="btn btn-primary self-start px-4 py-2 text-sm">
-            {t("seeNext")}
-          </a>
-        )}
       </form>
     );
   }
