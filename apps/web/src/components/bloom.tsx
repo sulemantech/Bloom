@@ -10,6 +10,7 @@ import type { AnchorKind } from "@/lib/bloom/anchor";
 import { checkAnswers, checkQuestions, checkReview, hasAnswers, stepStates, type CheckReview, type StepState, type Verdict } from "@/lib/bloom/adaptive";
 import { parseDetails } from "@/lib/bloom/details";
 import type { LearnerState } from "@/lib/bloom/learner";
+import type { OpenGap } from "@/lib/bloom/nudge";
 import { adaptationReasons, type AdaptationReason } from "@/lib/bloom/reasons";
 import { daysSince, type BloomPath, type TimelineEvent } from "@/lib/data/bloom";
 import { formatDate, formatDateTime } from "@/lib/programme";
@@ -616,6 +617,26 @@ export async function BloomPathList({ paths, hrefFor }: { paths: BloomPath[]; hr
   );
 }
 
+/** "Struggling with: leading questions (4×), triggers (2×)" for mentor lists (lib/bloom/nudge openGaps). */
+export async function StruggleLine({ gaps, max = 3 }: { gaps: readonly OpenGap[]; max?: number }) {
+  if (!gaps.length) return null;
+  const t = await getTranslations("bloom.learner");
+  const shown = gaps.slice(0, max);
+  return (
+    <span className="text-[13px] text-warning">
+      {t("strugglingWith")}{" "}
+      {shown.map((g, i) => (
+        <span key={g.idea}>
+          {i > 0 && ", "}
+          <span className="font-semibold">{g.idea}</span>
+          {g.times > 1 && <span className="opacity-70"> {t("times", { times: g.times })}</span>}
+        </span>
+      ))}
+      {gaps.length > max && <span className="text-soft"> {t("more", { count: gaps.length - max })}</span>}
+    </span>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Learner state: what Spark knows about a student's learning (lib/bloom/learner)
 // ---------------------------------------------------------------------------
@@ -644,7 +665,7 @@ export async function LearnerStateCard({ state, forStudent }: { state: LearnerSt
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-soft">{t("understandsEmpty")}</p>
+            <p className="text-sm text-soft">{t(forStudent ? "understandsEmpty" : "understandsEmptyViewer")}</p>
           )}
         </div>
         <div className="flex flex-col gap-2">
@@ -659,14 +680,14 @@ export async function LearnerStateCard({ state, forStudent }: { state: LearnerSt
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-soft">{t("workingOnEmpty")}</p>
+            <p className="text-sm text-soft">{t(forStudent ? "workingOnEmpty" : "workingOnEmptyViewer")}</p>
           )}
         </div>
       </div>
 
       <dl className="grid gap-3 border-t border-border pt-4 text-sm sm:grid-cols-2">
         <div className="flex flex-col gap-0.5">
-          <dt className="text-soft">{t("difficultyLabel")}</dt>
+          <dt className="text-soft">{t(forStudent ? "difficultyLabel" : "difficultyLabelViewer")}</dt>
           <dd className="font-medium">{t(`difficulty.${state.difficulty}`)}</dd>
         </div>
         <div className="flex flex-col gap-0.5">
@@ -676,7 +697,7 @@ export async function LearnerStateCard({ state, forStudent }: { state: LearnerSt
               ? t("nextPractise", { idea: need.idea })
               : need?.kind === "activity"
                 ? t(need.overdue ? "nextActivityOverdue" : "nextActivity", { title: need.title, week: need.week })
-                : t("nextNone")}
+                : t(forStudent ? "nextNone" : "nextNoneViewer")}
           </dd>
         </div>
       </dl>

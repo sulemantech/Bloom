@@ -7,6 +7,7 @@ import { WeekHeadline, WeekStrip } from "@/components/course";
 import { AGE_GROUP_TONE, Badge } from "@/components/ui/Badge";
 import { requireRole } from "@/lib/auth";
 import { loadBloomTotals, loadLastActive } from "@/lib/data/bloom";
+import { loadOpenGaps } from "@/lib/data/learner";
 import { loadCohortProgress, type CohortProgress } from "@/lib/data/cohort";
 import { formatDateTime, isPast, tr } from "@/lib/programme";
 import { createClient } from "@/lib/supabase/server";
@@ -40,7 +41,7 @@ export default async function GroupPage({ params }: PageProps<"/mentor/groups/[c
   const weeks = Array.from({ length: program.weeks }, (_, i) => i + 1);
   const cardWeek = week === null || week === 0 ? 1 : Math.min(week, program.weeks);
   const ids = students.map((s) => s.profile.id);
-  const [lastActive, bloom] = await Promise.all([loadLastActive(supabase, ids), loadBloomTotals(supabase, ids)]);
+  const [lastActive, bloom, gaps] = await Promise.all([loadLastActive(supabase, ids), loadBloomTotals(supabase, ids), loadOpenGaps(supabase, ids)]);
 
   return (
     <>
@@ -114,6 +115,9 @@ export default async function GroupPage({ params }: PageProps<"/mentor/groups/[c
                               <Badge tone={AGE_GROUP_TONE[s.membership.age_group]}>{t(`ageGroups.${s.membership.age_group}`)}</Badge>
                             )}
                             {s.overdue > 0 && <span className="text-danger">{t("overdueCount", { count: s.overdue })}</span>}
+                            {(gaps.get(s.profile.id)?.length ?? 0) > 0 && (
+                              <span className="text-warning">{t("gapsCount", { count: gaps.get(s.profile.id)!.length })}</span>
+                            )}
                           </span>
                         </Link>
                       </td>

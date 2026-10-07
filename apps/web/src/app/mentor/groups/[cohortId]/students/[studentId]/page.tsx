@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { BloomPathList, LastActive, Timeline } from "@/components/bloom";
+import { BloomPathList, LastActive, LearnerStateCard, StruggleLine, Timeline } from "@/components/bloom";
 import { ProgressBar, StatusBadge, StepBadge, SubmissionCard } from "@/components/course";
 import { AGE_GROUP_TONE, AREA_TONE, Badge } from "@/components/ui/Badge";
 import { requireRole } from "@/lib/auth";
 import { bloomStats, loadTimeline } from "@/lib/data/bloom";
+import { loadLearnerState } from "@/lib/data/learner";
 import { loadStudentOverview, signFiles } from "@/lib/data/overview";
 import { tr } from "@/lib/programme";
 import { createClient } from "@/lib/supabase/server";
@@ -46,6 +47,9 @@ export default async function MentorStudentPage({
     activityHref: (id) => `${base}#activity-${id}`,
   });
   const bloom = bloomStats(paths);
+  // What Spark knows about their learning; shown once there is evidence (lib/bloom/learner, nudge).
+  const learner = await loadLearnerState(supabase, studentId, overview);
+  const hasLearnerState = learner.understands.length > 0 || learner.strugglesWith.length > 0;
 
   return (
     <>
@@ -73,6 +77,7 @@ export default async function MentorStudentPage({
           <h2 className="label-caps text-soft">{t("progress")}</h2>
           <ProgressBar value={stats.done} max={stats.total} label={t("doneOf", { done: stats.done, total: stats.total })} />
           <p className="text-[13px] text-soft">{t("overdue", { count: stats.overdue })}</p>
+          <StruggleLine gaps={learner.strugglesWith} />
         </section>
         <section className="card flex flex-col gap-2 p-5">
           <h2 className="label-caps text-soft">{t("project")}</h2>
@@ -90,6 +95,8 @@ export default async function MentorStudentPage({
           )}
         </section>
       </div>
+
+      {hasLearnerState && <LearnerStateCard state={learner} forStudent={false} />}
 
       <div className="grid gap-4 lg:grid-cols-5">
         <section className="card flex flex-col gap-3 p-5 lg:col-span-3" aria-labelledby="bloom-heading">

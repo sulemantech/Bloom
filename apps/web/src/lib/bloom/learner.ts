@@ -5,6 +5,7 @@
  * tested and the same evidence always gives the same state.
  */
 import { checkAnswers, checkQuestions, checkReview, type StepFeeling, type Verdict } from "./adaptive";
+import { openGaps } from "./nudge";
 
 export type ConceptStatus = "struggling" | "understood";
 
@@ -91,10 +92,8 @@ export type NextNeed = { kind: "practise"; idea: string } | { kind: "activity"; 
 
 /** The most pressing need: the idea struggled with most (then most recently), otherwise course work. */
 export function nextNeed(concepts: readonly Concept[], course: { title: string; week: number; overdue: boolean } | null): NextNeed {
-  const struggling = concepts
-    .filter((c) => c.status === "struggling")
-    .sort((a, b) => b.struggle_count - a.struggle_count || (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
-  if (struggling[0]) return { kind: "practise", idea: struggling[0].label };
+  const [gap] = openGaps(concepts);
+  if (gap) return { kind: "practise", idea: gap.idea };
   return course ? { kind: "activity", ...course } : null;
 }
 
@@ -114,11 +113,7 @@ export function learnerState(
   const recent = [...concepts].sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
   return {
     understands: recent.filter((c) => c.status === "understood").slice(0, 8).map((c) => c.label),
-    strugglesWith: recent
-      .filter((c) => c.status === "struggling")
-      .sort((a, b) => b.struggle_count - a.struggle_count)
-      .slice(0, 5)
-      .map((c) => ({ idea: c.label, times: c.struggle_count })),
+    strugglesWith: openGaps(concepts).slice(0, 5),
     difficulty: preferredDifficulty(recentSteps).level,
     nextNeed: nextNeed(concepts, course),
   };

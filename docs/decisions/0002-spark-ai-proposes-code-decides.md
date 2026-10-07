@@ -21,6 +21,7 @@ Split every Spark decision into what the model **proposes** and what code **deci
 | Re-check questions | That every required re-check is present; adds a template one if not (`enforceRechecks`) |
 | A sentence explaining a change | How hard the next step is (`preferredDifficulty`) |
 | Which offered need a suggested path serves | Which needs are offered, in what order, and that the chosen one is valid (`anchorOptions`, `pickAnchor`, database trigger) |
+| Wording of a progress card for parents | Who may need a mentor's nudge, and why (`nudgeReasons`) |
 |  | Permissions, consent and limits (RLS, AI gateway) |
 
 Rules live in pure modules (`apps/web/src/lib/bloom/*.ts`) with unit tests. The model is told the
@@ -66,6 +67,16 @@ rules so it usually follows them; code checks its output and corrects it when it
     its label is a snapshot, so the path still says what it served after the course changes.
 13. Spark is told what the path is for when planning and when writing each later step, with the
     activity's instructions and whether it is late *now*.
+
+## Mentors in the loop (2.5.5)
+
+14. Code flags a student as "may need a nudge" by fixed rules (`NUDGE_RULES`): 2+ open gaps, 2+ overdue
+    activities, or 7 days without activity. Every flag shows its reasons and the ideas named, and the
+    list is ordered by rule (`byNudgePriority`). The AI never flags a student; a person decides what to do.
+15. Open gaps are ordered by one rule (`openGaps`: most missed, then most recent), shared by the learner
+    state, Spark's next need and the mentor views, so they always agree.
+16. Progress-card drafts for parents get idea names only (understood, still practising), never answers,
+    marks or counts, and may mention at most one idea being practised, framed as practice.
 
 ## Consequences
 

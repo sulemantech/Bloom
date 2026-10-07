@@ -331,6 +331,8 @@
     },
     "attentionTitle": "Students who may need a nudge",
     "attentionNone": "Everyone is on track.",
+    "attentionRule": "Flagged by fixed rules: 2+ ideas still not understood in Spark, 2+ activities overdue, or no activity for 7 days.",
+    "gapsCount": "{count, plural, one {# learning gap} other {# learning gaps}}",
     "reviewCount": "{count} to review",
     "bloomColumn": "Spark",
     "lastActive": "Last active"
@@ -917,10 +919,15 @@
       "introViewer": "Updated from their answers to check questions. Spark uses it to pitch their next steps.",
       "understands": "Understands",
       "understandsEmpty": "Nothing yet. Answer check questions at the end of a step to show what you know.",
+      "understandsEmptyViewer": "Nothing yet. This fills in as they answer check questions.",
       "workingOn": "Working on",
       "workingOnEmpty": "Nothing right now. Nice work!",
+      "workingOnEmptyViewer": "Nothing open right now.",
       "times": "· {times}×",
+      "strugglingWith": "Struggling with:",
+      "more": "+{count} more",
       "difficultyLabel": "How Spark pitches your next steps",
+      "difficultyLabelViewer": "How Spark pitches their next steps",
       "difficulty": {
         "easier": "A bit easier, with more support",
         "same": "Just right",
@@ -930,7 +937,8 @@
       "nextPractise": "Practise “{idea}”",
       "nextActivity": "Course: {title} (week {week})",
       "nextActivityOverdue": "Course: {title} (week {week}, overdue)",
-      "nextNone": "Nothing pressing. Pick something you’re curious about!"
+      "nextNone": "Nothing pressing. Pick something you’re curious about!",
+      "nextNoneViewer": "Nothing pressing."
     },
     "startTask": "Start",
     "markDone": "Mark done",

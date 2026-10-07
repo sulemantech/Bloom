@@ -16,6 +16,11 @@ export type DraftProgressCardInput = {
     submission: string | null;
     feedback: string[];
   }[];
+  /**
+   * From Spark's learner state (lib/bloom/learner): ideas shown understood, and ideas still being
+   * practised, most missed first. Idea names only; no answers or marks are sent.
+   */
+  learning: { understands: string[]; practising: string[] };
 };
 
 const SYSTEM = `You help mentors at Youth Idea Lab, an 8-week live online course where students aged 12-18 explore, choose a real problem, build a project and present it at Demo Day.
@@ -26,6 +31,8 @@ Write in plain, warm English for a parent, in 80-140 words, as 2-3 short paragra
 - what the student worked on and did well this week, using specifics from their work
 - one thing to improve or practise, framed encouragingly
 - what comes next and one way the parent can support at home
+
+"learning" comes from the student's check-your-understanding answers in Spark, their learning guide. You may mention one idea they understand and at most one they are practising, as something they are working on (for example "is practising how to ask fair questions"). Never call it a weakness, struggle or failure, and never mention counts, marks or Spark's verdicts. Leave it out if it is empty.
 
 Only state what the provided work and mentor feedback support; never invent achievements, grades or behaviour. If the student submitted nothing this week, say so kindly and suggest how to catch up. Refer to the student by first name. Never include contact details, links or personal data beyond what is given.`;
 

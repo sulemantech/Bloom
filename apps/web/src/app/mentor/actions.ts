@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { draftProgressCard } from "@/lib/ai";
 import { getCurrentProfile } from "@/lib/auth";
 import { loadStudentOverview } from "@/lib/data/overview";
+import { loadLearnerState } from "@/lib/data/learner";
 import { tr, zonedLocalToUtc } from "@/lib/programme";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
@@ -144,6 +145,7 @@ export async function draftCardWithAi(_prev: DraftState, formData: FormData): Pr
   if (!overview || overview.cohort.id !== cohortId || !student) return { status: "error", message: "failed" };
 
   const stage = overview.stages.find((s) => week >= s.week_from && week <= s.week_to);
+  const learner = await loadLearnerState(supabase, studentId, overview);
   const result = await draftProgressCard({
     studentFirstName: student.full_name.trim().split(/\s+/)[0] || "the student",
     ageGroup: overview.membership.age_group,
@@ -164,6 +166,7 @@ export async function draftCardWithAi(_prev: DraftState, formData: FormData): Pr
           feedback: latest?.feedback.map((f) => f.body) ?? [],
         };
       }),
+    learning: { understands: learner.understands.slice(0, 3), practising: learner.strugglesWith.slice(0, 2).map((g) => g.idea) },
   }, { studentId, mentorId: staff.id });
 
   return result.ok ? { status: "ok", text: result.data } : { status: "error", message: result.reason };

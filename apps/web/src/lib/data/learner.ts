@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkQuestions } from "@/lib/bloom/adaptive";
 import { applyReview, conceptKey, learnerState, type LearnerState } from "@/lib/bloom/learner";
+import { openGaps, type OpenGap } from "@/lib/bloom/nudge";
 import { pathAnchors } from "@/lib/data/bloom";
 import type { StudentOverview } from "@/lib/data/overview";
 import type { Database } from "@/lib/supabase/database.types";
@@ -31,6 +32,22 @@ export async function loadLearnerState(supabase: Client, studentId: string, over
       .limit(3),
   ]);
   return learnerState(concepts ?? [], steps ?? [], courseNeed(overview));
+}
+
+/** Open gaps per student (lib/bloom/nudge openGaps), for mentor lists. RLS limits it to their students. */
+export async function loadOpenGaps(supabase: Client, studentIds: string[]): Promise<Map<string, OpenGap[]>> {
+  const result = new Map<string, OpenGap[]>(studentIds.map((id) => [id, []]));
+  if (studentIds.length === 0) return result;
+  const { data } = await supabase
+    .from("spark_concepts")
+    .select("student_id, label, status, struggle_count, updated_at")
+    .in("student_id", studentIds)
+    .eq("status", "struggling");
+  // A plain loop, not Map.groupBy: that needs Node 21+, and the app also runs on Node 20.
+  const byStudent = new Map<string, NonNullable<typeof data>>();
+  for (const c of data ?? []) byStudent.set(c.student_id, [...(byStudent.get(c.student_id) ?? []), c]);
+  for (const [id, concepts] of byStudent) result.set(id, openGaps(concepts));
+  return result;
 }
 
 /**
