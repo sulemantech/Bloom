@@ -2,19 +2,19 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkQuestions } from "@/lib/bloom/adaptive";
 import { applyReview, conceptKey, learnerState, type LearnerState } from "@/lib/bloom/learner";
+import { pathAnchors } from "@/lib/data/bloom";
 import type { StudentOverview } from "@/lib/data/overview";
-import { tr } from "@/lib/programme";
 import type { Database } from "@/lib/supabase/database.types";
 
 type Client = SupabaseClient<Database>;
 
-/** The course activity the student most needs: the first overdue one, else this week's next one. */
+/**
+ * The course activity the student most needs: the most pressing activity a path could serve
+ * (lib/bloom/anchor), so "next need" and path anchors always agree.
+ */
 export function courseNeed(overview: StudentOverview | null): { title: string; week: number; overdue: boolean } | null {
-  if (!overview) return null;
-  const open = overview.activities.filter((a) => ["overdue", "todo", "needs_changes"].includes(overview.statuses.get(a.id) ?? ""));
-  const overdue = open.find((a) => overview.statuses.get(a.id) === "overdue");
-  const pick = overdue ?? open.find((a) => overview.week !== null && a.week <= overview.week);
-  return pick ? { title: tr(pick.title), week: pick.week, overdue: Boolean(overdue) } : null;
+  const pick = pathAnchors(overview).find((a) => a.kind === "activity");
+  return pick ? { title: pick.label, week: pick.week!, overdue: pick.urgent === "overdue" } : null;
 }
 
 /** What Spark knows about a student's learning (RLS decides who can read it). */

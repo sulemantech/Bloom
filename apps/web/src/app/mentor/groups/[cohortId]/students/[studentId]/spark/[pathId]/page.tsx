@@ -42,6 +42,7 @@ export default async function MentorBloomPath({ params }: PageProps<"/mentor/gro
       <BloomPathDetail
         path={path}
         timeZone={profile.timezone}
+        activityHref={(id) => `/mentor/groups/${cohortId}/students/${studentId}#activity-${id}`}
         mentorSlot={<BloomNoteForm pathId={path.id} note={path.mentor_note} />}
       />
     </>

@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { askBloom, planBloomPath, reviewBloomAnswers, suggestBloomPaths, writeBloomStep, type AiFailure, type BloomPlan, type BloomSuggestion } from "@/lib/ai";
 import { getCurrentProfile } from "@/lib/auth";
 import { answeredChecks, lastFinishedStep, nextStepToWrite, stepWriterInput } from "@/lib/bloom/adaptive";
+import { anchorBrief, anchorRecord, pickAnchor, type Anchor } from "@/lib/bloom/anchor";
 import { CHECK_COUNT, enforceRechecks, gapsToRecheck, maxRechecks } from "@/lib/bloom/gaps";
-import { bloomContext, hasConsent, loadBloomPaths } from "@/lib/data/bloom";
+import { bloomContext, hasConsent, loadBloomPaths, pathAnchors, pathServes } from "@/lib/data/bloom";
 import { loadLearnerState, recordReview } from "@/lib/data/learner";
 import { loadStudentOverview } from "@/lib/data/overview";
 import { bloomV2Enabled } from "@/lib/flags";
@@ -14,7 +15,9 @@ import { stageForWeek } from "@/lib/programme";
 import { createClient } from "@/lib/supabase/server";
 
 export type BloomState = { status: "idle" | "ok" | "error"; message?: string };
-export type SuggestState = BloomState & { suggestions?: BloomSuggestion[] };
+/** A suggestion with the need it serves, checked by code (the browser sends the key back on "Start"). */
+export type SuggestedPath = Omit<BloomSuggestion, "anchor"> & { anchor: Pick<Anchor, "key" | "kind" | "label" | "week" | "urgent"> };
+export type SuggestState = BloomState & { suggestions?: SuggestedPath[] };
 
 const DEPTHS = ["quick", "standard", "deep"] as const;
 const TASK_STATUSES = ["todo", "doing", "done"] as const;
@@ -48,10 +51,17 @@ export async function suggestPaths(_prev: SuggestState, formData: FormData): Pro
   if (!student) return { status: "error", message: "notAllowed" };
   if (!(await hasBloomAiConsent(student.id))) return { status: "error", message: "ai.noConsent" };
 
-  const { context } = await aiContext(student.id);
-  const result = await suggestBloomPaths(student.id, context, str(formData, "interest", 300));
+  const { overview, context } = await aiContext(student.id);
+  const anchors = pathAnchors(overview);
+  const result = await suggestBloomPaths(student.id, context, str(formData, "interest", 300), anchors);
   if (!result.ok) return aiError(result.reason);
-  return { status: "ok", suggestions: result.data };
+  return {
+    status: "ok",
+    suggestions: result.data.map(({ anchor, ...s }) => {
+      const { key, kind, label, week, urgent } = pickAnchor(anchors, anchor);
+      return { ...s, anchor: { key, kind, label, week, urgent } };
+    }),
+  };
 }
 
 export async function createPath(_prev: BloomState, formData: FormData): Promise<BloomState> {
@@ -66,6 +76,8 @@ export async function createPath(_prev: BloomState, formData: FormData): Promise
 
   const supabase = await createClient();
   const { overview, context } = await aiContext(student.id);
+  // Every path serves a real need; only an option code offers now is accepted (see lib/bloom/anchor).
+  const anchor = pickAnchor(pathAnchors(overview), str(formData, "anchor"));
 
   let plan: BloomPlan | null = null;
   if (wantsAi) {
@@ -73,7 +85,7 @@ export async function createPath(_prev: BloomState, formData: FormData): Promise
     // In Bloom v2 groups only step 1 is written now; Spark writes each later step when the student
     // gets there, from how the last one went.
     const outline = await bloomV2Enabled(student.id);
-    const result = await planBloomPath(student.id, context, { title, goal, depth }, { outline });
+    const result = await planBloomPath(student.id, context, { title, goal, depth, serves: anchorBrief(anchor) }, { outline, difficulty: context.learner?.difficulty });
     if (!result.ok) return aiError(result.reason);
     plan = result.data;
   }
@@ -89,6 +101,7 @@ export async function createPath(_prev: BloomState, formData: FormData): Promise
       details: task.details.slice(0, 6000),
       planned_only: task.planned_only,
       check_questions: task.check_questions ?? [],
+      difficulty: task.difficulty ?? null,
     }))
     .filter((task) => task.title)
     .slice(0, 10);
@@ -101,6 +114,7 @@ export async function createPath(_prev: BloomState, formData: FormData): Promise
     p_tasks: tasks,
     p_cohort: overview?.cohort.id,
     p_stage_key: stage?.key,
+    p_anchor: anchorRecord(anchor),
   });
   if (error || !pathId) {
     if (error) console.error("Bloom path create failed", error);
@@ -194,7 +208,7 @@ const STEP_FIELDS = "id, position, kind, title, details, status, reflection, fee
 async function writePlannedStep(studentId: string, pathId: string, finishedId?: string): Promise<"written" | "none" | AiFailure> {
   const supabase = await createClient();
   const [{ data: path }, { data: questions }] = await Promise.all([
-    supabase.from("bloom_paths").select(`title, goal, summary, depth, bloom_tasks(${STEP_FIELDS})`).eq("id", pathId).eq("student_id", studentId).single(),
+    supabase.from("bloom_paths").select(`title, goal, summary, depth, anchor_kind, anchor_label, anchor_week, anchor_activity_id, bloom_tasks(${STEP_FIELDS})`).eq("id", pathId).eq("student_id", studentId).single(),
     supabase.from("bloom_questions").select("task_id, question, answer").eq("path_id", pathId).order("created_at"),
   ]);
   if (!path) return "failed";
@@ -203,7 +217,7 @@ async function writePlannedStep(studentId: string, pathId: string, finishedId?: 
   if (!(await hasBloomAiConsent(studentId))) return "noConsent";
 
   const depth = oneOf(DEPTHS, path.depth, "standard");
-  const [{ context }, { data: openInPath }] = await Promise.all([
+  const [{ overview, context }, { data: openInPath }] = await Promise.all([
     aiContext(studentId),
     // Ideas still being worked on whose latest evidence came from this path: the open gaps.
     supabase
@@ -213,11 +227,14 @@ async function writePlannedStep(studentId: string, pathId: string, finishedId?: 
       .eq("last_path_id", pathId)
       .eq("status", "struggling"),
   ]);
-  const input = stepWriterInput(path, path.bloom_tasks, questions ?? [], target.id, finishedId);
+  const input = stepWriterInput({ ...path, serves: pathServes(path, overview) }, path.bloom_tasks, questions ?? [], target.id, finishedId);
   const source = lastFinishedStep(path.bloom_tasks, target.id, finishedId);
   // Gaps known before the call (a retry may follow an earlier review); Spark adds the ones its own review finds.
   const knownGaps = gapsToRecheck(openInPath ?? [], source?.check_review ? source : null, maxRechecks(depth));
-  const result = await writeBloomStep(studentId, context, depth, input, knownGaps);
+  // Difficulty is decided by code from evidence known now (feelings, earlier marks); this step's own
+  // marks arrive with Spark's answer and act through re-checks instead.
+  const difficulty = context.learner?.difficulty ?? "same";
+  const result = await writeBloomStep(studentId, context, depth, input, knownGaps, difficulty);
   if (!result.ok) return result.reason;
 
   // The re-check rule is enforced here, not left to the model: every gap from this review and the
@@ -225,7 +242,12 @@ async function writePlannedStep(studentId: string, pathId: string, finishedId?: 
   const reviewedSource = source && (source.check_review || result.data.review) ? { ...source, check_review: source.check_review ?? result.data.review } : null;
   const gaps = gapsToRecheck(openInPath ?? [], reviewedSource, maxRechecks(depth));
   const checks = enforceRechecks(result.data.check_questions, gaps, CHECK_COUNT[depth]);
-  if (checks.added.length) console.info(`Spark re-check added by rule for: ${checks.added.join(", ")}`);
+  // One structured line per written step: how often the guardrails fire and whether Spark followed
+  // the difficulty it was given (e.g. "easier" with 6 actions is drift worth looking at).
+  console.info(
+    "spark.step_written",
+    JSON.stringify({ difficulty, ...result.data.shape, rechecks: checks.questions.filter((q) => q.recheck).length, rechecksAddedByRule: checks.added.length }),
+  );
 
   // Only an outline step is replaced, so a double click can't overwrite a step already written.
   const { error } = await supabase
@@ -236,6 +258,7 @@ async function writePlannedStep(studentId: string, pathId: string, finishedId?: 
       adaptation: result.data.adaptation,
       adapted_from: source?.id ?? null,
       check_questions: checks.questions,
+      difficulty,
       planned_only: false,
     })
     .eq("id", target.id)

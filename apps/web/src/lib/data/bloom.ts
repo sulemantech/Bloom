@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BloomContext } from "@/lib/ai";
+import { anchorBrief, anchorOptions, type Anchor, type AnchorKind } from "@/lib/bloom/anchor";
 import type { LearnerState } from "@/lib/bloom/learner";
 import type { StudentOverview } from "@/lib/data/overview";
 import type { Database } from "@/lib/supabase/database.types";
@@ -9,7 +10,7 @@ import { stageForWeek, tr } from "@/lib/programme";
 type Client = SupabaseClient<Database>;
 
 const PATH_FIELDS =
-  "id, title, goal, summary, stage_key, depth, status, ai_generated, mentor_note, mentor_note_at, completed_at, created_at, updated_at, mentor:profiles!bloom_paths_mentor_note_by_fkey(full_name), bloom_tasks(id, position, kind, title, details, status, reflection, feeling, planned_only, adaptation, adapted_from, check_questions, check_answers, check_review, completed_at)";
+  "id, title, goal, summary, stage_key, anchor_kind, anchor_label, anchor_week, anchor_activity_id, depth, status, ai_generated, mentor_note, mentor_note_at, completed_at, created_at, updated_at, mentor:profiles!bloom_paths_mentor_note_by_fkey(full_name), bloom_tasks(id, position, kind, title, details, status, reflection, feeling, planned_only, adaptation, adapted_from, check_questions, check_answers, check_review, difficulty, completed_at)";
 
 /** A student's learning paths with their tasks (RLS decides who can read them). */
 export async function loadBloomPaths(supabase: Client, studentId: string) {
@@ -76,6 +77,47 @@ export function bloomContext(overview: StudentOverview | null, paths: { title: s
     previousPaths: paths.slice(0, 12).map((p) => p.title),
     ...(learner ? { learner } : {}),
   };
+}
+
+/**
+ * The needs a new path can serve right now (lib/bloom/anchor), from the student's course: their
+ * open activities, project and current programme step. Only "interest" without a group.
+ */
+export function pathAnchors(overview: StudentOverview | null): Anchor[] {
+  const week = overview?.week ?? null;
+  const focusWeek = overview && week !== null ? Math.min(Math.max(week, 1), overview.program.weeks) : null;
+  const stage = overview && focusWeek ? stageForWeek(overview.stages, focusWeek) : undefined;
+  return anchorOptions({
+    activities: (overview?.activities ?? []).map((a) => ({
+      id: a.id,
+      title: tr(a.title),
+      week: a.week,
+      status: overview?.statuses.get(a.id) ?? "todo",
+      instructions: tr(a.instructions),
+    })),
+    week,
+    project: overview?.project ?? null,
+    stage: stage ? { key: stage.key, name: tr(stage.name), summary: tr(stage.summary) } : null,
+  });
+}
+
+/**
+ * What Spark is told a saved path is for: its stored anchor, with the activity's instructions and
+ * whether it is late now (the activity may have been handed in or fallen behind since).
+ */
+export function pathServes(
+  path: { anchor_kind: string; anchor_label: string; anchor_week: number | null; anchor_activity_id: string | null },
+  overview: StudentOverview | null,
+) {
+  const activity = path.anchor_activity_id ? overview?.activities.find((a) => a.id === path.anchor_activity_id) : undefined;
+  const status = activity ? overview?.statuses.get(activity.id) : undefined;
+  return anchorBrief({
+    kind: path.anchor_kind as AnchorKind,
+    label: path.anchor_label,
+    week: path.anchor_week,
+    urgent: status === "overdue" || status === "needs_changes" ? status : null,
+    brief: activity ? tr(activity.instructions).slice(0, 500) : "",
+  });
 }
 
 // ---------------------------------------------------------------------------

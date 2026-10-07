@@ -4,7 +4,7 @@ import { EmptyState, Section, Stat } from "@/components/AppShell";
 import { BloomPathCard, LearnerStateCard } from "@/components/bloom";
 import { requireRole } from "@/lib/auth";
 import { aiConfigured } from "@/lib/ai";
-import { bloomStats, hasConsent, loadBloomPaths } from "@/lib/data/bloom";
+import { bloomStats, hasConsent, loadBloomPaths, pathAnchors } from "@/lib/data/bloom";
 import { loadLearnerState } from "@/lib/data/learner";
 import { loadStudentOverview } from "@/lib/data/overview";
 import { bloomV2Enabled } from "@/lib/flags";
@@ -27,6 +27,7 @@ export default async function BloomHome() {
   const learner = v2 ? await loadLearnerState(supabase, profile.id, overview) : null;
   const aiAllowed = consent && aiConfigured();
   const stats = bloomStats(paths);
+  const anchors = pathAnchors(overview).map(({ key, kind, label, week, urgent }) => ({ key, kind, label, week, urgent }));
   const active = paths.filter((p) => p.status === "active");
   const completed = paths.filter((p) => p.status === "completed");
   const archived = paths.filter((p) => p.status === "archived");
@@ -63,7 +64,7 @@ export default async function BloomHome() {
           <p className="text-sm text-muted">{aiAllowed ? t("startIntroAi") : t("startIntroManual")}</p>
         </div>
         {!consent && <p className="rounded-xl bg-sun/15 p-3 text-sm text-warning">{t("noConsentHint")}</p>}
-        <StartPath aiAllowed={aiAllowed} />
+        <StartPath aiAllowed={aiAllowed} anchors={anchors} />
       </section>
 
       <Section title={t("activeTitle")} id="active">

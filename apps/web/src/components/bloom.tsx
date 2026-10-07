@@ -3,17 +3,27 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { ProgressBar } from "@/components/course";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { AnchorChip, anchorParts } from "@/components/ui/AnchorChip";
 import { Badge, STEP_TONE, type Tone } from "@/components/ui/Badge";
 import { RecheckBadge } from "@/components/ui/RecheckBadge";
+import type { AnchorKind } from "@/lib/bloom/anchor";
 import { checkAnswers, checkQuestions, checkReview, hasAnswers, stepStates, type CheckReview, type StepState, type Verdict } from "@/lib/bloom/adaptive";
 import { parseDetails } from "@/lib/bloom/details";
 import type { LearnerState } from "@/lib/bloom/learner";
+import { adaptationReasons, type AdaptationReason } from "@/lib/bloom/reasons";
 import { daysSince, type BloomPath, type TimelineEvent } from "@/lib/data/bloom";
 import { formatDate, formatDateTime } from "@/lib/programme";
 
 const PATH_STATUS_TONE: Record<BloomPath["status"], Tone> = { active: "cyan", completed: "lime", archived: "neutral" };
 
 type Task = BloomPath["tasks"][number];
+
+/** The need a saved path serves (bloom_paths.anchor_*, lib/bloom/anchor). */
+const pathAnchor = (path: Pick<BloomPath, "anchor_kind" | "anchor_label" | "anchor_week">) => ({
+  kind: path.anchor_kind as AnchorKind,
+  label: path.anchor_label,
+  week: path.anchor_week,
+});
 
 /** Step number circles: done (tick), the one to do now (filled), later (plain). */
 const STEP_DOT: Record<StepState, string> = {
@@ -132,26 +142,61 @@ async function Checks({ task, showMarks, forStudent }: { task: Task; showMarks: 
 }
 
 /** Spark's response: what it changed in this step, and the feedback it was answering. */
-async function Adaptation({ task, source, sourceNumber, forStudent }: { task: Task; source: Task; sourceNumber: number; forStudent: boolean }) {
+async function Adaptation({
+  task,
+  source,
+  sourceNumber,
+  reasons,
+  forStudent,
+}: {
+  task: Task;
+  source: Task;
+  sourceNumber: number;
+  reasons: AdaptationReason[];
+  forStudent: boolean;
+}) {
   const t = await getTranslations("bloom");
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-ai/30 bg-violet/10 p-4">
+    <div className="flex flex-col gap-2.5 rounded-xl border border-ai/30 bg-violet/10 p-4">
       <p className="label-caps text-ai">
         <span aria-hidden="true">✦ </span>
         {t("adaptedTitle")}
       </p>
-      {(source.feeling || source.reflection) && (
+      {reasons.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5" aria-label={t("reasons.label")}>
+          {reasons.map((r, i) => (
+            <li key={i} className={`rounded-full px-2.5 py-0.5 text-[13px] font-medium ${REASON_STYLE(r)}`}>
+              {r.kind === "feeling" && t("reasons.feeling", { n: r.step, feeling: t(`feelings.${r.feeling}`) })}
+              {r.kind === "answer" && t("reasons.answer", { n: r.step, q: r.question, verdict: t(`checks.verdicts.${r.verdict}`) })}
+              {r.kind === "allNailed" && t("reasons.allNailed", { n: r.step })}
+              {r.kind === "recheck" && t("reasons.recheck", { idea: r.idea })}
+              {r.kind === "difficulty" && t(`reasons.difficulty.${r.level}`)}
+            </li>
+          ))}
+        </ul>
+      )}
+      {source.reflection && (
         <p className="text-sm text-muted">
-          <a href={`#task-${source.id}`} className="underline">{t(forStudent ? "adaptedBecause" : "adaptedBecauseViewer", { n: sourceNumber })}</a>{" "}
-          {source.feeling && <span className="font-medium">{t(`feelings.${source.feeling}`)}</span>}
-          {source.feeling && source.reflection && " · "}
-          {source.reflection && <span>“{source.reflection}”</span>}
+          <a href={`#task-${source.id}`} className="underline">{t(forStudent ? "reasons.wroteOn" : "reasons.wroteOnViewer", { n: sourceNumber })}</a>{" "}
+          “{source.reflection}”
         </p>
       )}
-      <p className="text-[15px]">{task.adaptation}</p>
+      {task.adaptation && <p className="text-[15px]">{task.adaptation}</p>}
     </div>
   );
 }
+
+/** Reason chips: warm colours for difficulty felt or shown, lime for success, violet for Spark's decisions. */
+const REASON_STYLE = (r: AdaptationReason) =>
+  r.kind === "allNailed" || (r.kind === "feeling" && r.feeling === "just_right")
+    ? "bg-lime/20 text-success"
+    : r.kind === "feeling" && r.feeling === "too_easy"
+      ? "bg-cyan/15 text-info"
+      : r.kind === "difficulty"
+        ? "bg-violet/15 text-ai"
+        : r.kind === "answer" && r.verdict === "not_yet"
+          ? "bg-coral/15 text-danger"
+          : "bg-sun/20 text-warning";
 
 /** Step instructions as readable blocks: paragraphs, numbered actions and labelled notes. */
 async function StepDetails({ text }: { text: string }) {
@@ -206,6 +251,7 @@ export async function BloomPathCard({ path, href }: { path: BloomPath; href: str
         )}
       </div>
       <p className="font-display-tight text-lg leading-snug">{path.title}</p>
+      <AnchorChip parts={anchorParts(t, pathAnchor(path))} />
       {path.goal && <p className="line-clamp-2 text-sm text-muted">{path.goal}</p>}
       <div className="mt-auto">
         <ProgressBar value={path.done} max={path.total} label={t("tasksDone", { done: path.done, total: path.total })} />
@@ -234,9 +280,12 @@ export async function BloomPathDetail({
   questionSlot,
   showMarks = true,
   notice,
+  activityHref,
 }: {
   path: PathDetail;
   timeZone: string;
+  /** Link for an anchor activity, where the viewer has an activity page. */
+  activityHref?: (activityId: string) => string;
   taskControls?: (task: BloomPath["tasks"][number]) => ReactNode;
   mentorSlot?: ReactNode;
   questionSlot?: (taskId: string | null) => ReactNode;
@@ -260,6 +309,11 @@ export async function BloomPathDetail({
   return (
     <div className="flex flex-col gap-5">
       <section className="card flex flex-col gap-4 p-5 sm:p-6">
+        <AnchorChip
+          parts={anchorParts(t, pathAnchor(path))}
+          href={path.anchor_activity_id && activityHref ? activityHref(path.anchor_activity_id) : undefined}
+          className="rounded-xl bg-violet/5 px-3 py-2"
+        />
         {path.summary && <p className="text-[15px] leading-relaxed">{path.summary}</p>}
         {path.tasks.length > 0 && (
           <div className="flex flex-col gap-3">
@@ -308,6 +362,7 @@ export async function BloomPathDetail({
             const n = number.get(task.id)!;
             const questions = path.questions.filter((q) => q.task_id === task.id);
             const source = task.adapted_from ? path.tasks.find((s) => s.id === task.adapted_from) : undefined;
+            const reasons = source ? adaptationReasons(source, number.get(source.id)!, task) : [];
             const writtenFrom = usedBy.get(task.id);
 
             const header = (
@@ -342,7 +397,9 @@ export async function BloomPathDetail({
 
             const body = (
               <>
-                {source && task.adaptation && <Adaptation task={task} source={source} sourceNumber={number.get(source.id)!} forStudent={Boolean(taskControls)} />}
+                {source && (task.adaptation || reasons.length > 0) && (
+                  <Adaptation task={task} source={source} sourceNumber={number.get(source.id)!} reasons={reasons} forStudent={Boolean(taskControls)} />
+                )}
                 {task.planned_only ? (
                   <div className="flex flex-col gap-1">
                     {task.details && <p className="text-[15px] text-muted">{task.details}</p>}
@@ -543,6 +600,9 @@ export async function BloomPathList({ paths, hrefFor }: { paths: BloomPath[]; hr
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate font-medium">{p.title}</span>
+              <span className="truncate text-[13px] text-muted">
+                {t("anchor.helpsWith")} {anchorParts(t, pathAnchor(p)).label}
+              </span>
               <span className="text-[13px] text-soft">
                 {t("tasksDone", { done: p.done, total: p.total })}
                 {p.mentor_note ? ` · ${t("hasMentorNote")}` : ""}

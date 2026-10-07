@@ -20,6 +20,7 @@ Split every Spark decision into what the model **proposes** and what code **deci
 | A draft verdict on each answer | Which gaps are open and which must be re-checked (`gapsToRecheck`) |
 | Re-check questions | That every required re-check is present; adds a template one if not (`enforceRechecks`) |
 | A sentence explaining a change | How hard the next step is (`preferredDifficulty`) |
+| Which offered need a suggested path serves | Which needs are offered, in what order, and that the chosen one is valid (`anchorOptions`, `pickAnchor`, database trigger) |
 |  | Permissions, consent and limits (RLS, AI gateway) |
 
 Rules live in pure modules (`apps/web/src/lib/bloom/*.ts`) with unit tests. The model is told the
@@ -40,12 +41,38 @@ rules so it usually follows them; code checks its output and corrects it when it
    review is only known after the call, code enforces the re-checks on the result.
 6. A new path has no gaps of its own: the planner never marks re-checks.
 
+## Difficulty and reasons (2.5.3)
+
+7. Code decides each written step's difficulty (easier / same / harder) from the last three finished
+   steps: feelings, plus marks already known. The step just finished counts through its feeling; its
+   marks arrive with Spark's answer and act through re-checks (5). The planner's first step uses
+   the same rule. The level is stored on the step (`bloom_tasks.difficulty`).
+8. Spark is told the level as an instruction with measurable meanings (new ideas, actions, minutes).
+   A model can't be forced to make something "harder", so compliance is **measured**, not assumed:
+   one log line per written step, `spark.step_written` {difficulty, actions, minutes, rechecks,
+   rechecksAddedByRule}.
+9. Every adapted step shows reasons built by code from stored data (`lib/bloom/reasons.ts`), next to
+   Spark's sentence: the feeling and weak answers it responds to, the gaps it re-checks and the level.
+
+## Anchored to the real project (2.5.4)
+
+10. Every path serves one need: a course activity, the project problem, the current programme step,
+    or (only for a student without a group) their own interest. Code lists the options, most pressing
+    first: work sent back for changes, overdue work, this week's work (at most 3), the project, the step.
+11. Spark proposes which option each suggestion serves, constrained by an enum in the output schema;
+    the server accepts only a key that is still an option (`pickAnchor`), else the most pressing need.
+12. The database refuses a path without an anchor, an activity from another programme, a project the
+    student doesn't have, or "interest" for a student in a group. The anchor is fixed after creation and
+    its label is a snapshot, so the path still says what it served after the course changes.
+13. Spark is told what the path is for when planning and when writing each later step, with the
+    activity's instructions and whether it is late *now*.
+
 ## Consequences
 
 - Behaviour is predictable and testable: the same evidence always gives the same state.
 - Every intervention can be explained ("re-checking *fair questions* because it was *not yet* on
   step 1"), which task 2.5.3 shows to students.
 - Template re-check questions are plainer than the model's. They are a safety net; how often they
-  are needed is a quality signal to watch (logged as "Spark re-check added by rule").
+  are needed is a quality signal to watch (`rechecksAddedByRule` in the `spark.step_written` log).
 - New Spark features must name which parts the model proposes and which code decides, before they
   are built.

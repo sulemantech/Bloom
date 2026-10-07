@@ -173,6 +173,10 @@ export type Database = {
       bloom_paths: {
         Row: {
           ai_generated: boolean
+          anchor_activity_id: string | null
+          anchor_kind: string
+          anchor_label: string
+          anchor_week: number | null
           cohort_id: string | null
           completed_at: string | null
           created_at: string
@@ -191,6 +195,10 @@ export type Database = {
         }
         Insert: {
           ai_generated?: boolean
+          anchor_activity_id?: string | null
+          anchor_kind: string
+          anchor_label?: string
+          anchor_week?: number | null
           cohort_id?: string | null
           completed_at?: string | null
           created_at?: string
@@ -209,6 +217,10 @@ export type Database = {
         }
         Update: {
           ai_generated?: boolean
+          anchor_activity_id?: string | null
+          anchor_kind?: string
+          anchor_label?: string
+          anchor_week?: number | null
           cohort_id?: string | null
           completed_at?: string | null
           created_at?: string
@@ -226,6 +238,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bloom_paths_anchor_activity_id_fkey"
+            columns: ["anchor_activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bloom_paths_cohort_id_fkey"
             columns: ["cohort_id"]
@@ -311,6 +330,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           details: string
+          difficulty: string | null
           feeling: Database["public"]["Enums"]["bloom_task_feeling"] | null
           id: string
           kind: Database["public"]["Enums"]["bloom_task_kind"]
@@ -332,6 +352,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           details?: string
+          difficulty?: string | null
           feeling?: Database["public"]["Enums"]["bloom_task_feeling"] | null
           id?: string
           kind?: Database["public"]["Enums"]["bloom_task_kind"]
@@ -353,6 +374,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           details?: string
+          difficulty?: string | null
           feeling?: Database["public"]["Enums"]["bloom_task_feeling"] | null
           id?: string
           kind?: Database["public"]["Enums"]["bloom_task_kind"]
@@ -1226,6 +1248,7 @@ export type Database = {
       create_bloom_path: {
         Args: {
           p_ai_generated: boolean
+          p_anchor?: Json
           p_cohort?: string
           p_depth: string
           p_goal: string

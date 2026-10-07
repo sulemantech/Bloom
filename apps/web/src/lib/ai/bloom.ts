@@ -1,8 +1,9 @@
 import "server-only";
 import { z } from "zod";
 import type { CheckQuestion, CheckReview, StepWriterInput } from "@/lib/bloom/adaptive";
+import type { Anchor } from "@/lib/bloom/anchor";
 import { CHECK_COUNT, maxRechecks, type Gap } from "@/lib/bloom/gaps";
-import type { LearnerState } from "@/lib/bloom/learner";
+import type { Difficulty, LearnerState } from "@/lib/bloom/learner";
 import { formatDetails } from "@/lib/bloom/details";
 import { generateStructured, generateText, type AiResult } from "./gateway";
 
@@ -35,35 +36,60 @@ Safety: keep everything age-appropriate. Never ask for or include personal data,
 /** Every Bloom call is the student's own request, checked against their "bloom_ai" consent. */
 const asStudent = (studentId: string) => ({ studentId, actorId: studentId, consent: "bloom_ai" as const });
 
-const SuggestionsSchema = z.object({
-  suggestions: z
-    .array(
-      z.object({
-        title: z.string().describe("Short, inviting name for the learning path, under 60 characters"),
-        goal: z.string().describe("One sentence: what the student will be able to do afterwards"),
-        why: z.string().describe("One sentence linking it to their project or current step"),
-      }),
-    )
-    .describe("Exactly 3 suggestions"),
-});
+/** Suggestions, each tied to one of the needs code offered (lib/bloom/anchor); the enum keeps Spark to them. */
+const suggestionsSchema = (anchorKeys: [string, ...string[]]) =>
+  z.object({
+    suggestions: z
+      .array(
+        z.object({
+          title: z.string().describe("Short, inviting name for the learning path, under 60 characters"),
+          goal: z.string().describe("One sentence: what the student will be able to do afterwards"),
+          why: z.string().describe("One sentence on how it helps with the need it serves"),
+          anchor: z.enum(anchorKeys).describe("The key of the need this path serves"),
+        }),
+      )
+      .describe("Exactly 3 suggestions"),
+  });
 
-export type BloomSuggestion = z.infer<typeof SuggestionsSchema>["suggestions"][number];
+export type BloomSuggestion = z.infer<ReturnType<typeof suggestionsSchema>>["suggestions"][number];
 
-/** Three personalised learning paths for where the student is right now. */
-export async function suggestBloomPaths(studentId: string, context: BloomContext, interest: string): Promise<AiResult<BloomSuggestion[]>> {
+/** How a need is shown to Spark when it suggests paths. */
+const describeAnchor = (a: Anchor) =>
+  a.kind === "activity"
+    ? `course activity "${a.label}", week ${a.week}${a.urgent === "overdue" ? " (overdue)" : a.urgent === "needs_changes" ? " (mentor asked for changes)" : ""}`
+    : a.kind === "project"
+      ? `their project problem: "${a.label}"`
+      : a.kind === "stage"
+        ? `the current programme step, ${a.label}`
+        : "their own curiosity (not in a group yet)";
+
+/**
+ * Three personalised learning paths for where the student is right now, each serving one of
+ * `anchors` (most pressing first). The server still checks each anchor it gets back (pickAnchor).
+ */
+export async function suggestBloomPaths(
+  studentId: string,
+  context: BloomContext,
+  interest: string,
+  anchors: readonly Anchor[],
+): Promise<AiResult<BloomSuggestion[]>> {
+  const keys = anchors.map((a) => a.key);
   const result = await generateStructured(
     {
       ...asStudent(studentId),
       capability: "bloom_suggest",
       system: BLOOM_SYSTEM,
       maxTokens: 8000,
-      user: `Suggest exactly 3 learning paths for this student, each different (e.g. one skill for their project, one thinking skill for their current step, one stretch idea). Do not repeat their earlier paths.
+      user: `Suggest exactly 3 learning paths for this student, each different. Do not repeat their earlier paths.
+
+Spark is the guide for their course, so every path must serve one of these needs (give its key as "anchor"). They are listed most pressing first: the first suggestion serves the first need, and together the three cover the most pressing needs you can usefully help with.
+${anchors.map((a) => `- ${a.key}: ${describeAnchor(a)}${a.brief ? `. ${a.brief}` : ""}`).join("\n")}
 
 Student context:
 ${JSON.stringify(context, null, 2)}
-${interest ? `\nThe student says they are curious about: ${interest}` : ""}`,
+${interest ? `\nThe student says they are curious about: ${interest}. Connect it to one of the needs above where you can.` : ""}`,
     },
-    SuggestionsSchema,
+    suggestionsSchema(keys.length ? [keys[0], ...keys.slice(1)] : ["interest"]),
   );
   return result.ok ? { ok: true, data: result.data.suggestions.slice(0, 3) } : result;
 }
@@ -118,6 +144,21 @@ const ReviewField = z
   .nullable()
   .describe('Only when lastStep.understandingChecks has at least one answer: one review per question, in the same order. Otherwise null');
 
+/**
+ * The difficulty code decided for this step (lib/bloom/learner preferredDifficulty), as an instruction
+ * with measurable meanings, so whether Spark followed it can be checked (see stepShape).
+ */
+const DIFFICULTY_RULES: Record<Difficulty, string> = {
+  easier:
+    "EASIER. At most 1 new idea. 3-4 small actions. 10-20 minutes. Start with a fresh everyday example, give fill-in patterns for anything the student writes, and keep sentences extra short.",
+  same: "THE SAME as the last step. 1-2 new ideas. 3-5 actions. 15-30 minutes.",
+  harder:
+    "HARDER. 1-2 new ideas, at least one applied to a new or less familiar situation. 4-6 actions, the last one a stretch the student designs or decides themselves. 20-40 minutes. Fewer fill-in patterns.",
+};
+
+const difficultyRule = (level: Difficulty) =>
+  `Difficulty for this step (decided from the student's recent feelings and answers; follow it exactly): ${DIFFICULTY_RULES[level]}`;
+
 /** Tells Spark which gaps to re-check; lib/bloom/gaps enforces it on the result. */
 const recheckRules = (depth: keyof typeof CHECK_COUNT, gaps: readonly Gap[]) => `Re-checking gaps: a gap is an idea the student has not shown they understand yet. Re-check up to ${maxRechecks(depth)} gaps in this step: first any idea whose answer you mark "nearly" or "not_yet" in your review, then these open gaps, in order: ${gaps.length ? gaps.map((g) => `"${g.idea}"`).join(", ") : "(none)"}. For each, write one check question with recheck = true and the gap's exact idea name, asking about it in a new way (a new situation, not the same question again). Re-check questions come first; the remaining questions (at least one) check this step's new idea with recheck = false. Teach a gap's idea again briefly in the step before re-checking it.`;
 
@@ -152,7 +193,15 @@ const OutlineSchema = z.object({
 /** A planned path, with each step's instructions already formatted for storage (see lib/bloom/details). */
 export type BloomPlan = {
   summary: string;
-  tasks: { kind: "learn" | "do" | "reflect"; title: string; details: string; planned_only: boolean; check_questions?: CheckQuestion[] }[];
+  tasks: {
+    kind: "learn" | "do" | "reflect";
+    title: string;
+    details: string;
+    planned_only: boolean;
+    check_questions?: CheckQuestion[];
+    /** Difficulty code decided for a step written now (outline planning only). */
+    difficulty?: Difficulty;
+  }[];
 };
 
 const TASK_COUNT = { quick: "3", standard: "5", deep: "7" } as const;
@@ -181,15 +230,17 @@ const writeStep = ({ steps, ...parts }: Omit<z.infer<typeof StepSchema>, "kind" 
 export async function planBloomPath(
   studentId: string,
   context: BloomContext,
-  path: { title: string; goal: string; depth: keyof typeof TASK_COUNT },
-  { outline = false }: { outline?: boolean } = {},
+  /** `serves`: what the path is for (lib/bloom/anchor anchorBrief), so every step works towards it. */
+  path: { title: string; goal: string; depth: keyof typeof TASK_COUNT; serves: string },
+  { outline = false, difficulty = "same" }: { outline?: boolean; difficulty?: Difficulty } = {},
 ): Promise<AiResult<BloomPlan>> {
   const count = TASK_COUNT[path.depth];
   const brief = `Create a learning path called "${path.title}".
 The student's goal: ${path.goal || "(not given — infer a sensible one from the title)"}
+What this path is for: ${path.serves}
 Depth: ${DEPTH_TEACHING[path.depth]}
 
-Plan exactly ${count} tasks in a sensible order: start with a "learn" task that explains the core idea simply, include at least one hands-on "do" task that moves their own project forward when possible, and finish with a "reflect" task asking what they learned and how they will use it.
+Plan exactly ${count} tasks in a sensible order: start with a "learn" task that explains the core idea simply, include at least one hands-on "do" task that produces something for what this path is for, and finish with a "reflect" task asking what they learned and how they will use it.
 
 ${TEACHING_RULES}
 
@@ -205,6 +256,8 @@ ${JSON.stringify(context, null, 2)}`;
         user: `${brief}
 
 Write only step 1 in full. For the other ${Number(count) - 1} steps give just a title and a one-sentence aim: each will be written when the student gets there, adapted to how the earlier steps went.
+
+For step 1: ${difficultyRule(difficulty)}
 
 ${checkRules(path.depth)}`,
       },
@@ -225,6 +278,7 @@ ${checkRules(path.depth)}`,
             planned_only: false,
             // A new path has no gaps of its own: re-checks are decided by code (lib/bloom/gaps), never here.
             check_questions: toChecks(checks, path.depth).map((c) => ({ ...c, recheck: false })),
+            difficulty,
           },
           ...later.map((s) => ({ kind: s.kind, title: s.title, details: s.aim, planned_only: true })),
         ],
@@ -257,6 +311,8 @@ const WrittenStepSchema = z.object({
 });
 
 export type WrittenStep = {
+  /** Measurable shape of the step, to check it against the difficulty asked for. */
+  shape: { actions: number; minutes: number | null };
   title: string;
   details: string;
   adaptation: string | null;
@@ -277,6 +333,8 @@ export async function writeBloomStep(
   input: StepWriterInput,
   /** Gaps already known to be open in this path (lib/bloom/gaps); code verifies the re-checks afterwards. */
   openGaps: readonly Gap[] = [],
+  /** Difficulty decided by code (lib/bloom/learner); Spark is told to follow it. */
+  difficulty: Difficulty = "same",
 ): Promise<AiResult<WrittenStep>> {
   const result = await generateStructured(
     {
@@ -288,14 +346,16 @@ export async function writeBloomStep(
 Depth: ${DEPTH_TEACHING[depth]}
 
 Adapt it to how the last step went ("lastStep", the one the student just finished, which may be an earlier step they went back to):
-- "too_hard", or a note or question showing confusion: make this step simpler and smaller, re-explain the confusing idea first with a new analogy, and add more support.
-- "too_easy": add more challenge or a stretch, and don't repeat what they already showed they know.
+- A note or question showing confusion: re-explain the confusing idea first with a new analogy.
+- How much to simplify or stretch is already decided: see "Difficulty for this step" below.
 - Answer anything still unclear from their note and questions, briefly, before moving on.
 - Follow where their note says they want to go next when it still fits the path's goal.
-- Look at earlier feelings and notes too: two hard steps in a row need a gentler step even if the last felt fine, and anything still unclear from an earlier note should be cleared up.
+- Look at earlier notes too: anything still unclear from an earlier note should be cleared up.
 - Their answers to the last step's checks ("understandingChecks") are stronger evidence than how it felt: if an answer is "nearly" or "not_yet", briefly re-teach that idea in this step before building on it; if they nailed everything, move on confidently.
 - Use the learner state in the student context: build on ideas in "understands" without re-teaching them, and where an idea in "strugglesWith" belongs in this step, explain it again in a new way.
-Keep to the step's planned aim unless the student clearly needs something else first.
+Keep to the step's planned aim unless the student clearly needs something else first, and keep the step useful for what the path is for ("path.serves" in "Path so far").
+
+${difficultyRule(difficulty)}
 
 ${TEACHING_RULES}
 
@@ -319,6 +379,7 @@ ${JSON.stringify(context, null, 2)}`,
   return {
     ok: true,
     data: {
+      shape: { actions: parts.steps.filter((s) => s.trim()).length, minutes: clampMinutes(parts.minutes) },
       title: title.trim().slice(0, 160) || input.stepToWrite.title,
       details: writeStep(parts),
       adaptation: adaptation?.trim().slice(0, 500) || null,

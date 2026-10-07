@@ -13,7 +13,9 @@ import {
   writeNextStep,
   type BloomState,
   type SuggestState,
+  type SuggestedPath,
 } from "./actions";
+import { AnchorChip, anchorParts } from "@/components/ui/AnchorChip";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { RecheckBadge } from "@/components/ui/RecheckBadge";
 import type { CheckQuestion } from "@/lib/bloom/adaptive";
@@ -58,11 +60,36 @@ function DepthPicker({ name = "depth" }: { name?: string }) {
   );
 }
 
+type AnchorOption = SuggestedPath["anchor"];
+
+/** "What is this path for?": the needs code offers (lib/bloom/anchor), most pressing first. */
+function AnchorPicker({ anchors }: { anchors: AnchorOption[] }) {
+  const t = useTranslations("bloom");
+  if (anchors.length < 2) return <input type="hidden" name="anchor" value={anchors[0]?.key ?? ""} />;
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-sm font-medium">{t("anchor.pick")}</span>
+      <select name="anchor" defaultValue={anchors[0].key} className="field">
+        {anchors.map((a) => {
+          const parts = anchorParts(t, a);
+          return (
+            <option key={a.key} value={a.key}>
+              {[parts.label, parts.detail, parts.urgent].filter(Boolean).join(" · ")}
+            </option>
+          );
+        })}
+      </select>
+      <span className="text-[13px] text-soft">{t("anchor.pickHint")}</span>
+    </label>
+  );
+}
+
 /**
  * Starting something new: Bloom suggests three ideas (when AI is allowed), or the student
- * writes their own topic. Either way, Bloom can plan the steps.
+ * writes their own topic. Either way, Bloom can plan the steps, and the path serves one of
+ * `anchors`: a course activity, the project or the programme step.
  */
-export function StartPath({ aiAllowed }: { aiAllowed: boolean }) {
+export function StartPath({ aiAllowed, anchors }: { aiAllowed: boolean; anchors: AnchorOption[] }) {
   const t = useTranslations("bloom");
   const [suggestState, suggest, suggesting] = useActionState(suggestPaths, { status: "idle" } as SuggestState);
   const [createState, create, creating] = useActionState(createPath, initial);
@@ -97,7 +124,9 @@ export function StartPath({ aiAllowed }: { aiAllowed: boolean }) {
                 <input type="hidden" name="goal" value={s.goal} />
                 <input type="hidden" name="depth" value="standard" />
                 <input type="hidden" name="useAi" value="on" />
+                <input type="hidden" name="anchor" value={s.anchor.key} />
                 <p className="font-display-tight text-[17px] leading-snug">{s.title}</p>
+                <AnchorChip parts={anchorParts(t, s.anchor)} />
                 <p className="text-sm">{s.goal}</p>
                 <p className="text-[13px] text-soft">{s.why}</p>
                 <SubmitButton pendingLabel={t("planning")} disabled={creating || suggesting} className="btn btn-secondary mt-auto px-4 py-2 text-sm">
@@ -119,6 +148,7 @@ export function StartPath({ aiAllowed }: { aiAllowed: boolean }) {
             <span className="text-sm font-medium">{t("goal")}</span>
             <textarea name="goal" rows={2} maxLength={1000} placeholder={t("goalPlaceholder")} className="field resize-y" />
           </label>
+          <AnchorPicker anchors={anchors} />
           <DepthPicker />
           {aiAllowed ? (
             <label className="flex items-start gap-3 rounded-xl bg-violet/10 p-3">

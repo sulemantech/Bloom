@@ -259,9 +259,9 @@ select is((select count(*)::int from public.audit_log where actor_id = 'b0000000
 -- Bloom: students own their learning; parents, mentors and admins can read it
 -- ---------------------------------------------------------------------------
 set local role postgres;
-insert into public.bloom_paths (id, student_id, cohort_id, title) values
-  ('70000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000001001', 'S1 path'),
-  ('70000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', 'e0000000-0000-0000-0000-000000000002', 'S2 path');
+insert into public.bloom_paths (id, student_id, cohort_id, title, anchor_kind, anchor_label) values
+  ('70000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000001001', 'S1 path', 'stage', 'Explore'),
+  ('70000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000002', 'e0000000-0000-0000-0000-000000000002', 'S2 path', 'stage', 'Explore');
 
 set local role authenticated;
 set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
@@ -275,7 +275,8 @@ select throws_ok(
     values ('70000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000001', 'Sneaky')$$,
   '42501', null, 'student cannot add a step to someone else''s path');
 select throws_ok(
-  $$insert into public.bloom_paths (student_id, title) values ('d0000000-0000-0000-0000-000000000002', 'Not mine')$$,
+  $$insert into public.bloom_paths (student_id, cohort_id, title, anchor_kind, anchor_label)
+    values ('d0000000-0000-0000-0000-000000000002', 'e0000000-0000-0000-0000-000000000002', 'Not mine', 'stage', 'Explore')$$,
   '42501', null, 'student cannot create a path for another student');
 select throws_ok(
   $$update public.bloom_paths set mentor_note = 'I am great' where id = '70000000-0000-0000-0000-000000000001'$$,
@@ -298,7 +299,7 @@ set local request.jwt.claims to '{"sub": "c0000000-0000-0000-0000-000000000001",
 select is((select count(*)::int from public.bloom_paths), 1, 'parent sees only their child''s Bloom paths');
 select is((select count(*)::int from public.bloom_questions), 1, 'parent can read their child''s questions to Bloom');
 select throws_ok(
-  $$insert into public.bloom_paths (student_id, title) values ('c0000000-0000-0000-0000-000000000001', 'Parent path')$$,
+  $$insert into public.bloom_paths (student_id, title, anchor_kind) values ('c0000000-0000-0000-0000-000000000001', 'Parent path', 'interest')$$,
   '42501', null, 'parents cannot create Bloom paths');
 
 set local request.jwt.claims to '{"sub": "b0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
@@ -333,7 +334,7 @@ set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001",
 select lives_ok(
   $$select public.create_bloom_path('Planned path', 'A goal', 'quick', 'Summary', true,
       '[{"kind": "learn", "title": "Read"}, {"kind": "do", "title": "Try", "details": "How"}]'::jsonb,
-      '00000000-0000-0000-0000-000000001001', 'explore')$$,
+      '00000000-0000-0000-0000-000000001001', 'explore', '{"kind": "stage", "label": "Explore"}'::jsonb)$$,
   'student can create a path with its steps in one call');
 select is((select count(*)::int from public.bloom_tasks t join public.bloom_paths p on p.id = t.path_id
            where p.title = 'Planned path'), 2, 'the planned steps were saved with the path');
@@ -343,7 +344,8 @@ select is((select string_agg(t.title, ',' order by t.position) from public.bloom
 
 select throws_ok(
   $$select public.create_bloom_path('Broken plan', '', 'quick', '', true,
-      '[{"kind": "learn", "title": "Fine"}, {"kind": "do", "title": ""}]'::jsonb)$$,
+      '[{"kind": "learn", "title": "Fine"}, {"kind": "do", "title": ""}]'::jsonb,
+      '00000000-0000-0000-0000-000000001001', 'explore', '{"kind": "stage", "label": "Explore"}'::jsonb)$$,
   '23514', null, 'a step that breaks a rule fails the whole path');
 select is((select count(*)::int from public.bloom_paths where title = 'Broken plan'), 0,
           'no empty path is left behind when a step fails');
@@ -387,7 +389,8 @@ set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001",
 select lives_ok(
   $$select public.create_bloom_path('Outline path', '', 'standard', '', true,
       '[{"kind": "learn", "title": "Written", "details": "Full step"},
-        {"kind": "do", "title": "Later", "details": "Aim only", "planned_only": true}]'::jsonb)$$,
+        {"kind": "do", "title": "Later", "details": "Aim only", "planned_only": true}]'::jsonb,
+      '00000000-0000-0000-0000-000000001001', 'explore', '{"kind": "stage", "label": "Explore"}'::jsonb)$$,
   'student can create a path whose later steps are an outline');
 select is((select string_agg(t.planned_only::text, ',' order by t.position) from public.bloom_tasks t
            join public.bloom_paths p on p.id = t.path_id where p.title = 'Outline path'),
@@ -435,7 +438,8 @@ set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001",
 select lives_ok(
   $$select public.create_bloom_path('Checked path', '', 'quick', '', true,
       '[{"kind": "learn", "title": "Learn it", "details": "Full step",
-         "check_questions": [{"kind": "apply", "question": "Use it?"}, {"kind": "judge", "question": "Why?"}]}]'::jsonb)$$,
+         "check_questions": [{"kind": "apply", "question": "Use it?"}, {"kind": "judge", "question": "Why?"}]}]'::jsonb,
+      '00000000-0000-0000-0000-000000001001', 'explore', '{"kind": "stage", "label": "Explore"}'::jsonb)$$,
   'a planned step is saved with its check questions');
 select is((select jsonb_array_length(t.check_questions) from public.bloom_tasks t join public.bloom_paths p on p.id = t.path_id
            where p.title = 'Checked path'), 2, 'both check questions were stored');
@@ -502,6 +506,28 @@ select is((select count(*)::int from public.spark_concepts where key = 'habit lo
 set local role postgres;
 
 -- ---------------------------------------------------------------------------
+-- Spark difficulty: recorded per written step, only known levels
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+
+select lives_ok(
+  $$select public.create_bloom_path('Pitched path', '', 'quick', '', true,
+      '[{"kind": "learn", "title": "Easy start", "details": "Full step", "difficulty": "easier"},
+        {"kind": "do", "title": "Later", "details": "Aim", "planned_only": true}]'::jsonb,
+      '00000000-0000-0000-0000-000000001001', 'explore', '{"kind": "stage", "label": "Explore"}'::jsonb)$$,
+  'a planned first step records the difficulty code decided for it');
+select is((select string_agg(coalesce(t.difficulty, 'null'), ',' order by t.position) from public.bloom_tasks t
+           join public.bloom_paths p on p.id = t.path_id where p.title = 'Pitched path'),
+          'easier,null', 'outline steps get their difficulty when they are written');
+select throws_ok(
+  $$update public.bloom_tasks set difficulty = 'extreme'
+    where path_id = (select id from public.bloom_paths where title = 'Pitched path')$$,
+  '23514', null, 'only easier, same or harder are accepted');
+
+set local role postgres;
+
+-- ---------------------------------------------------------------------------
 -- AI usage log: written by the server's secret key, read by admins only
 -- ---------------------------------------------------------------------------
 insert into public.ai_runs (capability, student_id, actor_id, model, input_tokens, output_tokens, latency_ms, outcome, input_hash)
@@ -541,5 +567,57 @@ select is(
   (select count(*)::int from information_schema.columns
    where table_schema = 'public' and table_name = 'ai_runs' and column_name in ('prompt', 'input', 'output', 'answer', 'text')),
   0, 'ai_runs has no column for prompt or answer text');
+-- ---------------------------------------------------------------------------
+-- Spark anchors: every path serves a real need of the student's own course
+-- ---------------------------------------------------------------------------
+set local role postgres;
+insert into public.programs (id, slug, name, weeks) values ('a1000000-0000-0000-0000-000000000001', 'other-course', '{"en": "Other"}', 4);
+insert into public.stages (id, program_id, position, key, name, week_from, week_to)
+  values ('a2000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 1, 'explore', '{"en": "Explore"}', 1, 4);
+insert into public.activities (id, stage_id, week, title, instructions)
+  values ('a3000000-0000-0000-0000-000000000001', 'a2000000-0000-0000-0000-000000000001', 1, '{"en": "Elsewhere"}', '{"en": "Not ours"}');
+
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+
+select throws_ok(
+  $$select public.create_bloom_path('Unanchored', '', 'quick', '', false, '[]'::jsonb, '00000000-0000-0000-0000-000000001001', 'explore')$$,
+  '23502', null, 'a path cannot be created without an anchor');
+select throws_ok(
+  $$select public.create_bloom_path('Just curious', '', 'quick', '', false, '[]'::jsonb, null, null, '{"kind": "interest"}'::jsonb)$$,
+  '23514', null, 'a student in a group cannot anchor a path to interest only, even without the group');
+select lives_ok(
+  format($$select public.create_bloom_path('For my activity', '', 'quick', '', false, '[]'::jsonb,
+      '00000000-0000-0000-0000-000000001001', 'explore', %L::jsonb)$$,
+    jsonb_build_object('kind', 'activity', 'label', 'Talk to 3 people', 'week', 3,
+      'activity_id', (select a.id from public.activities a join public.stages s on s.id = a.stage_id
+                      join public.cohorts c on c.program_id = s.program_id
+                      where c.id = '00000000-0000-0000-0000-000000001001' limit 1))),
+  'a path can serve a course activity of the student''s programme');
+select is((select anchor_kind || ':' || anchor_label || ':' || anchor_week from public.bloom_paths where title = 'For my activity'),
+          'activity:Talk to 3 people:3', 'the anchor is stored with the path');
+select throws_ok(
+  $$select public.create_bloom_path('Wrong course', '', 'quick', '', false, '[]'::jsonb,
+      '00000000-0000-0000-0000-000000001001', 'explore',
+      '{"kind": "activity", "label": "Elsewhere", "activity_id": "a3000000-0000-0000-0000-000000000001"}'::jsonb)$$,
+  '23514', null, 'an activity from another programme is refused');
+select lives_ok(
+  $$select public.create_bloom_path('For my project', '', 'quick', '', false, '[]'::jsonb,
+      '00000000-0000-0000-0000-000000001001', 'explore', '{"kind": "project", "label": "Plastic at school"}'::jsonb)$$,
+  'a path can serve the student''s project');
+select throws_ok(
+  $$select public.create_bloom_path('Nameless', '', 'quick', '', false, '[]'::jsonb,
+      '00000000-0000-0000-0000-000000001001', 'explore', '{"kind": "stage"}'::jsonb)$$,
+  '23514', null, 'an anchor must say what it serves');
+select throws_ok(
+  $$update public.bloom_paths set anchor_label = 'Something else' where title = 'For my project'$$,
+  '42501', null, 'the anchor is fixed once the path exists');
+
+set local role postgres;
+select lives_ok(
+  $$insert into public.bloom_paths (student_id, title, anchor_kind)
+    values ('c0000000-0000-0000-0000-000000000001', 'No group yet', 'interest')$$,
+  'someone without a group can follow their own interest');
+
 select * from finish();
 rollback;

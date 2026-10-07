@@ -772,6 +772,21 @@
     "startThis": "Start this path",
     "writeOwn": "I have my own topic",
     "backToIdeas": "Back to ideas",
+    "anchor": {
+      "helpsWith": "Helps with:",
+      "kind": {
+        "activity": "Course activity, week {week}",
+        "project": "Project problem",
+        "stage": "Programme step",
+        "interest": "Your own interest"
+      },
+      "urgent": {
+        "overdue": "Overdue",
+        "needs_changes": "Changes asked"
+      },
+      "pick": "What is this path for?",
+      "pickHint": "Spark plans every step around it. Late work is listed first."
+    },
     "pathTitle": "What do you want to learn?",
     "pathTitlePlaceholder": "e.g. Interviewing people about my problem",
     "goal": "Why, or what you want to be able to do",
@@ -856,8 +871,19 @@
     "feedback": "Feedback",
     "usedFor": "Spark used this to write step {n}",
     "adaptedTitle": "Spark changed this step for you",
-    "adaptedBecause": "Because on step {n} you said:",
-    "adaptedBecauseViewer": "Because on step {n} the student said:",
+    "reasons": {
+      "label": "Why it changed",
+      "feeling": "Step {n} felt: {feeling}",
+      "answer": "Step {n}, question {q}: {verdict}",
+      "allNailed": "Step {n}: every answer nailed",
+      "recheck": "↻ Re-checking: {idea}",
+      "difficulty": {
+        "easier": "Pitched a bit easier",
+        "harder": "Pitched a bit harder"
+      },
+      "wroteOn": "You wrote on step {n}:",
+      "wroteOnViewer": "They wrote on step {n}:"
+    },
     "detailLabels": {
       "example": "Example",
       "need": "You need",

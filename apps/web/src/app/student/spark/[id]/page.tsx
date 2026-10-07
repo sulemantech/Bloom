@@ -78,6 +78,7 @@ export default async function StudentPathPage({ params, searchParams }: PageProp
         path={path}
         timeZone={profile.timezone}
         taskControls={controls}
+        activityHref={(id) => `/student/activities/${id}`}
         questionSlot={canAsk ? (taskId) => <AskForm pathId={path.id} taskId={taskId} compact={taskId !== null} /> : undefined}
         notice={notice && { text: t(`ok.${notice}`), tone: notice === "taskDoneNextLater" ? "warning" : "success" }}
       />

@@ -113,7 +113,7 @@ export function stepStates<T extends { id: string; position: number; status: str
  * passed too, so no feedback is lost.
  */
 export function stepWriterInput(
-  path: { title: string; goal: string; summary: string },
+  path: { title: string; goal: string; summary: string; serves?: string },
   tasks: readonly AdaptiveTask[],
   questions: readonly AdaptiveQuestion[],
   targetId: string,
@@ -128,7 +128,7 @@ export function stepWriterInput(
   const others = before.filter((t) => t !== last);
 
   return {
-    path: { title: path.title, goal: path.goal, summary: path.summary },
+    path: { title: path.title, goal: path.goal, summary: path.summary, ...(path.serves ? { serves: path.serves } : {}) },
     outline: sorted.map((t, i) => ({
       step: i + 1,
       kind: t.kind,
