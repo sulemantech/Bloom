@@ -15,6 +15,7 @@ import {
   type SuggestState,
 } from "./actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import type { CheckQuestion } from "@/lib/bloom/adaptive";
 
 const initial: BloomState = { status: "idle" };
 
@@ -162,6 +163,33 @@ function FeelingPicker() {
   );
 }
 
+/** Answer boxes for the step's check questions; optional, sent in question order as "answer". */
+function CheckAnswers({ checks, answers }: { checks: CheckQuestion[]; answers: string[] | null }) {
+  const t = useTranslations("bloom");
+  return (
+    <fieldset className="flex flex-col gap-3 rounded-xl border border-ai/25 bg-violet/5 p-4">
+      <legend className="sr-only">{t("checks.title")}</legend>
+      <div className="flex flex-col gap-0.5">
+        <p className="flex items-center gap-1.5 font-semibold">
+          <span aria-hidden="true" className="text-ai">✦</span>
+          {t("checks.title")}
+          <span className="text-sm font-normal text-soft">{t("checks.optional")}</span>
+        </p>
+        <p className="text-[13px] text-muted">{t("checks.hint")}</p>
+      </div>
+      {checks.map((check, i) => (
+        <label key={i} className="flex flex-col gap-1.5">
+          <span className="text-[15px]">
+            <span className="mr-1.5 font-semibold text-ai">{i + 1}.</span>
+            {check.question}
+          </span>
+          <textarea name="answer" rows={2} maxLength={1000} defaultValue={answers?.[i] ?? ""} placeholder={t("checks.placeholder")} className="field resize-y" />
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
 /**
  * Start, finish (with an optional reflection) or reopen one task. With `adaptive`, finishing asks
  * how the step went and what to do next, so Spark can write the next step from it; `writesNext`
@@ -171,10 +199,15 @@ export function TaskControls({
   task,
   adaptive = false,
   writesNext = false,
+  checks = [],
+  answers = null,
 }: {
   task: { id: string; status: "todo" | "doing" | "done"; reflection: string | null; kind: string; feeling: string | null };
   adaptive?: boolean;
   writesNext?: boolean;
+  /** "Check your understanding" questions to answer when finishing (optional for the student). */
+  checks?: CheckQuestion[];
+  answers?: string[] | null;
 }) {
   const t = useTranslations("bloom");
   const [state, action] = useActionState(updateTask, initial);
@@ -201,6 +234,7 @@ export function TaskControls({
   return (
     <form action={action} className="flex flex-col gap-3 border-t border-border pt-3">
       <input type="hidden" name="taskId" value={task.id} />
+      {adaptive && checks.length > 0 && <CheckAnswers checks={checks} answers={answers} />}
       {adaptive && <FeelingPicker />}
       {(open || adaptive || task.kind === "reflect") && (
         <label className="flex flex-col gap-1.5">

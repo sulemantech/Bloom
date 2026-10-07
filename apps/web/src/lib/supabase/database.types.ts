@@ -305,6 +305,9 @@ export type Database = {
         Row: {
           adaptation: string | null
           adapted_from: string | null
+          check_answers: Json | null
+          check_questions: Json
+          check_review: Json | null
           completed_at: string | null
           created_at: string
           details: string
@@ -323,6 +326,9 @@ export type Database = {
         Insert: {
           adaptation?: string | null
           adapted_from?: string | null
+          check_answers?: Json | null
+          check_questions?: Json
+          check_review?: Json | null
           completed_at?: string | null
           created_at?: string
           details?: string
@@ -341,6 +347,9 @@ export type Database = {
         Update: {
           adaptation?: string | null
           adapted_from?: string | null
+          check_answers?: Json | null
+          check_questions?: Json
+          check_review?: Json | null
           completed_at?: string | null
           created_at?: string
           details?: string
@@ -957,6 +966,70 @@ export type Database = {
           },
         ]
       }
+      spark_concepts: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          label: string
+          last_path_id: string | null
+          last_task_id: string | null
+          nailed_count: number
+          status: Database["public"]["Enums"]["spark_concept_status"]
+          struggle_count: number
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          label: string
+          last_path_id?: string | null
+          last_task_id?: string | null
+          nailed_count?: number
+          status: Database["public"]["Enums"]["spark_concept_status"]
+          struggle_count?: number
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          label?: string
+          last_path_id?: string | null
+          last_task_id?: string | null
+          nailed_count?: number
+          status?: Database["public"]["Enums"]["spark_concept_status"]
+          struggle_count?: number
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spark_concepts_last_path_id_fkey"
+            columns: ["last_path_id"]
+            isOneToOne: false
+            referencedRelation: "bloom_paths"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spark_concepts_last_task_id_fkey"
+            columns: ["last_task_id"]
+            isOneToOne: false
+            referencedRelation: "bloom_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spark_concepts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stages: {
         Row: {
           id: string
@@ -1218,6 +1291,7 @@ export type Database = {
         | "building"
         | "presenting"
         | "done"
+      spark_concept_status: "struggling" | "understood"
       submission_status: "submitted" | "needs_changes" | "done"
       submission_type: "text" | "file" | "link" | "text_and_file"
     }
@@ -1367,6 +1441,7 @@ export const Constants = {
         "undecided",
       ],
       project_status: ["exploring", "chosen", "building", "presenting", "done"],
+      spark_concept_status: ["struggling", "understood"],
       submission_status: ["submitted", "needs_changes", "done"],
       submission_type: ["text", "file", "link", "text_and_file"],
     },

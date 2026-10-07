@@ -2,10 +2,11 @@
 
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
-import { askBloom, planBloomPath, suggestBloomPaths, writeBloomStep, type AiFailure, type BloomPlan, type BloomSuggestion } from "@/lib/ai";
+import { askBloom, planBloomPath, reviewBloomAnswers, suggestBloomPaths, writeBloomStep, type AiFailure, type BloomPlan, type BloomSuggestion } from "@/lib/ai";
 import { getCurrentProfile } from "@/lib/auth";
-import { lastFinishedStep, nextStepToWrite, stepWriterInput } from "@/lib/bloom/adaptive";
+import { answeredChecks, lastFinishedStep, nextStepToWrite, stepWriterInput } from "@/lib/bloom/adaptive";
 import { bloomContext, hasConsent, loadBloomPaths } from "@/lib/data/bloom";
+import { loadLearnerState, recordReview } from "@/lib/data/learner";
 import { loadStudentOverview } from "@/lib/data/overview";
 import { bloomV2Enabled } from "@/lib/flags";
 import { stageForWeek } from "@/lib/programme";
@@ -35,7 +36,8 @@ async function hasBloomAiConsent(studentId: string) {
 async function aiContext(studentId: string) {
   const supabase = await createClient();
   const [overview, paths] = await Promise.all([loadStudentOverview(supabase, studentId), loadBloomPaths(supabase, studentId)]);
-  return { overview, context: bloomContext(overview, paths) };
+  const learner = await loadLearnerState(supabase, studentId, overview);
+  return { overview, context: bloomContext(overview, paths, learner) };
 }
 
 const aiError = (reason: AiFailure) => ({ status: "error" as const, message: `ai.${reason}` });
@@ -85,6 +87,7 @@ export async function createPath(_prev: BloomState, formData: FormData): Promise
       title: task.title.trim().slice(0, 160),
       details: task.details.slice(0, 6000),
       planned_only: task.planned_only,
+      check_questions: task.check_questions ?? [],
     }))
     .filter((task) => task.title)
     .slice(0, 10);
@@ -136,6 +139,8 @@ export async function updateTask(_prev: BloomState, formData: FormData): Promise
   // Only touch the note and feeling when the form showed them, so finishing a step never wipes them.
   const reflection = formData.has("reflection") ? str(formData, "reflection", 4000) || null : undefined;
   const feeling = formData.has("feeling") ? (FEELINGS.find((f) => f === str(formData, "feeling")) ?? null) : undefined;
+  // Answers to the step's checks, in question order. New answers clear any earlier review.
+  const answers = formData.has("answer") ? formData.getAll("answer").slice(0, 5).map((a) => String(a).trim().slice(0, 1000)) : undefined;
 
   const supabase = await createClient();
   const { data: task, error } = await supabase
@@ -144,6 +149,7 @@ export async function updateTask(_prev: BloomState, formData: FormData): Promise
       status,
       ...(reflection === undefined ? {} : { reflection }),
       ...(feeling === undefined ? {} : { feeling }),
+      ...(answers === undefined ? {} : { check_answers: answers, check_review: null }),
     })
     .eq("id", taskId)
     .eq("student_id", student.id)
@@ -158,30 +164,30 @@ export async function updateTask(_prev: BloomState, formData: FormData): Promise
   // Finishing a step lets Spark write the next outline step from how this one went. If it can't
   // right now, the step keeps its aim and the student can ask again ("Write this step").
   let message = status === "done" ? (pathDone ? "pathDone" : "taskDone") : "saved";
-  if (status === "done" && !pathDone) {
-    const written = await writePlannedStep(student.id, task.path_id, taskId);
+  if (status === "done") {
+    // Spark writes the next step (reviewing these answers in the same call); with no step to
+    // write, it reviews the answers on their own.
+    const written = pathDone ? "none" : await writePlannedStep(student.id, task.path_id, taskId);
     if (written === "written") message = "stepWritten";
     else if (written !== "none") message = "taskDoneNextLater";
+    else if ((await reviewAnswers(student.id, task.path_id, taskId)) === "reviewed") message = pathDone ? "pathDoneReviewed" : "answersReviewed";
   }
 
   refresh();
   return { status: "ok", message };
 }
 
+const STEP_FIELDS = "id, position, kind, title, details, status, reflection, feeling, planned_only, check_questions, check_answers, check_review";
+
 /**
  * Has Spark write the path's next outline step (see lib/bloom/adaptive), from how `finishedId` (the
- * step just finished) went. "none" when no step is waiting: every step is written, or an earlier
- * step isn't done yet.
+ * step just finished) went, and review that step's check answers. "none" when no step is waiting:
+ * every step is written, or an earlier step isn't done yet.
  */
 async function writePlannedStep(studentId: string, pathId: string, finishedId?: string): Promise<"written" | "none" | AiFailure> {
   const supabase = await createClient();
   const [{ data: path }, { data: questions }] = await Promise.all([
-    supabase
-      .from("bloom_paths")
-      .select("title, goal, summary, depth, bloom_tasks(id, position, kind, title, details, status, reflection, feeling, planned_only)")
-      .eq("id", pathId)
-      .eq("student_id", studentId)
-      .single(),
+    supabase.from("bloom_paths").select(`title, goal, summary, depth, bloom_tasks(${STEP_FIELDS})`).eq("id", pathId).eq("student_id", studentId).single(),
     supabase.from("bloom_questions").select("task_id, question, answer").eq("path_id", pathId).order("created_at"),
   ]);
   if (!path) return "failed";
@@ -203,13 +209,48 @@ async function writePlannedStep(studentId: string, pathId: string, finishedId?: 
       details: result.data.details.slice(0, 6000),
       adaptation: result.data.adaptation,
       adapted_from: source?.id ?? null,
+      check_questions: result.data.check_questions,
       planned_only: false,
     })
     .eq("id", target.id)
     .eq("student_id", studentId)
     .eq("planned_only", true);
   if (error) return "failed";
+
+  if (source && result.data.review && !source.check_review) {
+    const { error: reviewError } = await supabase
+      .from("bloom_tasks")
+      .update({ check_review: result.data.review })
+      .eq("id", source.id)
+      .eq("student_id", studentId);
+    if (!reviewError) await recordReview(supabase, studentId, { ...source, path_id: pathId, check_review: result.data.review });
+  }
   return "written";
+}
+
+/** Has Spark review a finished step's check answers on their own (see reviewBloomAnswers). */
+async function reviewAnswers(studentId: string, pathId: string, taskId: string): Promise<"reviewed" | "none" | AiFailure> {
+  const supabase = await createClient();
+  const { data: path } = await supabase
+    .from("bloom_paths")
+    .select(`title, bloom_tasks(${STEP_FIELDS})`)
+    .eq("id", pathId)
+    .eq("student_id", studentId)
+    .eq("bloom_tasks.id", taskId)
+    .single();
+  const task = path?.bloom_tasks[0];
+  if (!path || !task || task.check_review) return "none";
+  const checks = answeredChecks(task);
+  if (!checks.some((c) => c.answer)) return "none";
+  if (!(await hasBloomAiConsent(studentId))) return "noConsent";
+
+  const { context } = await aiContext(studentId);
+  const result = await reviewBloomAnswers(studentId, context, { path: path.title, title: task.title, details: task.details, checks });
+  if (!result.ok) return result.reason;
+  const { error } = await supabase.from("bloom_tasks").update({ check_review: result.data }).eq("id", task.id).eq("student_id", studentId);
+  if (error) return "failed";
+  await recordReview(supabase, studentId, { ...task, path_id: pathId, check_review: result.data });
+  return "reviewed";
 }
 
 /** "Write this step": retry when Spark couldn't write the next step as the last one was finished. */

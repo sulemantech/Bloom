@@ -4,8 +4,9 @@ import { getTranslations } from "next-intl/server";
 import { ProgressBar } from "@/components/course";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Badge, STEP_TONE, type Tone } from "@/components/ui/Badge";
-import { stepStates, type StepState } from "@/lib/bloom/adaptive";
+import { checkAnswers, checkQuestions, checkReview, hasAnswers, stepStates, type CheckReview, type StepState, type Verdict } from "@/lib/bloom/adaptive";
 import { parseDetails } from "@/lib/bloom/details";
+import type { LearnerState } from "@/lib/bloom/learner";
 import { daysSince, type BloomPath, type TimelineEvent } from "@/lib/data/bloom";
 import { formatDate, formatDateTime } from "@/lib/programme";
 
@@ -25,6 +26,96 @@ const FEELING_TEXT: Record<NonNullable<Task["feeling"]>, string> = {
   just_right: "text-success",
   too_hard: "text-warning",
 };
+
+const VERDICT_STYLE: Record<Verdict, string> = {
+  nailed: "bg-lime/25 text-success",
+  nearly: "bg-sun/25 text-warning",
+  not_yet: "bg-coral/15 text-danger",
+};
+
+/** "2 of 3 nailed" next to a finished step's title. */
+async function MarksSummary({ review }: { review: CheckReview[] | null }) {
+  const t = await getTranslations("bloom");
+  if (!review?.length) return null;
+  const nailed = review.filter((r) => r.verdict === "nailed").length;
+  return (
+    <>
+      <span aria-hidden="true">·</span>
+      <span className={nailed === review.length ? "text-success" : "text-soft"}>{t("checks.summary", { nailed, total: review.length })}</span>
+    </>
+  );
+}
+
+/**
+ * Check your understanding. Unfinished steps list the questions for viewers (the student answers
+ * them in the finish form); finished steps show each answer with Spark's review.
+ */
+async function Checks({ task, showMarks, forStudent }: { task: Task; showMarks: boolean; forStudent: boolean }) {
+  const t = await getTranslations("bloom");
+  const questions = checkQuestions(task.check_questions);
+  if (!questions.length || task.planned_only) return null;
+  if (task.status !== "done") {
+    if (forStudent) return null;
+    return (
+      <div className="flex flex-col gap-2 rounded-xl border border-ai/25 bg-violet/5 p-4">
+        <p className="label-caps text-ai">{t("checks.title")}</p>
+        <ol className="flex flex-col gap-1.5 text-[15px]">
+          {questions.map((q, i) => (
+            <li key={i}>
+              <span className="mr-1.5 font-semibold text-ai">{i + 1}.</span>
+              {q.question}
+            </li>
+          ))}
+        </ol>
+      </div>
+    );
+  }
+
+  const answers = checkAnswers(task.check_answers);
+  const review = checkReview(task.check_review);
+  if (!hasAnswers(answers) && !review) return null;
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-ai/25 bg-violet/5 p-4">
+      <p className="label-caps text-ai">
+        <span aria-hidden="true">✦ </span>
+        {t("checks.title")}
+      </p>
+      <ol className="flex flex-col gap-4">
+        {questions.map((q, i) => {
+          const answer = answers?.[i];
+          const r = review?.[i];
+          return (
+            <li key={i} className="flex flex-col gap-1.5">
+              <p className="text-[15px] font-medium">
+                <span className="mr-1.5 text-ai">{i + 1}.</span>
+                {q.question}
+              </p>
+              <div className="flex flex-col gap-1 rounded-lg bg-surface px-3 py-2">
+                <p className="label-caps text-soft">{forStudent ? t("checks.yourAnswer") : t("checks.theirAnswer")}</p>
+                <p className={`whitespace-pre-wrap text-[15px] ${answer ? "" : "text-soft italic"}`}>{answer || t("checks.notAnswered")}</p>
+              </div>
+              {showMarks && r && (
+                <div className="flex flex-col gap-1">
+                  {answer && <span className={`self-start rounded-full px-2.5 py-0.5 text-[13px] font-semibold ${VERDICT_STYLE[r.verdict]}`}>{t(`checks.verdicts.${r.verdict}`)}</span>}
+                  {answer && r.feedback && <p className="text-[15px]">{r.feedback}</p>}
+                  {r.key_idea && (
+                    <p className="text-sm text-muted">
+                      <span className="font-semibold">{t("checks.keyIdea")}: </span>
+                      {r.key_idea}
+                    </p>
+                  )}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      {showMarks && !review && hasAnswers(answers) && (
+        <p className="text-[13px] text-soft">{forStudent ? t("checks.pending") : t("checks.pendingViewer")}</p>
+      )}
+    </div>
+  );
+}
 
 /** Spark's response: what it changed in this step, and the feedback it was answering. */
 async function Adaptation({ task, source, sourceNumber, forStudent }: { task: Task; source: Task; sourceNumber: number; forStudent: boolean }) {
@@ -127,12 +218,15 @@ export async function BloomPathDetail({
   taskControls,
   mentorSlot,
   questionSlot,
+  showMarks = true,
 }: {
   path: PathDetail;
   timeZone: string;
   taskControls?: (task: BloomPath["tasks"][number]) => ReactNode;
   mentorSlot?: ReactNode;
   questionSlot?: (taskId: string | null) => ReactNode;
+  /** Show Spark's marks on check answers (students, mentors, admins); parents see the answers only. */
+  showMarks?: boolean;
 }) {
   const t = await getTranslations("bloom");
   const generalQuestions = path.questions.filter((q) => !q.task_id);
@@ -141,6 +235,10 @@ export async function BloomPathDetail({
   const current = path.tasks.find((task) => states.get(task.id) === "current");
   // Which later step Spark wrote from each finished step's feedback.
   const usedBy = new Map(path.tasks.filter((task) => task.adapted_from).map((task) => [task.adapted_from!, task]));
+  // The step finished most recently stays open, so its feedback and review are in view.
+  const latestDone = path.tasks
+    .filter((task) => task.status === "done" && task.completed_at)
+    .sort((a, b) => b.completed_at!.localeCompare(a.completed_at!))[0];
 
   return (
     <div className="flex flex-col gap-5">
@@ -205,6 +303,7 @@ export async function BloomPathDetail({
                     <span>{t("stepN", { n })}</span>
                     <span aria-hidden="true">·</span>
                     <span>{t(`kinds.${task.kind}`)}</span>
+                    {state === "done" && showMarks && <MarksSummary review={checkReview(task.check_review)} />}
                     {state === "done" && task.feeling && (
                       <>
                         <span aria-hidden="true">·</span>
@@ -237,6 +336,7 @@ export async function BloomPathDetail({
                 ) : (
                   task.details && <StepDetails text={task.details} />
                 )}
+                <Checks task={task} showMarks={showMarks} forStudent={Boolean(taskControls)} />
                 {(task.feeling || task.reflection) && (
                   <div className="flex flex-col gap-1.5 rounded-xl bg-surface-2 p-3">
                     <p className="label-caps text-soft">{taskControls ? t("yourFeedback") : t("feedback")}</p>
@@ -268,7 +368,7 @@ export async function BloomPathDetail({
             // Done and upcoming steps fold away so the current step stands out.
             return (
               <li key={task.id} id={`task-${task.id}`} className={`card scroll-mt-6 ${state === "upcoming" ? "bg-surface-2/40" : ""}`}>
-                <details className="group">
+                <details className="group" open={task.id === latestDone?.id}>
                   <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
                     {header}
                     <Icon name="chevron" size={16} className="shrink-0 text-soft transition-transform group-open:rotate-90" />
@@ -434,5 +534,73 @@ export async function BloomPathList({ paths, hrefFor }: { paths: BloomPath[]; hr
         </li>
       ))}
     </ul>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Learner state: what Spark knows about a student's learning (lib/bloom/learner)
+// ---------------------------------------------------------------------------
+
+/** "What Spark knows about you": understood ideas, ideas to work on, step difficulty and next need. */
+export async function LearnerStateCard({ state, forStudent }: { state: LearnerState; forStudent: boolean }) {
+  const t = await getTranslations("bloom.learner");
+  const need = state.nextNeed;
+  return (
+    <section className="card flex flex-col gap-5 p-5 sm:p-6" aria-labelledby="learner-heading">
+      <div className="flex flex-col gap-1">
+        <h2 id="learner-heading" className="flex items-center gap-2 font-display-tight text-xl">
+          <span aria-hidden="true" className="text-ai">✦</span>
+          {forStudent ? t("title") : t("titleViewer")}
+        </h2>
+        <p className="text-sm text-muted">{forStudent ? t("intro") : t("introViewer")}</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <p className="label-caps text-success">{t("understands")}</p>
+          {state.understands.length ? (
+            <ul className="flex flex-wrap gap-1.5">
+              {state.understands.map((idea) => (
+                <li key={idea} className="rounded-full bg-lime/20 px-3 py-1 text-sm text-success">{idea}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-soft">{t("understandsEmpty")}</p>
+          )}
+        </div>
+        <div className="flex flex-col gap-2">
+          <p className="label-caps text-warning">{t("workingOn")}</p>
+          {state.strugglesWith.length ? (
+            <ul className="flex flex-wrap gap-1.5">
+              {state.strugglesWith.map(({ idea, times }) => (
+                <li key={idea} className="rounded-full bg-sun/20 px-3 py-1 text-sm text-warning">
+                  {idea}
+                  {times > 1 && <span className="ml-1 opacity-70">{t("times", { times })}</span>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-soft">{t("workingOnEmpty")}</p>
+          )}
+        </div>
+      </div>
+
+      <dl className="grid gap-3 border-t border-border pt-4 text-sm sm:grid-cols-2">
+        <div className="flex flex-col gap-0.5">
+          <dt className="text-soft">{t("difficultyLabel")}</dt>
+          <dd className="font-medium">{t(`difficulty.${state.difficulty}`)}</dd>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <dt className="text-soft">{t("nextLabel")}</dt>
+          <dd className="font-medium">
+            {need?.kind === "practise"
+              ? t("nextPractise", { idea: need.idea })
+              : need?.kind === "activity"
+                ? t(need.overdue ? "nextActivityOverdue" : "nextActivity", { title: need.title, week: need.week })
+                : t("nextNone")}
+          </dd>
+        </div>
+      </dl>
+    </section>
   );
 }

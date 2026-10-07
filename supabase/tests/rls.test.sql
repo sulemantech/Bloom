@@ -427,6 +427,81 @@ select is((select count(*)::int from public.bloom_tasks t join public.bloom_path
 set local role postgres;
 
 -- ---------------------------------------------------------------------------
+-- Spark check your understanding: questions, answers and Spark's review
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+
+select lives_ok(
+  $$select public.create_bloom_path('Checked path', '', 'quick', '', true,
+      '[{"kind": "learn", "title": "Learn it", "details": "Full step",
+         "check_questions": [{"kind": "apply", "question": "Use it?"}, {"kind": "judge", "question": "Why?"}]}]'::jsonb)$$,
+  'a planned step is saved with its check questions');
+select is((select jsonb_array_length(t.check_questions) from public.bloom_tasks t join public.bloom_paths p on p.id = t.path_id
+           where p.title = 'Checked path'), 2, 'both check questions were stored');
+select is((select jsonb_array_length(t.check_questions) from public.bloom_tasks t join public.bloom_paths p on p.id = t.path_id
+           where p.title = 'Outline path' and t.position = 1), 0, 'steps without questions default to none');
+
+select lives_ok(
+  $$update public.bloom_tasks set check_answers = '["By using it daily", ""]', status = 'done'
+    where path_id = (select id from public.bloom_paths where title = 'Checked path')$$,
+  'student can save their answers as they finish a step');
+select throws_ok(
+  $$update public.bloom_tasks set check_answers = '{"not": "a list"}'
+    where path_id = (select id from public.bloom_paths where title = 'Checked path')$$,
+  '23514', null, 'answers must be a list');
+select lives_ok(
+  $$update public.bloom_tasks set check_review = '[{"verdict": "nailed", "feedback": "Yes", "key_idea": "Daily use"}]'
+    where path_id = (select id from public.bloom_paths where title = 'Checked path')$$,
+  'the student''s session can store Spark''s review');
+update public.bloom_tasks set check_answers = '["Sneaky"]' where id = '71000000-0000-0000-0000-000000000003';
+
+set local request.jwt.claims to '{"sub": "c0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select is((select t.check_answers ->> 0 from public.bloom_tasks t join public.bloom_paths p on p.id = t.path_id
+           where p.title = 'Checked path'), 'By using it daily', 'a parent can read their child''s answers');
+
+set local role postgres;
+select is((select check_answers from public.bloom_tasks where id = '71000000-0000-0000-0000-000000000003'), null,
+          'a student cannot answer another student''s checks');
+
+-- ---------------------------------------------------------------------------
+-- Spark learner state: written as the student from reviews, readable like the rest of Spark
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "d0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+
+select lives_ok(
+  $$insert into public.spark_concepts (student_id, key, label, status, struggle_count)
+    values ('d0000000-0000-0000-0000-000000000001', 'habit loop', 'Habit loop', 'struggling', 1)$$,
+  'a student records evidence about their own learning');
+select lives_ok(
+  $$insert into public.spark_concepts (student_id, key, label, status, struggle_count)
+    values ('d0000000-0000-0000-0000-000000000001', 'habit loop', 'Habit loop', 'understood', 1)
+    on conflict (student_id, key) do update set status = excluded.status, nailed_count = public.spark_concepts.nailed_count + 1$$,
+  'the same idea is updated, not duplicated');
+select is((select status::text || '/' || nailed_count from public.spark_concepts where key = 'habit loop'), 'understood/1',
+          'the latest evidence sets the status');
+select throws_ok(
+  $$insert into public.spark_concepts (student_id, key, label, status)
+    values ('d0000000-0000-0000-0000-000000000002', 'x', 'X', 'struggling')$$,
+  '42501', null, 'a student cannot write another student''s learner state');
+
+set local request.jwt.claims to '{"sub": "c0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select is((select count(*)::int from public.spark_concepts where key = 'habit loop'), 1, 'a parent can read their child''s learner state');
+select ok((public.export_student_data('d0000000-0000-0000-0000-000000000001') -> 'spark_concepts') @> '[{"key": "habit loop"}]',
+          'data export includes the learner state');
+select throws_ok(
+  $$insert into public.spark_concepts (student_id, key, label, status)
+    values ('d0000000-0000-0000-0000-000000000001', 'y', 'Y', 'understood')$$,
+  '42501', null, 'a parent cannot change the learner state');
+
+set local request.jwt.claims to '{"sub": "b0000000-0000-0000-0000-000000000002", "role": "authenticated"}';
+select is((select count(*)::int from public.spark_concepts where key = 'habit loop'), 0,
+          'a mentor of another group cannot see the learner state');
+
+set local role postgres;
+
+-- ---------------------------------------------------------------------------
 -- AI usage log: written by the server's secret key, read by admins only
 -- ---------------------------------------------------------------------------
 insert into public.ai_runs (capability, student_id, actor_id, model, input_tokens, output_tokens, latency_ms, outcome, input_hash)

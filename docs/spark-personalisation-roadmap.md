@@ -1,6 +1,6 @@
 # Spark personalised learning roadmap
 
-- **Status:** Phase 1 done (6 October 2026). Phase 2 next; phases 3–7 not started.
+- **Status:** Phase 1 done; Phase 2 built (live test pending); Phase 2.5 "Tighten the loop" in progress (7 October 2026). Phases 3–7 wait for 2.5.
 - **Date:** 6 October 2026
 - **Source:** the original Bloom tutor, kept on the `bloom/legacy` branch (`backend/app/courses.py`,
   `backend/app/recommendations.py`, `skills/`). File references below point there.
@@ -44,13 +44,42 @@ Spark actions, forms and path page. The new AI call is logged as `bloom_step` an
 
 ## Phase 2: Check your understanding
 
-| # | Task | From the original Bloom |
-|---|---|---|
-| 2.1 | Each written step can end with 2–3 thinking questions: at least one applying the idea to a new situation, one comparing or judging. | "Thinking questions" in `FIRST_LESSON_PROMPT` |
-| 2.2 | The student answers them when finishing the step. | `feedbacks.thought_answers` |
-| 2.3 | The next step opens with a short review of each answer ("Nailed it" / "Nearly" / "Not yet") and the right answer explained. | "Review of last time's questions" in `NEXT_LESSON_PROMPT` |
+Phase 1 adapts to how a step **felt**; students often feel they understood when they can't yet use the
+idea. Phase 2 adds evidence: short questions, the student's answers and Spark's review.
 
-Overlaps Bloom v2 **Assessments** and **Rubrics**: build the review on the same assessor.
+| # | Task | From the original Bloom | Status |
+|---|---|---|---|
+| 2.1 | Each written step ends with check questions (2 for Quick, 3 for Standard and Deep): at least one applying the idea to a new situation, one comparing or judging. Stored in `bloom_tasks.check_questions`. | "Thinking questions" in `FIRST_LESSON_PROMPT` | ✅ Built |
+| 2.2 | The student may answer them when finishing the step (optional, encouraged). Stored in `check_answers`; new answers clear an earlier review. | `feedbacks.thought_answers` | ✅ Built |
+| 2.3 | When Spark writes the next step it also reviews the answers in the same call ("Nailed it" / "Nearly" / "Not yet", feedback, key idea) and re-teaches anything not yet understood. With no step left to write (e.g. the last step), a short review-only call (`bloom_review`). Stored in `check_review` on the answered step. | "Review of last time's questions" in `NEXT_LESSON_PROMPT` | ✅ Built |
+| 2.4 | Who sees what: students and mentors see answers with marks; parents see the answers only. The step finished last stays open so its review is in view. | — | ✅ Built |
+| 2.5 | Consent wording mentions answers to check questions. Database tests for the new columns. | — | ✅ Built |
+| 2.6 | **Live test:** finish a step with one good and one weak answer; the review marks them, and the next step re-teaches the weak idea. | — | ⏳ To do |
+
+Decisions (6 October 2026): answers optional; parents see answers, not marks; 2 questions for Quick, 3 otherwise.
+Overlaps Bloom v2 **Assessments** and **Rubrics**: when those land, the review moves onto the shared assessor.
+
+## Phase 2.5: Tighten the loop
+
+**No new Spark features until this is done.** Phases 1 and 2 adapt steps, but the loop is partly
+implicit: gaps are never recorded, a weak idea is not guaranteed to be checked again, the AI decides
+difficulty on its own, and nothing is remembered between paths. This phase makes the loop explicit and
+trustworthy:
+
+**Teach → Check → Detect gap → Adapt next step → Re-check**
+
+Rule of thumb: **the AI proposes** (step content, which idea a question tests, a draft verdict);
+**code decides** (gaps, difficulty, mastery, progression, permissions).
+
+| # | Task | Done when | Status |
+|---|---|---|---|
+| 2.5.1 | **Learner state.** A small, stored picture of each student, updated by code after each finished step: ideas they *understand* (nailed checks), ideas they *struggle with* (not yet / nearly), *preferred difficulty* (a rolling level from recent feelings and marks), *current project and course step* (existing data) and *next learning need* (the most pressing open struggle, otherwise the current week's activity). Each check question names the idea it tests. Students see it as "What Spark knows about you". | After a "not yet" answer, the idea appears under "struggling with" on the student's Spark page and in what Spark is told; after a later "nailed it" it moves to "understands". | ✅ Built (`spark_concepts`, `lib/bloom/learner.ts`); live test pending |
+| 2.5.2 | **Explicit gaps and a forced re-check.** A not-yet or nearly answer opens a gap on that idea. The next step Spark writes **must** include a question re-checking each open gap (code checks this and adds one if missing). A gap closes only when its re-check is nailed. | A weak answer on step N is re-checked on step N+1, and the gap closes or stays open by rule, not by the AI. | To do |
+| 2.5.3 | **Deterministic difficulty and reasons.** Code calculates the next step's level (easier / same / harder) from the learner state and tells the AI exactly that. The "Spark changed this step" box shows the code's reason (e.g. *"Too hard" on step 3 · "Not yet" on question 2*) next to Spark's sentence. | The same signals always give the same level, and every adapted step shows a checkable reason. | To do |
+| 2.5.4 | **Anchored to the real project.** Every path and suggestion states which project need or course activity it serves ("Helps with: *Talk to 3 people*, week 3"); without a project, it anchors to the current programme step. Suggestions start from the current or overdue activity and the project problem. | No path is created without an anchor, and the anchor shows on the path and to the mentor. | To do |
+| 2.5.5 | **Mentor view of the learner state.** The mentor's student page and dashboard show "Struggling with: *triggers* (2×)" next to overdue work, so mentors can step in early; progress-card drafts can use it. | A student with two open gaps appears under "may need a nudge" with the ideas named. | To do |
+
+Overlaps Bloom v2 **Facts table** and **Memory proposer** (the learner state is their first, deterministic version).
 
 ## Phase 3: Mastery
 

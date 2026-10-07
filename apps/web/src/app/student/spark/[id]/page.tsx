@@ -7,7 +7,7 @@ import { BloomPathDetail, PathStatusBadge } from "@/components/bloom";
 import { Badge, STEP_TONE } from "@/components/ui/Badge";
 import { requireRole } from "@/lib/auth";
 import { aiConfigured } from "@/lib/ai";
-import { nextStepToWrite } from "@/lib/bloom/adaptive";
+import { checkAnswers, checkQuestions, nextStepToWrite } from "@/lib/bloom/adaptive";
 import { hasConsent, loadBloomPath } from "@/lib/data/bloom";
 import { bloomV2Enabled } from "@/lib/flags";
 import { createClient } from "@/lib/supabase/server";
@@ -37,7 +37,15 @@ export default async function StudentPathPage({ params }: PageProps<"/student/sp
       return canAsk ? <WriteStepButton pathId={path.id} /> : <TaskControls task={task} />;
     }
     const following = path.tasks[path.tasks.indexOf(task) + 1];
-    return <TaskControls task={task} adaptive={adaptive} writesNext={canAsk && Boolean(following?.planned_only)} />;
+    return (
+      <TaskControls
+        task={task}
+        adaptive={adaptive}
+        writesNext={canAsk && Boolean(following?.planned_only)}
+        checks={checkQuestions(task.check_questions)}
+        answers={checkAnswers(task.check_answers)}
+      />
+    );
   };
 
   return (

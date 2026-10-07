@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextStepToWrite, stepStates, stepWriterInput, type AdaptiveTask } from "./adaptive";
+import { checkAnswers, checkQuestions, checkReview, hasAnswers, nextStepToWrite, stepStates, stepWriterInput, type AdaptiveTask } from "./adaptive";
 
 const task = (id: string, position: number, extra: Partial<AdaptiveTask> = {}): AdaptiveTask => ({
   id,
@@ -62,6 +62,7 @@ describe("stepWriterInput", () => {
       feeling: "too_hard",
       note: "Follow-up questions confused me",
       questions: [{ question: "What is a follow-up?", answer: "A question that builds on the answer." }],
+      understandingChecks: [],
     });
     expect(input.earlierFeelings).toEqual(["just_right"]);
     expect(input.outline.map((s) => s.status)).toEqual(["done", "done", "not written yet"]);
@@ -101,5 +102,42 @@ describe("stepWriterInput", () => {
 
   it("has no last step for the first step", () => {
     expect(stepWriterInput(path, [task("a", 1, { planned_only: true })], [], "a").lastStep).toBeNull();
+  });
+});
+
+describe("check your understanding", () => {
+  it("reads questions, answers and reviews from jsonb, ignoring anything malformed", () => {
+    expect(checkQuestions([{ kind: "judge", question: " Which is better? " }, { question: "" }, "junk", { question: "Use it" }])).toEqual([
+      { kind: "judge", question: "Which is better?" },
+      { kind: "apply", question: "Use it" },
+    ]);
+    expect(checkQuestions(null)).toEqual([]);
+    expect(checkAnswers(null)).toBeNull();
+    expect(checkAnswers([" yes ", 3])).toEqual(["yes", ""]);
+    expect(checkReview([{ verdict: "nailed", feedback: "Spot on", key_idea: "Habits loop" }, { verdict: "wrong" }])).toEqual([
+      { verdict: "nailed", feedback: "Spot on", key_idea: "Habits loop" },
+      { verdict: "nearly", feedback: "", key_idea: "" },
+    ]);
+  });
+
+  it("knows whether anything was answered", () => {
+    expect(hasAnswers(null)).toBe(false);
+    expect(hasAnswers(["", ""])).toBe(false);
+    expect(hasAnswers(["", "a trigger"])).toBe(true);
+  });
+
+  it("gives Spark the last step's questions with the answers, blanks as null", () => {
+    const tasks = [
+      task("a", 1, {
+        status: "done",
+        check_questions: [{ kind: "apply", question: "Name a trigger" }, { kind: "judge", question: "Which loop is stronger?" }],
+        check_answers: ["A phone buzz", ""],
+      }),
+      task("b", 2, { planned_only: true }),
+    ];
+    expect(stepWriterInput({ title: "P", goal: "", summary: "" }, tasks, [], "b").lastStep?.understandingChecks).toEqual([
+      { question: "Name a trigger", answer: "A phone buzz" },
+      { question: "Which loop is stronger?", answer: null },
+    ]);
   });
 });

@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BloomContext } from "@/lib/ai";
+import type { LearnerState } from "@/lib/bloom/learner";
 import type { StudentOverview } from "@/lib/data/overview";
 import type { Database } from "@/lib/supabase/database.types";
 import { stageForWeek, tr } from "@/lib/programme";
@@ -8,7 +9,7 @@ import { stageForWeek, tr } from "@/lib/programme";
 type Client = SupabaseClient<Database>;
 
 const PATH_FIELDS =
-  "id, title, goal, summary, stage_key, depth, status, ai_generated, mentor_note, mentor_note_at, completed_at, created_at, updated_at, mentor:profiles!bloom_paths_mentor_note_by_fkey(full_name), bloom_tasks(id, position, kind, title, details, status, reflection, feeling, planned_only, adaptation, adapted_from, completed_at)";
+  "id, title, goal, summary, stage_key, depth, status, ai_generated, mentor_note, mentor_note_at, completed_at, created_at, updated_at, mentor:profiles!bloom_paths_mentor_note_by_fkey(full_name), bloom_tasks(id, position, kind, title, details, status, reflection, feeling, planned_only, adaptation, adapted_from, check_questions, check_answers, check_review, completed_at)";
 
 /** A student's learning paths with their tasks (RLS decides who can read them). */
 export async function loadBloomPaths(supabase: Client, studentId: string) {
@@ -62,7 +63,7 @@ export function bloomStats(paths: BloomPath[]) {
 }
 
 /** What the AI is told about the student: age group, step, project and earlier topics. Never names. */
-export function bloomContext(overview: StudentOverview | null, paths: { title: string }[]): BloomContext {
+export function bloomContext(overview: StudentOverview | null, paths: { title: string }[], learner?: LearnerState): BloomContext {
   const week = overview?.week ?? null;
   const focusWeek = overview && week !== null ? Math.min(Math.max(week, 1), overview.program.weeks) : null;
   const stage = overview && focusWeek ? stageForWeek(overview.stages, focusWeek) : undefined;
@@ -73,6 +74,7 @@ export function bloomContext(overview: StudentOverview | null, paths: { title: s
     week: focusWeek,
     project: project ? { area: project.area, title: project.title, problem: project.problem, status: project.status } : null,
     previousPaths: paths.slice(0, 12).map((p) => p.title),
+    ...(learner ? { learner } : {}),
   };
 }
 

@@ -23,7 +23,7 @@ export default async function ParentBloomPath({ params }: PageProps<"/parent/chi
     <>
       <Link href={`/parent/children/${id}`} className="text-sm font-medium text-info">← {t("backToChild")}</Link>
       <PageHeader eyebrow={<PathStatusBadge status={path.status} />} title={path.title} description={path.goal || undefined} />
-      <BloomPathDetail path={path} timeZone={profile.timezone} />
+      <BloomPathDetail path={path} timeZone={profile.timezone} showMarks={false} />
     </>
   );
 }

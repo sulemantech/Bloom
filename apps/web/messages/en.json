@@ -489,7 +489,7 @@
     },
     "bloom_ai": {
       "title": "Spark AI guide",
-      "body": "Let your child use Spark’s AI to suggest learning topics, plan steps and answer questions. Their age group, course step and project are shared, never their name. To write each next step, Spark also reads how your child found the last one, their notes and their questions. You and their mentor can read every question and answer."
+      "body": "Let your child use Spark’s AI to suggest learning topics, plan steps and answer questions. Their age group, course step and project are shared, never their name. To write each next step, Spark also reads how your child found the last one, their notes, their questions and their answers to short check questions. You and their mentor can read every question and answer."
     }
   },
   "admin": {
@@ -866,6 +866,46 @@
       "tip": "Tip",
       "next": "Next step"
     },
+    "checks": {
+      "title": "Check your understanding",
+      "optional": "(optional)",
+      "hint": "Answer in your own words. It’s fine to guess: Spark will review your answers and help with anything you’re unsure about.",
+      "placeholder": "Your answer…",
+      "yourAnswer": "Your answer",
+      "theirAnswer": "Answer",
+      "notAnswered": "Not answered",
+      "keyIdea": "The key idea",
+      "pending": "Spark will review your answers when it writes your next step.",
+      "pendingViewer": "Not reviewed yet.",
+      "summary": "{nailed} of {total} nailed",
+      "verdicts": {
+        "nailed": "Nailed it",
+        "nearly": "Nearly",
+        "not_yet": "Not yet"
+      }
+    },
+    "learner": {
+      "title": "What Spark knows about you",
+      "titleViewer": "What Spark knows about their learning",
+      "intro": "Spark updates this from your answers to check questions, so it can pitch your next steps. Your mentor and parent can see it too.",
+      "introViewer": "Updated from their answers to check questions. Spark uses it to pitch their next steps.",
+      "understands": "Understands",
+      "understandsEmpty": "Nothing yet. Answer check questions at the end of a step to show what you know.",
+      "workingOn": "Working on",
+      "workingOnEmpty": "Nothing right now. Nice work!",
+      "times": "· {times}×",
+      "difficultyLabel": "How Spark pitches your next steps",
+      "difficulty": {
+        "easier": "A bit easier, with more support",
+        "same": "Just right",
+        "harder": "A bit harder, with more challenge"
+      },
+      "nextLabel": "Next learning need",
+      "nextPractise": "Practise “{idea}”",
+      "nextActivity": "Course: {title} (week {week})",
+      "nextActivityOverdue": "Course: {title} (week {week}, overdue)",
+      "nextNone": "Nothing pressing. Pick something you’re curious about!"
+    },
     "startTask": "Start",
     "markDone": "Mark done",
     "reopen": "Not finished? Reopen",
@@ -897,6 +937,8 @@
       "pathDone": "Path complete — well done!",
       "stepWritten": "Step done! Spark wrote your next step from how this one went.",
       "stepReady": "Your next step is ready.",
+      "answersReviewed": "Step done! Spark reviewed your answers.",
+      "pathDoneReviewed": "Path complete, well done! Spark reviewed your answers.",
       "taskDoneNextLater": "Step done! Spark couldn’t write your next step just now. Try “Write this step” in a minute.",
       "saved": "Saved.",
       "noteSaved": "Note saved."
@@ -1067,6 +1109,7 @@
       "bloom_suggest": "Spark: suggest paths",
       "bloom_plan": "Spark: plan a path",
       "bloom_step": "Spark: write the next step",
+      "bloom_review": "Spark: review answers",
       "bloom_ask": "Spark: answer a question",
       "progress_card": "Progress card draft"
     },

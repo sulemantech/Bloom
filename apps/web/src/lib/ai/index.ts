@@ -4,4 +4,4 @@
  */
 export { aiConfigured, type AiCapability, type AiFailure, type AiResult } from "./gateway";
 export { draftProgressCard, type DraftProgressCardInput } from "./progress-card";
-export { askBloom, planBloomPath, suggestBloomPaths, writeBloomStep, type BloomContext, type BloomPlan, type BloomSuggestion } from "./bloom";
+export { askBloom, planBloomPath, reviewBloomAnswers, suggestBloomPaths, writeBloomStep, type BloomContext, type BloomPlan, type BloomSuggestion } from "./bloom";

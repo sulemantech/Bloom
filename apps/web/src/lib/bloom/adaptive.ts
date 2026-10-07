@@ -15,9 +15,59 @@ export type AdaptiveTask = {
   reflection: string | null;
   feeling: StepFeeling | null;
   planned_only: boolean;
+  /** jsonb; read with checkQuestions / checkAnswers. */
+  check_questions?: unknown;
+  check_answers?: unknown;
 };
 
 export type AdaptiveQuestion = { task_id: string | null; question: string; answer: string };
+
+// ---------------------------------------------------------------------------
+// Check your understanding: questions at the end of a step, the student's answers and Spark's review
+// ---------------------------------------------------------------------------
+
+/** `idea` names what the question tests (e.g. "habit triggers"), so the learner state can track it. */
+export type CheckQuestion = { kind: "apply" | "judge"; question: string; idea?: string };
+export type Verdict = "nailed" | "nearly" | "not_yet";
+export type CheckReview = { verdict: Verdict; feedback: string; key_idea: string };
+
+const VERDICTS: readonly Verdict[] = ["nailed", "nearly", "not_yet"];
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
+const text = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+
+/** The step's questions (stored as jsonb), ignoring anything malformed. */
+export function checkQuestions(value: unknown): CheckQuestion[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((q) =>
+    isObject(q) && text(q.question)
+      ? [{ kind: q.kind === "judge" ? ("judge" as const) : ("apply" as const), question: text(q.question), ...(text(q.idea) ? { idea: text(q.idea) } : {}) }]
+      : [],
+  );
+}
+
+/** The student's answers in question order, or null when they haven't answered. */
+export function checkAnswers(value: unknown): string[] | null {
+  return Array.isArray(value) ? value.map(text) : null;
+}
+
+/** Spark's review of the answers, in question order, or null before it has reviewed them. */
+export function checkReview(value: unknown): CheckReview[] | null {
+  if (!Array.isArray(value)) return null;
+  return value.map((r) => ({
+    verdict: isObject(r) && VERDICTS.includes(r.verdict as Verdict) ? (r.verdict as Verdict) : "nearly",
+    feedback: isObject(r) ? text(r.feedback) : "",
+    key_idea: isObject(r) ? text(r.key_idea) : "",
+  }));
+}
+
+/** True when at least one answer has something in it. */
+export const hasAnswers = (answers: string[] | null) => Boolean(answers?.some((a) => a));
+
+/** Questions paired with the student's answers, for Spark to review. */
+export function answeredChecks(task: Pick<AdaptiveTask, "check_questions" | "check_answers">) {
+  const answers = checkAnswers(task.check_answers);
+  return checkQuestions(task.check_questions).map((q, i) => ({ question: q.question, answer: answers?.[i] || null }));
+}
 
 const byPosition = <T extends { position: number }>(tasks: readonly T[]) => [...tasks].sort((a, b) => a.position - b.position);
 const clip = (s: string, max: number) => (s.length > max ? `${s.slice(0, max)}…` : s);
@@ -88,6 +138,8 @@ export function stepWriterInput(
         .filter((q) => q.task_id === last.id)
         .slice(-5)
         .map((q) => ({ question: q.question, answer: clip(q.answer, 400) })),
+      /** The step's check questions and the student's answers (null = left blank), to review. */
+      understandingChecks: answeredChecks(last).map((c) => ({ ...c, answer: c.answer && clip(c.answer, 800) })),
     },
     earlierFeelings: others.map((t) => t.feeling).filter((f): f is StepFeeling => f !== null),
     earlierNotes: others
