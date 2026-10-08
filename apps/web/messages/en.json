@@ -64,7 +64,9 @@
       },
       "note": "Demo accounts share sample data that may be reset at any time. Please don’t enter real personal information.",
       "eyebrow": "No account needed",
-      "or": "or sign in to your account"
+      "or": "or sign in to your account",
+      "haveAccount": "Have an account?",
+      "signInLink": "Sign in"
     },
     "emailPlaceholder": "you@example.com",
     "showPassword": "Show password",

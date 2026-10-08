@@ -21,7 +21,12 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const profile = await getCurrentProfile();
   if (profile) redirect(HOME_PATH[profile.role]);
 
-  const { error } = await searchParams;
+  const { error, signin } = await searchParams;
+  const roles = demoRoles();
+  // A public demo site (ENABLE_DEMO_LOGIN) shows only the demo accounts. The real sign-in stays
+  // reachable at /login?signin=1 (and after a failed sign-in link), and is never hidden when no
+  // demo account is offered, so nobody can be locked out.
+  const demoOnly = process.env.ENABLE_DEMO_LOGIN === "true" && roles.length > 0 && signin !== "1" && error !== "link";
   const t = await getTranslations("login");
   const tSteps = await getTranslations("steps");
 
@@ -74,7 +79,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <LoginForms
             linkError={error === "link"}
             devPasswordLogin={process.env.ENABLE_DEV_PASSWORD_LOGIN === "true"}
-            demoRoles={demoRoles()}
+            demoRoles={roles}
+            showSignIn={!demoOnly}
           />
           <p className="flex items-center justify-center gap-1.5 text-[13px] text-soft">
             <Icon name="shield" size={14} />

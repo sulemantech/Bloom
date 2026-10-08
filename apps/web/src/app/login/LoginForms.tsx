@@ -80,11 +80,14 @@ export function LoginForms({
   linkError,
   devPasswordLogin,
   demoRoles,
+  showSignIn = true,
 }: {
   linkError: boolean;
   devPasswordLogin: boolean;
   /** Demo accounts offered as one-click buttons (lib/demo); empty hides the panel. */
   demoRoles: DemoRole[];
+  /** False on a public demo site: only the demo accounts, with a small link to the real sign-in. */
+  showSignIn?: boolean;
 }) {
   const t = useTranslations("login");
   const [tab, setTab] = useState<"adult" | "student">("adult");
@@ -140,100 +143,111 @@ export function LoginForms({
             <p className="text-[12px] leading-relaxed text-soft">{t("demo.note")}</p>
           </form>
 
-          <div className="flex items-center gap-3 text-[13px] text-soft" aria-hidden="true">
-            <span className="h-px flex-1 bg-border" />
-            {t("demo.or")}
-            <span className="h-px flex-1 bg-border" />
-          </div>
+          {showSignIn ? (
+            <div className="flex items-center gap-3 text-[13px] text-soft" aria-hidden="true">
+              <span className="h-px flex-1 bg-border" />
+              {t("demo.or")}
+              <span className="h-px flex-1 bg-border" />
+            </div>
+          ) : (
+            <p className="text-center text-[13px] text-soft">
+              {t("demo.haveAccount")}{" "}
+              <a href="/login?signin=1" className="font-medium text-info underline-offset-2 hover:underline">
+                {t("demo.signInLink")}
+              </a>
+            </p>
+          )}
         </>
       )}
 
-      <div className="card flex flex-col gap-6 p-5 sm:p-7">
-        <div role="tablist" aria-label={t("chooseAccount")} className="relative grid grid-cols-2 rounded-full bg-surface-2 p-1">
-          <span
-            aria-hidden="true"
-            className={`absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-surface shadow-sm ring-1 ring-border transition-transform duration-300 ease-out ${
-              tab === "student" ? "translate-x-full" : ""
-            }`}
-          />
-          {(["adult", "student"] as const).map((key) => (
-            <button
-              key={key}
-              role="tab"
-              type="button"
-              aria-selected={tab === key}
-              onClick={() => setTab(key)}
-              className={`relative z-10 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                tab === key ? "text-text" : "text-muted hover:text-text"
+      {showSignIn && (
+        <div className="card flex flex-col gap-6 p-5 sm:p-7">
+          <div role="tablist" aria-label={t("chooseAccount")} className="relative grid grid-cols-2 rounded-full bg-surface-2 p-1">
+            <span
+              aria-hidden="true"
+              className={`absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-surface shadow-sm ring-1 ring-border transition-transform duration-300 ease-out ${
+                tab === "student" ? "translate-x-full" : ""
               }`}
-            >
-              {t(key === "adult" ? "tabAdult" : "tabStudent")}
-            </button>
-          ))}
-        </div>
-
-        {linkError && (
-          <p role="alert" className="flex items-start gap-2 rounded-xl bg-coral/12 px-3 py-2.5 text-sm text-danger">
-            <Icon name="alert" size={16} className="mt-0.5 shrink-0" />
-            {t("linkExpired")}
-          </p>
-        )}
-
-        {tab === "adult" && (
-          <div key="adult" className="animate-rise flex flex-col gap-5">
-            {linkSent ? (
-              <div role="status" className="flex flex-col items-center gap-3 py-2 text-center">
-                <span className="flex size-14 items-center justify-center rounded-full bg-lime/20 text-success">
-                  <Icon name="mail" size={26} />
-                </span>
-                <p className="font-display-tight text-xl">{t("checkEmailTitle")}</p>
-                <p className="text-sm leading-relaxed text-muted">{t("checkEmailBody")}</p>
-                <button type="button" onClick={() => setEditingEmail(true)} className="text-sm font-medium text-info underline-offset-2 hover:underline">
-                  {t("useDifferentEmail")}
-                </button>
-              </div>
-            ) : (
-              <form action={linkAction} onSubmit={() => setEditingEmail(false)} className="flex flex-col gap-4">
-                <p className="text-sm leading-relaxed text-muted">
-                  {t("adultIntro")} <span className="text-soft">{t("staffHint")}</span>
-                </p>
-                <Field label={t("email")} icon="mail" name="email" type="email" autoComplete="email" placeholder={t("emailPlaceholder")} required />
-                <ErrorText state={linkState} />
-                <Submit pending={linkPending} idle={t("sendLink")} busy={t("sending")} />
-              </form>
-            )}
-
-            {devPasswordLogin && (
-              <form action={devAction} className="flex flex-col gap-3 rounded-xl border border-dashed border-warning/40 bg-sun/5 p-4">
-                <p className="label-caps text-warning">{t("devTitle")}</p>
-                <Field label={t("email")} icon="mail" name="email" type="email" autoComplete="username" required />
-                <PasswordField label={t("password")} />
-                <ErrorText state={devState} />
-                <Submit pending={devPending} idle={t("signIn")} busy={t("signingIn")} variant="secondary" />
-              </form>
-            )}
-          </div>
-        )}
-
-        {tab === "student" && (
-          <form key="student" action={studentAction} className="animate-rise flex flex-col gap-4">
-            <p className="text-sm leading-relaxed text-muted">{t("studentIntro")}</p>
-            <Field
-              label={t("username")}
-              icon="user"
-              name="username"
-              autoComplete="username"
-              autoCapitalize="none"
-              spellCheck={false}
-              required
             />
-            <PasswordField label={t("password")} />
-            <ErrorText state={studentState} />
-            <Submit pending={studentPending} idle={t("signIn")} busy={t("signingIn")} />
-            <p className="text-center text-[13px] text-soft">{t("forgotStudent")}</p>
-          </form>
-        )}
-      </div>
+            {(["adult", "student"] as const).map((key) => (
+              <button
+                key={key}
+                role="tab"
+                type="button"
+                aria-selected={tab === key}
+                onClick={() => setTab(key)}
+                className={`relative z-10 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  tab === key ? "text-text" : "text-muted hover:text-text"
+                }`}
+              >
+                {t(key === "adult" ? "tabAdult" : "tabStudent")}
+              </button>
+            ))}
+          </div>
+
+          {linkError && (
+            <p role="alert" className="flex items-start gap-2 rounded-xl bg-coral/12 px-3 py-2.5 text-sm text-danger">
+              <Icon name="alert" size={16} className="mt-0.5 shrink-0" />
+              {t("linkExpired")}
+            </p>
+          )}
+
+          {tab === "adult" && (
+            <div key="adult" className="animate-rise flex flex-col gap-5">
+              {linkSent ? (
+                <div role="status" className="flex flex-col items-center gap-3 py-2 text-center">
+                  <span className="flex size-14 items-center justify-center rounded-full bg-lime/20 text-success">
+                    <Icon name="mail" size={26} />
+                  </span>
+                  <p className="font-display-tight text-xl">{t("checkEmailTitle")}</p>
+                  <p className="text-sm leading-relaxed text-muted">{t("checkEmailBody")}</p>
+                  <button type="button" onClick={() => setEditingEmail(true)} className="text-sm font-medium text-info underline-offset-2 hover:underline">
+                    {t("useDifferentEmail")}
+                  </button>
+                </div>
+              ) : (
+                <form action={linkAction} onSubmit={() => setEditingEmail(false)} className="flex flex-col gap-4">
+                  <p className="text-sm leading-relaxed text-muted">
+                    {t("adultIntro")} <span className="text-soft">{t("staffHint")}</span>
+                  </p>
+                  <Field label={t("email")} icon="mail" name="email" type="email" autoComplete="email" placeholder={t("emailPlaceholder")} required />
+                  <ErrorText state={linkState} />
+                  <Submit pending={linkPending} idle={t("sendLink")} busy={t("sending")} />
+                </form>
+              )}
+
+              {devPasswordLogin && (
+                <form action={devAction} className="flex flex-col gap-3 rounded-xl border border-dashed border-warning/40 bg-sun/5 p-4">
+                  <p className="label-caps text-warning">{t("devTitle")}</p>
+                  <Field label={t("email")} icon="mail" name="email" type="email" autoComplete="username" required />
+                  <PasswordField label={t("password")} />
+                  <ErrorText state={devState} />
+                  <Submit pending={devPending} idle={t("signIn")} busy={t("signingIn")} variant="secondary" />
+                </form>
+              )}
+            </div>
+          )}
+
+          {tab === "student" && (
+            <form key="student" action={studentAction} className="animate-rise flex flex-col gap-4">
+              <p className="text-sm leading-relaxed text-muted">{t("studentIntro")}</p>
+              <Field
+                label={t("username")}
+                icon="user"
+                name="username"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                required
+              />
+              <PasswordField label={t("password")} />
+              <ErrorText state={studentState} />
+              <Submit pending={studentPending} idle={t("signIn")} busy={t("signingIn")} />
+              <p className="text-center text-[13px] text-soft">{t("forgotStudent")}</p>
+            </form>
+          )}
+        </div>
+      )}
     </div>
   );
 }
