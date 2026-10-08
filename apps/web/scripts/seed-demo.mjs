@@ -131,6 +131,9 @@ if (!bloomCount) {
       goal: "Ask good questions and find out what people really need",
       summary: "Great projects start with listening. In this path you'll learn how to ask open questions, try them on two people, and turn what you hear into a clear problem statement.",
       stage_key: "explore",
+      // Every path serves a real need (roadmap 2.5.4): this one, the programme step.
+      anchor_kind: "stage",
+      anchor_label: "Explore",
       ai_generated: true,
     })
     .select("id")

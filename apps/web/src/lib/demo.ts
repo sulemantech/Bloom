@@ -28,7 +28,9 @@ export function demoRoles(): DemoRole[] {
   const on = process.env.ENABLE_DEMO_LOGIN === "true" || process.env.ENABLE_DEV_PASSWORD_LOGIN === "true";
   if (!on) return [];
   const listed = process.env.DEMO_LOGIN_ROLES?.split(",").map((r) => r.trim().toLowerCase());
-  const wanted = listed?.length ? ROLES.filter((r) => listed.includes(r)) : DEFAULT_ROLES;
+  // Local development offers every role, admin included; a public demo site only the default three.
+  const defaults = process.env.ENABLE_DEV_PASSWORD_LOGIN === "true" ? ROLES : DEFAULT_ROLES;
+  const wanted = listed?.length ? ROLES.filter((r) => listed.includes(r)) : defaults;
   return wanted.filter((r) => Boolean(process.env[DEMO_ACCOUNTS[r].passwordEnv]));
 }
 

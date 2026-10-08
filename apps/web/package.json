@@ -10,6 +10,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "seed:demo": "node --experimental-websocket --no-warnings --env-file=.env.local scripts/seed-demo.mjs",
+    "seed:world": "node --experimental-websocket --no-warnings --env-file=.env.local --env-file=.env.development.local scripts/seed-world.mjs",
+    "seed:world:online": "node --experimental-websocket --no-warnings --env-file=.env.local scripts/seed-world.mjs --online",
     "login-link": "node --experimental-websocket --no-warnings --env-file=.env.local scripts/login-link.mjs"
   },
   "dependencies": {
