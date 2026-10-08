@@ -21,7 +21,19 @@ if (!online && !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/.test(url)) {
   console.error("Refusing to seed a non-local database. Use npm run seed:world:online for a demo project.");
   process.exit(1);
 }
-const db = createClient(url, process.env.SUPABASE_SECRET_KEY, { auth: { persistSession: false } });
+// Online, hundreds of sequential requests meet the odd dropped connection, which would stop the run
+// half way. Network failures (not database errors, which come back as normal responses) are retried.
+async function fetchWithRetry(input, init, attempt = 1) {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    if (attempt >= 5) throw error;
+    console.warn(`Network error (${error.cause?.code ?? error.message}), retrying ${attempt}/4…`);
+    await new Promise((r) => setTimeout(r, 1000 * attempt));
+    return fetchWithRetry(input, init, attempt + 1);
+  }
+}
+const db = createClient(url, process.env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { fetch: fetchWithRetry } });
 
 const PASSWORD = {
   mentor: process.env.DEMO_MENTOR_PASSWORD,
@@ -508,7 +520,7 @@ commit;`;
 // Adults sign in once, so "never signed in" only flags the two parents who really haven't.
 let signedIn = 0;
 if (PASSWORD.mentor && PASSWORD.parent) {
-  const anon = () => createClient(url, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false } });
+  const anon = () => createClient(url, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: false }, global: { fetch: fetchWithRetry } });
   for (const m of MENTORS) if (!(await anon().auth.signInWithPassword({ email: m.email, password: PASSWORD.mentor })).error) signedIn++;
   for (const p of PARENTS.filter((p) => !p.neverSignedIn)) if (!(await anon().auth.signInWithPassword({ email: p.email, password: PASSWORD.parent })).error) signedIn++;
 }

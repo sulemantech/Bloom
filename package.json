@@ -8,7 +8,10 @@
     "db:test": "supabase test db --linked",
     "db:types": "supabase gen types typescript --linked > apps/web/src/lib/supabase/database.types.ts",
     "db:local:start": "supabase start",
-    "db:local:test": "supabase test db"
+    "db:local:test": "supabase test db",
+    "seed:demo": "npm --prefix apps/web run seed:demo",
+    "seed:world": "npm --prefix apps/web run seed:world --",
+    "seed:world:online": "npm --prefix apps/web run seed:world:online --"
   },
   "devDependencies": {
     "supabase": "^2.119.0"
