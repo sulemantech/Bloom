@@ -11,6 +11,7 @@ import { displayEmail, isDeactivated, loadAuthInfo } from "@/lib/data/admin";
 import { loadTimeline } from "@/lib/data/bloom";
 import { loadStudentOverview } from "@/lib/data/overview";
 import { formatDate } from "@/lib/programme";
+import { cardsRead } from "@/lib/operations";
 import { createClient } from "@/lib/supabase/server";
 import {
   AccountActiveForm,
@@ -72,6 +73,13 @@ export default async function PersonPage({ params, searchParams }: PageProps<"/a
     ? await loadTimeline(supabase, id, overview, { bloomHref: studentBase ? (pathId) => `${studentBase}/spark/${pathId}` : undefined })
     : null;
   const activeConsents = (consents ?? []).filter((c) => !c.revoked_at);
+  // Family engagement: progress cards sent to the family and opened (for a student, or a parent's children).
+  const familyStudentIds = isStudent ? [id] : linkList.map((l) => l.student_id);
+  const { data: familyCards } = familyStudentIds.length
+    ? await supabase.from("progress_cards").select("student_id, status, viewed_at").in("student_id", familyStudentIds)
+    : { data: [] };
+  const readFor = (studentId: string) => cardsRead((familyCards ?? []).filter((c) => c.student_id === studentId));
+  const studentCards = isStudent ? readFor(id) : null;
 
   return (
     <>
@@ -145,14 +153,32 @@ export default async function PersonPage({ params, searchParams }: PageProps<"/a
                 <ul className="flex flex-col divide-y divide-border">
                   {linkList.map((l) => {
                     const other = isStudent ? l.parent : l.student;
+                    const childCards = isStudent ? null : readFor(l.student_id);
+                    const parentSignIn = isStudent && other ? auth.get(other.id)?.lastSignInAt : undefined;
                     return (
                       <li key={l.id} className="flex items-center justify-between gap-2 py-2">
-                        <Link href={`/admin/people/${other?.id}`} className="font-medium hover:text-info">{other?.full_name}</Link>
+                        <span className="flex flex-col">
+                          <Link href={`/admin/people/${other?.id}`} className="font-medium hover:text-info">{other?.full_name}</Link>
+                          <span className="text-[12px] text-soft">
+                            {isStudent
+                              ? parentSignIn
+                                ? t("lastSignIn", { date: formatDate(parentSignIn, admin.timezone) })
+                                : <span className="text-warning">{t("neverSignedIn")}</span>
+                              : childCards && childCards.sent > 0
+                                ? t("cardsRead", { read: childCards.read, sent: childCards.sent })
+                                : t("noCardsYet")}
+                          </span>
+                        </span>
                         <UnlinkButton linkId={l.id} />
                       </li>
                     );
                   })}
                 </ul>
+              )}
+              {studentCards && studentCards.sent > 0 && (
+                <p className={`text-[13px] ${studentCards.read < studentCards.sent ? "text-warning" : "text-soft"}`}>
+                  {t("cardsReadByFamily", { read: studentCards.read, sent: studentCards.sent })}
+                </p>
               )}
               <LinkGuardianForm fixed={isStudent ? "student" : "parent"} fixedId={id} options={linkOptions} />
               {!isStudent && (

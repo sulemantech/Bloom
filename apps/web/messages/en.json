@@ -617,7 +617,13 @@
       "builder": "Builder"
     },
     "dangerZone": "Delete group",
-    "cantDelete": "This group has submitted work, so it can’t be deleted. Remove students from it instead."
+    "cantDelete": "This group has submitted work, so it can’t be deleted. Remove students from it instead.",
+    "familyCards": "Families have read {read} of {sent} progress cards",
+    "familyNoCards": "No progress cards sent yet",
+    "familyQuiet": "{count, plural, one {# parent hasn’t} other {# parents haven’t}} signed in yet",
+    "noParent": "No parent linked",
+    "parentNeverSignedIn": "never signed in",
+    "cardsRead": "{read} of {sent} cards read"
   },
   "adminForms": {
     "groupName": "Group name",
@@ -768,6 +774,9 @@
     "overview": "Overview",
     "people": "People",
     "groups": "Groups",
+    "mentors": "Mentors",
+    "submissions": "Submissions",
+    "mentorView": "Mentor view",
     "payments": "Payments",
     "programme": "Programme",
     "aiUsage": "AI usage",
@@ -1152,7 +1161,10 @@
     "lastSignIn": "Last signed in {date}",
     "neverSignedIn": "Hasn’t signed in yet.",
     "setPassword": "Set a new password",
-    "dangerZone": "Delete account"
+    "dangerZone": "Delete account",
+    "cardsRead": "{read} of {sent} progress cards read",
+    "noCardsYet": "No progress cards yet",
+    "cardsReadByFamily": "The family has read {read} of {sent} progress cards."
   },
   "adminAi": {
     "title": "AI usage",
@@ -1275,5 +1287,88 @@
       "bloom_tasks": "a Spark step",
       "bloom_questions": "a Spark question"
     }
+  },
+  "adminMentors": {
+    "title": "Mentors",
+    "intro": "Who teaches which group, and whether the work is keeping up. Every submission should get feedback within {days} days.",
+    "stats": {
+      "mentors": "Mentors",
+      "late": "Reviews waiting over {days} days",
+      "cards": "Progress cards due",
+      "unstaffed": "Groups without a mentor"
+    },
+    "unstaffed": "These groups have no mentor yet:",
+    "none": "No mentors yet",
+    "noneBody": "Invite a mentor from People, then add them to a group.",
+    "columns": {
+      "mentor": "Mentor",
+      "groups": "Groups",
+      "reviews": "Waiting for review",
+      "feedback": "Feedback (7 days)",
+      "cards": "Progress cards",
+      "status": "Status"
+    },
+    "lastSignIn": "Last signed in {date}",
+    "neverSignedIn": "Never signed in",
+    "noGroup": "No group",
+    "notStarted": "Not started",
+    "week": "Week {week} of {weeks}",
+    "students": "{count, plural, one {# student} other {# students}}",
+    "allReviewed": "All reviewed",
+    "late": "{count} over the deadline",
+    "oldest": "{days, plural, =0 {Oldest from today} one {Oldest waiting # day} other {Oldest waiting # days}}",
+    "noFeedbackYet": "No feedback in 30 days",
+    "medianResponse": "Usually replies in {hours, plural, =0 {under an hour} one {# hour} other {# hours}}",
+    "medianResponseDays": "Usually replies in {days} days",
+    "cardsMissing": "{count} to write",
+    "cardsDone": "All sent",
+    "deactivated": "Deactivated",
+    "flags": {
+      "ok": "On track",
+      "late_reviews": "Late reviews",
+      "cards_due": "Cards due",
+      "quiet": "Not signed in for a week",
+      "never_signed_in": "Never signed in",
+      "no_group": "No group"
+    },
+    "shared": "Reviews and progress cards belong to a group, so mentors who share a group share its queue. Response time is the median over the last 30 days."
+  },
+  "adminWork": {
+    "title": "Submissions",
+    "intro": "All student work across groups, as it stands now. Every submission should get feedback within {days} days.",
+    "statusLabel": "Filter by status",
+    "statuses": {
+      "waiting": "Waiting",
+      "needs_changes": "Needs changes",
+      "done": "Done",
+      "all": "All"
+    },
+    "search": "Search students",
+    "searchPlaceholder": "Search by student name or username",
+    "groupLabel": "Group",
+    "allGroups": "All groups",
+    "lateOnly": "Only over {days} days",
+    "apply": "Apply",
+    "lateBanner": "{count, plural, one {# submission has} other {# submissions have}} waited more than {days} days for feedback. Show them",
+    "allCaughtUp": "All caught up — nothing is waiting for review.",
+    "noResults": "No submissions match these filters.",
+    "columns": {
+      "student": "Student",
+      "activity": "Activity",
+      "submitted": "Submitted",
+      "status": "Status",
+      "feedback": "Last feedback",
+      "open": "Open"
+    },
+    "weekShort": "W{week}",
+    "daysAgo": "{days, plural, =0 {today} one {# day ago} other {# days ago}}",
+    "lateBadge": "Late",
+    "someone": "A mentor",
+    "review": "Review",
+    "open": "Open",
+    "pagination": "Pages",
+    "pageOf": "Page {page} of {pages} · {total} submissions",
+    "previous": "Previous",
+    "next": "Next"
   }
 }

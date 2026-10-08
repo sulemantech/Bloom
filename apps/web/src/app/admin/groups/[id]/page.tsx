@@ -8,8 +8,10 @@ import { ProgressBar, WeekHeadline, WeekStrip } from "@/components/course";
 import { AGE_GROUP_TONE, Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { requireRole } from "@/lib/auth";
+import { loadAuthInfo } from "@/lib/data/admin";
 import { loadLastActive } from "@/lib/data/bloom";
 import { loadCohortProgress } from "@/lib/data/cohort";
+import { cardsRead } from "@/lib/operations";
 import { createClient } from "@/lib/supabase/server";
 import { AddMemberForm, CohortSettingsForm, DeleteCohortForm, MembershipForm, RemoveMemberButton } from "../../forms";
 
@@ -46,7 +48,18 @@ export default async function AdminGroupPage({ params }: PageProps<"/admin/group
   const freeMentors = (people ?? [])
     .filter((p) => (p.role === "mentor" || p.role === "admin") && !mentors.some((m) => m.user!.id === p.id))
     .map((p) => ({ id: p.id, label: p.full_name || p.id }));
-  const lastActive = await loadLastActive(supabase, students.map((s) => s.user!.id));
+  const studentIds = students.map((s) => s.user!.id);
+  const [lastActive, { data: guardians }, auth] = await Promise.all([
+    loadLastActive(supabase, studentIds),
+    supabase.from("guardian_links").select("student_id, parent:profiles!guardian_links_parent_id_fkey(id, full_name)").in("student_id", studentIds),
+    loadAuthInfo(),
+  ]);
+  // Families: who the parents are, whether they have ever signed in, and which progress cards they read.
+  const parentsOf = (studentId: string) =>
+    (guardians ?? []).filter((g) => g.student_id === studentId && g.parent).map((g) => ({ ...g.parent!, signedIn: Boolean(auth.get(g.parent!.id)?.lastSignInAt) }));
+  const cardsFor = (studentId: string) => cardsRead(progress.cards.filter((c) => c.student_id === studentId));
+  const groupCards = cardsRead(progress.cards);
+  const quietParents = new Set((guardians ?? []).filter((g) => g.parent && !auth.get(g.parent.id)?.lastSignInAt).map((g) => g.parent!.id)).size;
   const progressById = new Map(progress.students.map((s) => [s.profile.id, s]));
 
   return (
@@ -72,6 +85,12 @@ export default async function AdminGroupPage({ params }: PageProps<"/admin/group
             {t("createStudent")}
           </Link>
         </div>
+        {students.length > 0 && (
+          <p className="text-[13px] text-soft">
+            {groupCards.sent ? t("familyCards", { read: groupCards.read, sent: groupCards.sent }) : t("familyNoCards")}
+            {quietParents > 0 && <span className="text-warning"> · {t("familyQuiet", { count: quietParents })}</span>}
+          </p>
+        )}
         {students.length === 0 && <p className="text-sm text-muted">{t("noStudents")}</p>}
         <ul className="flex flex-col divide-y divide-border">
           {students.map((m) => {
@@ -90,6 +109,21 @@ export default async function AdminGroupPage({ params }: PageProps<"/admin/group
                     <span className="text-[13px]">
                       <span className="text-soft">@{m.user!.username} · </span>
                       <LastActive at={lastActive.get(m.user!.id) ?? null} />
+                    </span>
+                    <span className="flex flex-wrap items-center gap-x-1.5 text-[12px] text-soft">
+                      {parentsOf(m.user!.id).length === 0 ? (
+                        <span className="text-warning">{t("noParent")}</span>
+                      ) : (
+                        parentsOf(m.user!.id).map((p) => (
+                          <span key={p.id}>
+                            <Link href={`/admin/people/${p.id}`} className="hover:text-info">{p.full_name}</Link>
+                            {!p.signedIn && <span className="text-warning"> ({t("parentNeverSignedIn")})</span>}
+                          </span>
+                        ))
+                      )}
+                      {cardsFor(m.user!.id).sent > 0 && (
+                        <span>· {t("cardsRead", { read: cardsFor(m.user!.id).read, sent: cardsFor(m.user!.id).sent })}</span>
+                      )}
                     </span>
                   </span>
                   {p && (

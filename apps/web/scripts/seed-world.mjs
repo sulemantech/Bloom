@@ -295,7 +295,13 @@ for (const s of studentRows) {
       must(
         await db.from("feedback").insert({
           submission_id: sub.id, mentor_id: mentor.id, body: feedbackFor(status, a.title, s, reviews),
-          created_at: at(Math.min(day + DAY, today), "20:15"),
+          // Mentors answer within a few hours to about three days, like real people.
+          // Last week's work was reviewed in the past few days, so the mentor views show recent feedback too.
+          created_at: new Date(
+            a.week === W - 1
+              ? Math.max(Date.parse(submittedAt) + 3_600_000, Date.now() - between(6, 120) * 3_600_000)
+              : Math.min(Date.parse(submittedAt) + between(3, 70) * 3_600_000, Date.now() - 3_600_000),
+          ).toISOString(),
         }),
         "feedback",
       );
