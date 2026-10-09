@@ -441,7 +441,8 @@
       "refused": "The AI couldn’t write this draft. Please write it yourself.",
       "rateLimited": "The AI is busy. Try again in a minute.",
       "failed": "The draft couldn’t be created. Please try again.",
-      "notAllowed": "Only mentors can use AI drafts."
+      "notAllowed": "Only mentors can use AI drafts.",
+      "paused": "AI drafting is paused by an admin right now. Please write the card yourself."
     }
   },
   "parentChild": {
@@ -779,6 +780,7 @@
     "mentorView": "Mentor view",
     "payments": "Payments",
     "programme": "Programme",
+    "features": "Features",
     "aiUsage": "AI usage",
     "activityLog": "Activity log"
   },
@@ -1038,7 +1040,8 @@
         "refused": "Spark couldn’t help with that one. Try asking in a different way, or ask your mentor.",
         "rateLimited": "Spark is busy right now. Try again in a minute.",
         "failed": "Spark couldn’t answer just now. Please try again.",
-        "dailyLimit": "You’ve asked Spark a lot today. Have a go on your own, ask your mentor, or come back tomorrow."
+        "dailyLimit": "You’ve asked Spark a lot today. Have a go on your own, ask your mentor, or come back tomorrow.",
+        "paused": "Spark’s AI is paused for a little while. You can still create your own path and keep going with your steps."
       }
     }
   },
@@ -1285,7 +1288,8 @@
       "invitations": "an invitation",
       "bloom_paths": "a Spark path",
       "bloom_tasks": "a Spark step",
-      "bloom_questions": "a Spark question"
+      "bloom_questions": "a Spark question",
+      "feature_flags": "a feature switch"
     }
   },
   "adminMentors": {
@@ -1370,5 +1374,39 @@
     "pageOf": "Page {page} of {pages} · {total} submissions",
     "previous": "Previous",
     "next": "Next"
+  },
+  "adminFeatures": {
+    "title": "Features",
+    "intro": "Turn features on or off for everyone or for one group. A group’s setting beats the setting for everyone; “Default” follows the level above.",
+    "aiPausedBanner": "All AI is paused. Spark and progress-card drafts won’t call the AI until you turn it back on.",
+    "scope": {
+      "global": "Everyone only",
+      "group": "Per group"
+    },
+    "builtInDefault": "Built-in default: {value}",
+    "everyone": "Everyone",
+    "values": {
+      "default": "Default",
+      "on": "On",
+      "off": "Off"
+    },
+    "effective": {
+      "default": "{value} (built-in default)",
+      "set": "{value} for everyone",
+      "group": "{value} for this group",
+      "followsEveryone": "{value} (follows everyone)"
+    },
+    "saveFailed": "Couldn’t save. Please try again.",
+    "rules": "Parent consent always wins: no switch turns AI on for a child whose parent said no. Every change here is recorded in the activity log.",
+    "items": {
+      "ai": {
+        "name": "AI (master switch)",
+        "description": "Pauses every AI call at once — Spark’s guide and mentors’ progress-card drafts — if something goes wrong or costs spike. Students and mentors can keep working without AI."
+      },
+      "bloom_v2": {
+        "name": "Adaptive Spark",
+        "description": "Spark writes each step from how the last one went, checks understanding, re-checks weak ideas, sets the difficulty and ties every path to course work. Being piloted with one group first."
+      }
+    }
   }
 }

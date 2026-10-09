@@ -6,6 +6,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { CONSENT_VERSION, getCurrentProfile, normalizeUsername, studentEmail, USERNAME_PATTERN } from "@/lib/auth";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/env";
+import { FEATURES, isFeatureKey } from "@/lib/features";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
@@ -596,4 +597,40 @@ export async function deleteActivity(_prev: ActionState, formData: FormData): Pr
   if (error) return { status: "error", message: "failed" };
   refresh();
   return { status: "ok" };
+}
+
+// ---------------------------------------------------------------------------
+// Feature switches (lib/features.ts): on, off, or back to the default, for everyone or one group
+// ---------------------------------------------------------------------------
+const SWITCH_VALUES = ["on", "off", "default"] as const;
+
+export async function setFeature(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const admin = await requireAdmin();
+  if (!admin) return { status: "error", message: "notAllowed" };
+  const key = str(formData, "key");
+  const cohortId = str(formData, "cohort") || null;
+  const value = SWITCH_VALUES.find((v) => v === str(formData, "value"));
+  if (!isFeatureKey(key) || !value) return { status: "error", message: "failed" };
+  // A global-only switch (the AI master switch) is never set per group.
+  if (cohortId && FEATURES[key].scope !== "group") return { status: "error", message: "failed" };
+
+  const supabase = await createClient();
+  if (cohortId) {
+    const { data: cohort } = await supabase.from("cohorts").select("id").eq("id", cohortId).maybeSingle();
+    if (!cohort) return { status: "error", message: "failed" };
+  }
+  // Written as the admin (row-level security allows admins only), so the audit log records who changed it.
+  const rows = supabase.from("feature_flags");
+  const { error } =
+    value === "default"
+      ? cohortId
+        ? await rows.delete().eq("key", key).eq("cohort_id", cohortId)
+        : await rows.delete().eq("key", key).is("cohort_id", null)
+      : await rows.upsert({ key, cohort_id: cohortId, enabled: value === "on" }, { onConflict: "key,cohort_id" });
+  if (error) {
+    console.error("Feature switch failed:", error.message);
+    return { status: "error", message: "failed" };
+  }
+  refresh();
+  return { status: "ok", message: "featureSaved" };
 }

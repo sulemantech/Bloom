@@ -1,18 +1,20 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { FEATURES, type FeatureKey } from "./features";
 import { resolveFlag } from "./flags-rule";
 
 export const BLOOM_V2 = "bloom_v2";
 
-/** A flag set for the cohort wins over the global flag; missing flags are off. */
-export async function isEnabled(key: string, cohortId?: string): Promise<boolean> {
+/** A setting for the group wins over the one for everyone; with neither, the feature's default (lib/features). */
+export async function isEnabled(key: FeatureKey, cohortId?: string): Promise<boolean> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("feature_flags")
     .select("cohort_id, enabled")
     .eq("key", key);
 
-  return resolveFlag(data ?? [], cohortId);
+  // Global-only features (like the AI master switch) ignore group rows.
+  return resolveFlag(data ?? [], FEATURES[key].scope === "group" ? cohortId : undefined, FEATURES[key].default);
 }
 
 /** Bloom v2 is rolled out per group: a student follows their current group (as in loadStudentOverview). */

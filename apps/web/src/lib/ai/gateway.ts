@@ -2,6 +2,8 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { z } from "zod";
+import { FEATURES } from "@/lib/features";
+import { resolveFlag } from "@/lib/flags-rule";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/database.types";
 import { dailyLimitFrom, dayWindowStart, inputHash, joinText } from "./util";
@@ -14,7 +16,7 @@ import { dailyLimitFrom, dayWindowStart, inputHash, joinText } from "./util";
 const MODEL = "claude-opus-5-5";
 
 export type AiCapability = "progress_card" | "bloom_suggest" | "bloom_plan" | "bloom_step" | "bloom_review" | "bloom_ask";
-export type AiFailure = "notConfigured" | "noConsent" | "dailyLimit" | "refused" | "rateLimited" | "failed";
+export type AiFailure = "notConfigured" | "paused" | "noConsent" | "dailyLimit" | "refused" | "rateLimited" | "failed";
 export type AiResult<T> = { ok: true; data: T } | { ok: false; reason: AiFailure };
 
 type Outcome = Database["public"]["Tables"]["ai_runs"]["Insert"]["outcome"];
@@ -87,6 +89,13 @@ async function run<T>(
         // Logging must never break the feature itself.
         if (error) console.error("ai_runs insert failed:", error.message);
       });
+
+  // The admins' master switch (/admin/features) pauses every AI call at once, before anything else.
+  const { data: aiSwitch } = await admin.from("feature_flags").select("cohort_id, enabled").eq("key", "ai").is("cohort_id", null);
+  if (!resolveFlag(aiSwitch ?? [], undefined, FEATURES.ai.default)) {
+    await log("paused");
+    return { ok: false, reason: "paused" };
+  }
 
   const { data: consented } = await admin.rpc("has_active_consent", { p_student: call.studentId, p_type: call.consent });
   if (!consented) {

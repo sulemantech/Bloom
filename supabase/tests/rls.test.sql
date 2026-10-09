@@ -162,7 +162,8 @@ select lives_ok(
 
 set local role anon;
 set local request.jwt.claims to '{"role": "anon"}';
-select is((select count(*)::int from public.projects), 1, 'anonymous visitors see the consented public portfolio');
+-- Scoped to the test's own students, so demo data in a development database doesn't change the count.
+select is((select count(*)::int from public.projects where student_id::text like 'd0000000-%'), 1, 'anonymous visitors see the consented public portfolio');
 select is((select count(*)::int from public.submissions), 0, 'anonymous visitors see no submissions');
 select is((select count(*)::int from public.profiles), 0, 'anonymous visitors see no profiles');
 
@@ -173,7 +174,7 @@ where student_id = 'd0000000-0000-0000-0000-000000000001' and type = 'public_por
 
 set local role anon;
 set local request.jwt.claims to '{"role": "anon"}';
-select is((select count(*)::int from public.projects), 0, 'revoking consent hides the portfolio');
+select is((select count(*)::int from public.projects where student_id::text like 'd0000000-%'), 0, 'revoking consent hides the portfolio');
 
 -- ---------------------------------------------------------------------------
 -- Mentor M1 (cohort C1) and mentor M2 (cohort C2)
@@ -618,6 +619,31 @@ select lives_ok(
   $$insert into public.bloom_paths (student_id, title, anchor_kind)
     values ('c0000000-0000-0000-0000-000000000001', 'No group yet', 'interest')$$,
   'someone without a group can follow their own interest');
+
+-- ---------------------------------------------------------------------------
+-- Feature switches: admins only, every change audited; AI pauses are logged
+-- ---------------------------------------------------------------------------
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "b0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select throws_ok(
+  $$insert into public.feature_flags (key, cohort_id, enabled) values ('ai', null, false)$$,
+  '42501', null, 'a mentor cannot change a feature switch');
+
+set local request.jwt.claims to '{"sub": "a0000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+select lives_ok(
+  $$insert into public.feature_flags (key, cohort_id, enabled) values ('ai', null, false)$$,
+  'an admin can pause AI for everyone');
+select is((select count(*)::int from public.audit_log
+           where entity = 'feature_flags' and action = 'insert' and actor_id = 'a0000000-0000-0000-0000-000000000001'), 1,
+          'the audit log records which admin changed a switch');
+select lives_ok(
+  $$delete from public.feature_flags where key = 'ai' and cohort_id is null$$,
+  'an admin can put a switch back to its default');
+
+set local role postgres;
+select lives_ok(
+  $$insert into public.ai_runs (capability, student_id, actor_id, outcome) values ('bloom_ask', 'd0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000001', 'paused')$$,
+  'a call blocked by the AI master switch is logged as paused');
 
 select * from finish();
 rollback;

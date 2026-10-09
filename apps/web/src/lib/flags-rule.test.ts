@@ -25,4 +25,9 @@ describe("resolveFlag", () => {
     expect(resolveFlag(flags, PILOT)).toBe(false);
     expect(resolveFlag(flags, OTHER)).toBe(true);
   });
+
+  it("uses the feature's default when nothing is set", () => {
+    expect(resolveFlag([], PILOT, true)).toBe(true);
+    expect(resolveFlag([{ cohort_id: null, enabled: false }], PILOT, true)).toBe(false);
+  });
 });
